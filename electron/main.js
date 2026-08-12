@@ -1,4 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+
+// Puerto 443 del VPS tiene cert autofirmado — aceptarlo mientras no haya Let's Encrypt
+// Solo afecta conexiones a 31.97.141.124 (el proxy Vite ya lo maneja en dev via Node.js)
+app.commandLine.appendSwitch("ignore-certificate-errors");
 const path = require("path");
 const Store = require("electron-store");
 const XLSX = require("xlsx");
