@@ -22,8 +22,7 @@
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "arm64"
           ]
         }
       ],
@@ -58,6 +57,7 @@
     },
     "dmg": {
       "title": "Organ\u00edzalo.AI",
+      "background": null,
       "window": {
         "width": 540,
         "height": 380
