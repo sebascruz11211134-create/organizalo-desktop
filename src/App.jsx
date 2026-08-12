@@ -56,8 +56,6 @@ import AdminScreen, { SUPERADMIN_EMAIL } from "./screens/AdminScreen";
 import ChatWidget           from "./components/ChatWidget";
 import FlujoCajaScreen      from "./screens/FlujoCajaScreen";
 import RecepcionScreen      from "./screens/RecepcionScreen";
-import CalendarioScreen     from "./screens/CalendarioScreen";
-import CRMClientesScreen    from "./screens/CRMClientesScreen";
 
 // ── Títulos por ruta ──────────────────────────────────────────────────────────
 
