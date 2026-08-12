@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build && electron-builder",
-    "build:mac": "vite build && electron-builder --mac",
+    "build:mac": "vite build && electron-builder --mac -p never",
     "build:win": "vite build && electron-builder --win",
     "build:web": "vite build --config vite.config.web.js",
     "preview": "vite preview"
