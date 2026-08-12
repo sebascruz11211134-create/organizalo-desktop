@@ -3,6 +3,7 @@ const path = require("path");
 const Store = require("electron-store");
 const XLSX = require("xlsx");
 const fs = require("fs");
+const { autoUpdater } = require("electron-updater");
 
 // ── Store (base de datos local) ───────────────────────────────────────────────
 const store = new Store({ name: "organizalo-data" });
@@ -56,6 +57,32 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  // ── Auto-update (solo en producción) ────────────────────────────────────────
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    // Revisar actualizaciones 5 segundos después de que carga la app
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {/* sin internet, ignorar */});
+    }, 5000);
+
+    autoUpdater.on("update-downloaded", () => {
+      dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "Actualización lista — Organízalo.AI",
+        message: "Hay una nueva versión disponible.",
+        detail: "La actualización ya se descargó. Reiniciá la app para instalarla.",
+        buttons: ["Reiniciar ahora", "Más tarde"],
+        defaultId: 0,
+      }).then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+    });
+
+    autoUpdater.on("error", () => {/* silencioso */});
+  }
 });
 
 app.on("window-all-closed", () => {

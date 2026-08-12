@@ -15,49 +15,31 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - name: Auto-versionar por commit count
+        run: |
+          COUNT=$(git rev-list --count HEAD)
+          npm version "1.0.$COUNT" --no-git-tag-version
+          echo "Versión: 1.0.$COUNT"
+
       - name: Instalar dependencias
         run: npm install
 
-      - name: Build macOS (.dmg)
+      - name: Build y publicar macOS (.dmg)
         run: npm run build:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-
-      - name: Encontrar el .dmg generado
-        id: dmg
-        run: |
-          DMG=$(find . -name "*.dmg" | head -1)
-          echo "path=$DMG" >> $GITHUB_OUTPUT
-          echo "Archivo encontrado: $DMG"
-          ls -lh "$DMG" || echo "No se encontró .dmg"
-
-      - name: Publicar en GitHub Releases (HTTPS gratuito)
-        if: steps.dmg.outputs.path != ''
-        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Confirmar publicación
         run: |
-          # Renombrar sin caracteres especiales ni versión
-          cp "${{ steps.dmg.outputs.path }}" ./Organizalo-mac.dmg
-          echo "DMG listo: $(ls -lh Organizalo-mac.dmg)"
-
-          # Borrar release anterior con el mismo tag si existe
-          gh release delete latest-mac --yes 2>/dev/null || true
-          sleep 2
-
-          # Crear release marcado como "latest" con el .dmg
-          gh release create latest-mac \
-            --title "Organízalo.AI — Mac (última versión)" \
-            --notes "Instalador para macOS (Apple Silicon). Descargá y abrí el .dmg para instalar." \
-            --latest \
-            ./Organizalo-mac.dmg
-
-          echo ""
-          echo "✓ Descarga disponible en:"
-          echo "  https://github.com/${{ github.repository }}/releases/latest/download/Organizalo-mac.dmg"
+          echo "✓ Build completado. Releases en:"
+          echo "  https://github.com/${{ github.repository }}/releases"
