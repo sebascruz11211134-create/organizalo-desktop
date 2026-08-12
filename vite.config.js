@@ -13,12 +13,13 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://31.97.141.124",
+        target: "https://31.97.141.124",
         changeOrigin: true,
-        secure: false,
+        secure: false,        // acepta cert autofirmado del VPS
+        followRedirects: true,
       },
       "/socket.io": {
-        target: "http://31.97.141.124",
+        target: "https://31.97.141.124",
         changeOrigin: true,
         secure: false,
         ws: true,

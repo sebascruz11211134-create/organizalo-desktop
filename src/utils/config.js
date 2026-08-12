@@ -1,6 +1,11 @@
 /**
  * BACKEND URL centralizada.
- * - Dev mode (Vite): "" → URLs relativas, Vite hace proxy server-side → sin CORS.
- * - Producción (Electron empaquetado): URL absoluta directa al VPS.
+ * - Dev mode (localhost): "" → URLs relativas, Vite hace proxy server-side → sin CORS.
+ * - Producción (file:// o cualquier otro origen): URL absoluta directa al VPS.
  */
-export const BACKEND = import.meta.env.DEV ? "" : "http://31.97.141.124";
+const isLocalhost =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+   window.location.hostname === "127.0.0.1");
+
+export const BACKEND = isLocalhost ? "" : "https://31.97.141.124";
