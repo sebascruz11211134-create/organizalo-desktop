@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
@@ -35,16 +38,26 @@ jobs:
           echo "Archivo encontrado: $DMG"
           ls -lh "$DMG" || echo "No se encontró .dmg"
 
-      - name: Subir .dmg al VPS
+      - name: Publicar en GitHub Releases (HTTPS gratuito)
         if: steps.dmg.outputs.path != ''
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "$VPS_SSH_KEY" > /tmp/vps_key
-          chmod 600 /tmp/vps_key
-          scp -i /tmp/vps_key \
-              -o StrictHostKeyChecking=no \
-              "${{ steps.dmg.outputs.path }}" \
-              root@31.97.141.124:/var/www/downloads/Organizalo-mac.dmg
-          rm -f /tmp/vps_key
-          echo "✓ Subido a http://31.97.141.124/descargar/Organizalo-mac.dmg"
+          # Renombrar sin caracteres especiales ni versión
+          cp "${{ steps.dmg.outputs.path }}" ./Organizalo-mac.dmg
+          echo "DMG listo: $(ls -lh Organizalo-mac.dmg)"
+
+          # Borrar release anterior con el mismo tag si existe
+          gh release delete latest-mac --yes 2>/dev/null || true
+          sleep 2
+
+          # Crear release marcado como "latest" con el .dmg
+          gh release create latest-mac \
+            --title "Organízalo.AI — Mac (última versión)" \
+            --notes "Instalador para macOS (Apple Silicon). Descargá y abrí el .dmg para instalar." \
+            --latest \
+            ./Organizalo-mac.dmg
+
+          echo ""
+          echo "✓ Descarga disponible en:"
+          echo "  https://github.com/${{ github.repository }}/releases/latest/download/Organizalo-mac.dmg"
