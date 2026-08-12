@@ -58,6 +58,7 @@
     "dmg": {
       "title": "Organ\u00edzalo.AI",
       "background": null,
+      "artifactName": "Organizalo-mac.dmg",
       "window": {
         "width": 540,
         "height": 380
