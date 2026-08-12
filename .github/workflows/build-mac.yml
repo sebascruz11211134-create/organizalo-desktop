@@ -1,0 +1,54 @@
+name: Build & Deploy Mac Installer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'vite.config.js'
+      - 'electron/**'
+  workflow_dispatch:   # También se puede lanzar manualmente desde GitHub
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build macOS (.dmg)
+        run: npm run build:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false   # Sin firma de código por ahora
+
+      - name: Encontrar el .dmg generado
+        id: dmg
+        run: |
+          DMG=$(find dist -name "*.dmg" | head -1)
+          echo "path=$DMG" >> $GITHUB_OUTPUT
+          echo "Archivo: $DMG"
+
+      - name: Subir .dmg al VPS
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          echo "$VPS_SSH_KEY" > /tmp/vps_key
+          chmod 600 /tmp/vps_key
+          scp -i /tmp/vps_key \
+              -o StrictHostKeyChecking=no \
+              "${{ steps.dmg.outputs.path }}" \
+              root@31.97.141.124:/var/www/downloads/Organizalo-mac.dmg
+          rm -f /tmp/vps_key
+          echo "✓ Subido a http://31.97.141.124/descargar/Organizalo-mac.dmg"

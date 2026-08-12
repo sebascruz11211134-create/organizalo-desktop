@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-electron/
+.env
+.env.*
+*.dmg
+*.exe
+*.AppImage
+release/
+out/
+.DS_Store

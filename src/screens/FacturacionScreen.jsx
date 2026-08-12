@@ -1,0 +1,677 @@
+/**
+ * FacturacionScreen — Factura electrónica Hacienda v4.4 (desktop)
+ *
+ * Flujo:
+ *  1. Llenar encabezado (cliente, moneda, tipo, condición de pago)
+ *  2. Agregar líneas (producto, cantidad, precio, descuento, IVA)
+ *  3. Calcular totales automáticamente
+ *  4. Guardar localmente + enviar a Hacienda vía Railway backend
+ *
+ * El envío a Hacienda usa el endpoint del backend Railway que ya
+ * implementa la firma digital y el envío XML (via facturae-cr o similar).
+ */
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Trash2, Send, Save, FileText, ChevronDown, Printer, Search, Loader2 } from "lucide-react";
+import db from "../utils/db";
+import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
+import SinpeQR from "../components/SinpeQR";
+import { reducirInventario, crearCXC } from "../utils/clienteUtils";
+
+const BACKEND = "https://organizalo-backend-production.up.railway.app";
+
+// ── Constantes Hacienda ───────────────────────────────────────────────────────
+const TIPOS_DOC = [
+  { value: "01", label: "01 - Factura Electrónica" },
+  { value: "02", label: "02 - Nota de Débito" },
+  { value: "03", label: "03 - Nota de Crédito" },
+  { value: "04", label: "04 - Tiquete Electrónico" },
+  { value: "08", label: "08 - Fact. Elect. de Compra" },
+  { value: "09", label: "09 - Fact. Elect. de Exportación" },
+];
+
+const CONDICIONES = [
+  { value: "01", label: "01 - Contado" },
+  { value: "02", label: "02 - Crédito" },
+  { value: "03", label: "03 - Consignación" },
+  { value: "04", label: "04 - Apartado" },
+  { value: "05", label: "05 - Arrendamiento" },
+  { value: "06", label: "06 - Otro" },
+];
+
+const MEDIOS_PAGO = [
+  { value: "01", label: "01 - Efectivo" },
+  { value: "02", label: "02 - Tarjeta" },
+  { value: "03", label: "03 - Cheque" },
+  { value: "04", label: "04 - Transferencia" },
+  { value: "05", label: "05 - Recaudado por terceros" },
+  { value: "99", label: "99 - Otro" },
+];
+
+const TIPOS_IVA = [
+  { value: "01", label: "01 - Tarifa 0% (Exento)" },
+  { value: "02", label: "02 - Tarifa 1%" },
+  { value: "03", label: "03 - Tarifa 2%" },
+  { value: "04", label: "04 - Tarifa 4% (Canasta)" },
+  { value: "05", label: "05 - Tarifa 0% (Trans. no sujeta)" },
+  { value: "06", label: "06 - Tarifa 4% (Med. y otros)" },
+  { value: "07", label: "07 - Tarifa 8%" },
+  { value: "08", label: "08 - Tarifa 13%" },
+];
+
+const IVA_PCT = { "01": 0, "02": 1, "03": 2, "04": 4, "05": 0, "06": 4, "07": 8, "08": 13 };
+
+const UNIDADES = ["Unid", "Kg", "g", "L", "mL", "m", "cm", "h", "Días", "Servicio", "Otro"];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function calcLinea(l) {
+  const cant     = parseFloat(l.cantidad) || 0;
+  const precio   = parseFloat(l.precioUnit) || 0;
+  const pctDesc  = parseFloat(l.pctDesc) || 0;
+  const montoDesc = (cant * precio * pctDesc) / 100;
+  const subTotal  = cant * precio - montoDesc;
+  const pctIVA    = IVA_PCT[l.codigoIVA] ?? 13;
+  const montoIVA  = (subTotal * pctIVA) / 100;
+  const total     = subTotal + montoIVA;
+  return { ...l, montoDesc, subTotal, pctIVA, montoIVA, total };
+}
+
+function lineaVacia() {
+  return { id: genId(), descripcion: "", cantidad: "1", unidad: "Unid", codigoCabys: "", precioUnit: "", pctDesc: "0", codigoIVA: "08", montoDesc: 0, subTotal: 0, pctIVA: 13, montoIVA: 0, total: 0 };
+}
+
+// ── Fila de línea ─────────────────────────────────────────────────────────────
+function LineaRow({ linea, productos, onChange, onDelete }) {
+  const [showProd, setShowProd] = useState(false);
+  const busqProd = (val) => {
+    const p = productos.find((x) => x.nombre === val || x.codigoInterno === val);
+    if (p) onChange({ ...linea, descripcion: p.nombre, productoId: p.id, codigoCabys: p.codigoCabys || "", precioUnit: String(p.precio || ""), unidad: p.unidad || "Unid" });
+    else    onChange({ ...linea, descripcion: val, productoId: null });
+    setShowProd(false);
+  };
+  const l = calcLinea(linea);
+
+  return (
+    <tr className="group">
+      {/* Descripción con autocomplete */}
+      <td className="relative min-w-[180px]">
+        <input value={linea.descripcion}
+          onChange={(e) => { onChange({ ...linea, descripcion: e.target.value }); setShowProd(true); }}
+          onFocus={() => setShowProd(true)}
+          onBlur={() => setTimeout(() => setShowProd(false), 150)}
+          placeholder="Descripción / producto…"
+          className="w-full border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50" />
+        {showProd && productos.filter((p) => p.nombre?.toLowerCase().includes(linea.descripcion?.toLowerCase() || "")).length > 0 && (
+          <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
+            {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 8).map((p) => (
+              <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 border-b border-gray-50 last:border-0">
+                <span className="font-semibold">{p.nombre}</span>
+                <span className="text-slate-400 ml-2">{p.codigoCabys || "—"}</span>
+                <span className="text-green-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </td>
+      <td>
+        <input value={linea.codigoCabys} onChange={(e) => onChange({ ...linea, codigoCabys: e.target.value })}
+          placeholder="CABYS" className="w-24 border-0 bg-transparent text-xs outline-none py-1 px-2 rounded focus:bg-green-50 text-slate-400" />
+      </td>
+      <td>
+        <input value={linea.cantidad} onChange={(e) => onChange({ ...linea, cantidad: e.target.value })}
+          type="number" min="0" step="any"
+          className="w-16 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-center" />
+      </td>
+      <td>
+        <select value={linea.unidad} onChange={(e) => onChange({ ...linea, unidad: e.target.value })}
+          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded focus:bg-green-50">
+          {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </td>
+      <td>
+        <input value={linea.precioUnit} onChange={(e) => onChange({ ...linea, precioUnit: e.target.value })}
+          type="number" min="0" step="any" placeholder="0"
+          className="w-24 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-right" />
+      </td>
+      <td>
+        <input value={linea.pctDesc} onChange={(e) => onChange({ ...linea, pctDesc: e.target.value })}
+          type="number" min="0" max="100" step="0.01" placeholder="0"
+          className="w-14 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-center" />
+      </td>
+      <td>
+        <select value={linea.codigoIVA} onChange={(e) => onChange({ ...linea, codigoIVA: e.target.value })}
+          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded focus:bg-green-50">
+          {TIPOS_IVA.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+      </td>
+      <td className="text-right text-xs text-slate-500">{fmtMoney(l.montoIVA, "CRC")}</td>
+      <td className="text-right font-semibold text-sm">{fmtMoney(l.total, "CRC")}</td>
+      <td>
+        <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
+          <Trash2 size={12} />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+// ── Pantalla principal ────────────────────────────────────────────────────────
+export default function FacturacionScreen() {
+  const [settings,   setSettings]   = useState({});
+  const [contactos,  setContactos]  = useState([]);
+  const [productos,  setProductos]  = useState([]);
+  const [facturas,   setFacturas]   = useState([]);
+  const [sending,    setSending]    = useState(false);
+  const [enviada,    setEnviada]    = useState(null); // factura recién enviada
+
+  // Encabezado
+  const [tipoDoc,    setTipoDoc]    = useState("01");
+  const [condPago,   setCondPago]   = useState("01");
+  const [medioPago,  setMedioPago]  = useState("01");
+  const [moneda,     setMoneda]     = useState("CRC");
+  const [plazo,      setPlazo]      = useState(""); // días crédito si cond=02
+  const [fechaEm,    setFechaEm]    = useState(hoy());
+  const [busqCliente,setBusqCliente]= useState("");
+  const [cliente,    setCliente]    = useState({ nombre: "", cedula: "", email: "", tipo: "01" });
+  const [notas,      setNotas]      = useState("");
+
+  // Líneas
+  const [lineas, setLineas] = useState([lineaVacia()]);
+
+  const cargar = useCallback(async () => {
+    const [s, c, p, f] = await Promise.all([db.getSettings(), db.getContactos(), db.getProductos(), db.getFacturas()]);
+    setSettings(s);
+    setContactos(c);
+    setProductos(p);
+    setFacturas(f);
+    if (s.moneda) setMoneda(s.moneda);
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  // ── Autocompletar cliente ─────────────────────────────────────────────────
+  const [showClientes,    setShowClientes]    = useState(false);
+  const [buscandoCedula,  setBuscandoCedula]  = useState(false);
+  const [cedulaError,     setCedulaError]     = useState("");
+  const [situacionFiscal, setSituacionFiscal] = useState(null); // null | { moroso, omiso, estado }
+
+  const clientesFiltrados = contactos.filter((c) =>
+    c.nombre?.toLowerCase().includes(busqCliente.toLowerCase()) ||
+    c.cedula?.includes(busqCliente) ||
+    c.codigoCliente?.toUpperCase().includes(busqCliente.toUpperCase())
+  ).slice(0, 6);
+
+  // Busca en contactos locales primero, luego en API de Hacienda
+  const buscarPorCedula = async () => {
+    const cedula = cliente.cedula.trim().replace(/\D/g, "");
+    if (!cedula) return;
+    setCedulaError("");
+    setSituacionFiscal(null);
+
+    // 1. Buscar en contactos locales
+    const local = contactos.find((c) => c.cedula?.replace(/\D/g, "") === cedula);
+    if (local) {
+      setCliente({ nombre: local.nombre, cedula: local.cedula || cedula, email: local.email || "", tipo: local.tipoCedula || "01" });
+      setBusqCliente(local.nombre);
+      // Igual consultar Hacienda para situación fiscal actualizada
+    }
+
+    // 2. Consultar API pública de Hacienda CR
+    setBuscandoCedula(true);
+    try {
+      const res  = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cedula}`, { signal: AbortSignal.timeout(8000) });
+      const data = await res.json();
+      if (data?.nombre) {
+        const tipo = data.tipoIdentificacion || (cedula.length === 9 ? "01" : cedula.length === 10 ? "02" : "03");
+        if (!local) {
+          setCliente((p) => ({ ...p, nombre: data.nombre, tipo }));
+          setBusqCliente(data.nombre);
+        }
+        // Guardar situación fiscal
+        const sit = data.situacion || {};
+        setSituacionFiscal({
+          moroso: sit.moroso ?? false,
+          omiso:  sit.omiso  ?? false,
+          estado: sit.estado || (sit.moroso ? "Moroso" : "Al día"),
+        });
+      } else if (!local) {
+        setCedulaError("Cédula no encontrada en el registro de Hacienda");
+      }
+    } catch {
+      if (!local) setCedulaError("No se pudo consultar Hacienda — verificá la conexión");
+    } finally {
+      setBuscandoCedula(false);
+    }
+  };
+
+  // ── Totales ───────────────────────────────────────────────────────────────
+  const lineasCalc = lineas.map(calcLinea);
+  const subtotal   = lineasCalc.reduce((s, l) => s + l.subTotal, 0);
+  const totalDesc  = lineasCalc.reduce((s, l) => s + l.montoDesc, 0);
+  const totalIVA   = lineasCalc.reduce((s, l) => s + l.montoIVA, 0);
+  const totalFact  = lineasCalc.reduce((s, l) => s + l.total, 0);
+
+  // ── Acciones ──────────────────────────────────────────────────────────────
+  const agregarLinea = () => setLineas((p) => [...p, lineaVacia()]);
+
+  const updateLinea = (idx, val) => setLineas((p) => p.map((l, i) => i === idx ? val : l));
+
+  const deleteLinea = (idx) => setLineas((p) => p.filter((_, i) => i !== idx));
+
+  const resetForm = () => {
+    setLineas([lineaVacia()]);
+    setBusqCliente("");
+    setCliente({ nombre: "", cedula: "", email: "", tipo: "01" });
+    setNotas("");
+    setCondPago("01");
+    setPlazo("");
+    setSituacionFiscal(null);
+    setCedulaError("");
+  };
+
+  const guardarLocal = async (factura) => {
+    const all = await db.getFacturas();
+    await db.setFacturas([...all, factura]);
+
+    // ── Conexiones lógicas ───────────────────────────────────────────────────
+    // 1. Reducir inventario por los productos vendidos
+    await reducirInventario(factura.lineas);
+
+    // 2. Si es a crédito (condPago "02"), crear CXC automáticamente
+    if (factura.condPago === "02") {
+      await crearCXC({
+        cliente:    factura.cliente,
+        total:      factura.total,
+        moneda:     factura.moneda,
+        plazo:      factura.plazo || 30,
+        facturaRef: factura.numero,
+      });
+    }
+
+    cargar();
+  };
+
+  const armarFactura = () => {
+    const num = `FE-${String(facturas.length + 1).padStart(5, "0")}`;
+    return {
+      id: genId(),
+      numero: num,
+      tipoDoc,
+      fecha: fechaEm,
+      condPago,
+      medioPago,
+      plazo: condPago === "02" ? parseInt(plazo) || 30 : 0,
+      moneda,
+      cliente: { ...cliente, nombre: cliente.nombre || "Consumidor Final" },
+      lineas: lineasCalc,
+      subtotal,
+      totalDescuento: totalDesc,
+      totalIVA,
+      total: totalFact,
+      notas,
+      estado: "borrador",
+      creadoEn: new Date().toISOString(),
+    };
+  };
+
+  const handleGuardar = async () => {
+    const f = armarFactura();
+    await guardarLocal({ ...f, estado: "guardada" });
+    setEnviada(f);
+  };
+
+  const handleEnviar = async () => {
+    if (!cliente.cedula && tipoDoc !== "04") {
+      alert("Para documentos distintos al tiquete, ingrese la cédula del receptor.");
+      return;
+    }
+    const f = armarFactura();
+    setSending(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/facturas/emitir`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, empresaId: settings.empresaId }),
+      });
+      const json = await res.json();
+      const estado = json.ok ? "aceptada" : "pendiente";
+      const guardada = { ...f, estado, haciendaRes: json };
+      await guardarLocal(guardada);
+      setEnviada(guardada);
+      resetForm();
+    } catch (err) {
+      // Si falla la conexión, guardar como pendiente para reenvío
+      const guardada = { ...f, estado: "pendiente", error: err.message };
+      await guardarLocal(guardada);
+      setEnviada(guardada);
+      alert(`Guardada localmente. Se enviará cuando haya conexión.\n${err.message}`);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // ── Imprimir factura en ventana del OS ───────────────────────────────────
+  const imprimirFactura = async (factura) => {
+    const s = await db.getSettings();
+    const sinpe = s?.sinpe || s?.telefono || "8302-6613";
+    const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(`sinpe://506${sinpe.replace(/\D/g,"")}?amount=${factura.total}&description=${factura.numero}`)}&size=200&margin=1&format=png`;
+    const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><title>${factura.numero}</title>
+<style>
+  body{font-family:Arial,sans-serif;font-size:12px;max-width:800px;margin:0 auto;padding:24px;color:#111}
+  h1{font-size:22px;margin:0}h2{font-size:16px;margin:8px 0 4px}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0f172a;padding-bottom:12px;margin-bottom:16px}
+  .negocio{font-size:10px;color:#555;line-height:1.6}
+  .badge{background:#0f172a;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:bold;display:inline-block;margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin:12px 0}
+  th{background:#f1f5f9;text-align:left;padding:6px 8px;font-size:11px;border-bottom:1px solid #cbd5e1}
+  td{padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:12px}
+  .totales{margin-top:8px;text-align:right}
+  .total-final{font-size:18px;font-weight:900;color:#0f172a;margin-top:6px}
+  .footer{margin-top:24px;display:flex;justify-content:space-between;align-items:flex-end}
+  .qr-box{text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:12px;display:inline-block}
+  .qr-box p{margin:4px 0;font-size:10px;color:#666}
+  .qr-box strong{font-size:14px;color:#0f172a}
+  @media print{body{padding:0}}
+</style></head><body>
+<div class="header">
+  <div>
+    <div class="badge">${factura.numero}</div>
+    <h1>${s?.nombreNegocio||"Mi negocio"}</h1>
+    <div class="negocio">
+      ${s?.cedula?`Cédula: ${s.cedula}<br>`:""}
+      ${s?.correo?`${s.correo}<br>`:""}
+      ${s?.telefono?`Tel: ${s.telefono}<br>`:""}
+      ${s?.direccion||""}
+    </div>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#555">
+    <p style="margin:2px 0">Fecha: ${fmtDate(factura.fechaEmision)}</p>
+    ${factura.vencimiento?`<p style="margin:2px 0">Vence: ${fmtDate(factura.vencimiento)}</p>`:""}
+    <p style="margin:2px 0">Cliente: <strong>${factura.nombreReceptor||"Consumidor Final"}</strong></p>
+    ${factura.cedulaReceptor?`<p style="margin:2px 0">Cédula: ${factura.cedulaReceptor}</p>`:""}
+  </div>
+</div>
+
+<table>
+  <thead><tr><th>#</th><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">IVA</th><th style="text-align:right">Subtotal</th></tr></thead>
+  <tbody>
+    ${(factura.lineas||[]).map((l,i)=>`<tr><td>${i+1}</td><td>${l.descripcion||l.nombre||""}</td><td style="text-align:right">${l.cantidad}</td><td style="text-align:right">${fmtMoney(l.precioUnitario,factura.moneda)}</td><td style="text-align:right">${fmtMoney(l.montoImpuesto||0,factura.moneda)}</td><td style="text-align:right">${fmtMoney(l.subtotal||l.montoTotal,factura.moneda)}</td></tr>`).join("")}
+  </tbody>
+</table>
+
+<div class="totales">
+  <p>Subtotal: ${fmtMoney(factura.totalVenta||factura.total,factura.moneda)}</p>
+  ${factura.totalImpuesto?`<p>IVA: ${fmtMoney(factura.totalImpuesto,factura.moneda)}</p>`:""}
+  <p class="total-final">TOTAL: ${fmtMoney(factura.totalGeneral||factura.total,factura.moneda)}</p>
+</div>
+
+<div class="footer">
+  <div style="font-size:10px;color:#888;max-width:400px">
+    ${factura.observaciones?`<p>${factura.observaciones}</p>`:""}
+    <p>Gracias por su preferencia.</p>
+  </div>
+  <div class="qr-box">
+    <img src="${qrUrl}" width="100" height="100" alt="QR SINPE"/>
+    <p>Pago por SINPE Móvil</p>
+    <strong>${sinpe}</strong>
+  </div>
+</div>
+</body></html>`;
+
+    const w = window.open("","_blank","width=850,height=700");
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(), 600);
+  };
+
+  // ── Banner de confirmación ────────────────────────────────────────────────
+  if (enviada) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-6 fade-in">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${enviada.estado === "aceptada" ? "bg-green-100" : "bg-amber-100"}`}>
+          {enviada.estado === "aceptada" ? "✓" : "⏳"}
+        </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-black text-slate-900">{enviada.numero}</h2>
+          <p className="text-slate-500 mt-1">
+            {enviada.estado === "aceptada" ? "Enviada a Hacienda exitosamente" :
+             enviada.estado === "guardada" ? "Guardada como borrador" :
+             "Guardada — pendiente de envío"}
+          </p>
+          <p className="text-2xl font-black text-green-700 mt-3">{fmtMoney(enviada.total, enviada.moneda)}</p>
+        </div>
+
+        {/* QR de SINPE */}
+        <div className="flex flex-col items-center gap-1 border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
+          <SinpeQR
+            telefono={settings?.sinpe || settings?.telefono || "8302-6613"}
+            monto={enviada.totalGeneral || enviada.total}
+            descripcion={enviada.numero}
+            size={130}
+          />
+          <p className="text-xs text-slate-400 mt-1">Escaneá para pagar por SINPE Móvil</p>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={() => imprimirFactura(enviada)}
+            className="flex items-center gap-2 border border-slate-200 text-slate-700 px-5 py-2 rounded-lg font-semibold hover:bg-gray-50">
+            <Printer size={15}/> Imprimir / PDF
+          </button>
+          <button onClick={() => setEnviada(null)}
+            className="flex items-center gap-2 bg-brand-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-brand-600">
+            <Plus size={16} /> Nueva factura
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Encabezado */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+          {/* Fila 1: Tipo doc / Fecha / Moneda */}
+          <div className="flex gap-3">
+            <label className="flex-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Tipo de documento</span>
+              <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </label>
+            <label className="w-36">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Fecha emisión</span>
+              <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+            </label>
+            <label className="w-24">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Moneda</span>
+              <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                <option value="CRC">₡ CRC</option>
+                <option value="USD">$ USD</option>
+              </select>
+            </label>
+          </div>
+          {/* Fila 1 col 2: Condición pago / Medio / Plazo */}
+          <div className="flex gap-3">
+            <label className="flex-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Condición de pago</span>
+              <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </label>
+            <label className="flex-1">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Medio de pago</span>
+              <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </label>
+            {condPago === "02" && (
+              <label className="w-24">
+                <span className="text-xs font-semibold text-slate-500 uppercase">Plazo (días)</span>
+                <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)}
+                  placeholder="30" min="1"
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              </label>
+            )}
+          </div>
+          {/* Fila 2: Receptor */}
+          <div className="col-span-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase">Receptor</span>
+            <div className="flex gap-3 mt-1">
+              {/* Nombre con autocomplete */}
+              <div className="relative flex-1">
+                <input value={busqCliente}
+                  onChange={(e) => { setBusqCliente(e.target.value); setCliente((p) => ({ ...p, nombre: e.target.value })); setShowClientes(true); }}
+                  onFocus={() => setShowClientes(true)}
+                  onBlur={() => setTimeout(() => setShowClientes(false), 150)}
+                  placeholder="Nombre / razón social (o Consumidor Final)"
+                  className="w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                {showClientes && clientesFiltrados.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-36 overflow-auto">
+                    {clientesFiltrados.map((c) => (
+                      <button key={c.id} onMouseDown={() => { setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01" }); setBusqCliente(c.nombre); setShowClientes(false); }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b border-gray-50 last:border-0">
+                        {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                        <span className="font-semibold">{c.nombre}</span>
+                        <span className="text-slate-400 ml-2">{c.cedula}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Tipo cédula */}
+              <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
+                className="w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="01">01 - Física</option>
+                <option value="02">02 - Jurídica</option>
+                <option value="03">03 - DIMEX</option>
+                <option value="04">04 - NITE</option>
+              </select>
+              {/* Cédula + botón buscar + badge fiscal */}
+              <div className="flex flex-col gap-0.5">
+                <div className="flex">
+                  <input
+                    value={cliente.cedula}
+                    onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
+                    onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
+                    placeholder="Número de cédula"
+                    className="w-36 border border-slate-200 rounded-l-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 border-r-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={buscarPorCedula}
+                    title="Buscar por cédula en Hacienda"
+                    disabled={buscandoCedula || !cliente.cedula.trim()}
+                    className="flex items-center justify-center w-9 border border-slate-200 rounded-r-md bg-slate-50 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-600 text-slate-500 transition-colors disabled:opacity-40"
+                  >
+                    {buscandoCedula ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
+                  </button>
+                </div>
+
+                {/* Badge situación fiscal Hacienda */}
+                {situacionFiscal && (
+                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit
+                    ${situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI"
+                      ? "bg-red-100 text-red-700 border border-red-200"
+                      : "bg-green-100 text-green-700 border border-green-200"}`}>
+                    <span>{situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI" ? "⚠️" : "✓"}</span>
+                    <span>
+                      {situacionFiscal.moroso === "SI" && situacionFiscal.omiso === "SI" ? "Moroso + Omiso" :
+                       situacionFiscal.moroso === "SI" ? "Moroso" :
+                       situacionFiscal.omiso  === "SI" ? "Omiso" :
+                       "Al día · Hacienda"}
+                    </span>
+                  </div>
+                )}
+
+                {cedulaError && <p className="text-[10px] text-red-500 leading-none">{cedulaError}</p>}
+              </div>
+              {/* Email */}
+              <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
+                placeholder="correo@empresa.com"
+                className="w-52 border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Líneas de factura */}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-3 py-2 text-xs font-bold text-slate-500 uppercase min-w-[180px]">Descripción</th>
+              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">CABYS</th>
+              <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Cant.</th>
+              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">Unid.</th>
+              <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">P. Unit.</th>
+              <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Desc. %</th>
+              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">IVA</th>
+              <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">Mto. IVA</th>
+              <th className="text-right px-3 py-2 text-xs font-bold text-slate-500 uppercase">Total</th>
+              <th className="w-6"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {lineas.map((l, i) => (
+              <LineaRow key={l.id} linea={l} productos={productos}
+                onChange={(v) => updateLinea(i, v)}
+                onDelete={() => deleteLinea(i)} />
+            ))}
+          </tbody>
+        </table>
+        <div className="px-4 py-2">
+          <button onClick={agregarLinea}
+            className="flex items-center gap-2 text-green-700 text-sm font-semibold hover:text-green-900">
+            <Plus size={15} /> Agregar línea
+          </button>
+        </div>
+      </div>
+
+      {/* Notas + Totales + Botones */}
+      <div className="bg-white border-t border-gray-200 px-6 py-4 flex gap-8">
+        {/* Notas */}
+        <div className="flex-1">
+          <label className="text-xs font-semibold text-slate-500 uppercase">Observaciones</label>
+          <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
+            rows={3} placeholder="Condiciones, referencias, notas adicionales…"
+            className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500" />
+        </div>
+        {/* Totales */}
+        <div className="w-72 space-y-1">
+          <div className="flex justify-between text-sm text-slate-600">
+            <span>Subtotal</span><span>{fmtMoney(subtotal, moneda)}</span>
+          </div>
+          {totalDesc > 0 && (
+            <div className="flex justify-between text-sm text-red-500">
+              <span>Descuentos</span><span>− {fmtMoney(totalDesc, moneda)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm text-slate-600">
+            <span>IVA total</span><span>{fmtMoney(totalIVA, moneda)}</span>
+          </div>
+          <div className="flex justify-between text-lg font-black text-slate-900 border-t border-gray-200 pt-2 mt-2">
+            <span>TOTAL</span><span className="text-green-700">{fmtMoney(totalFact, moneda)}</span>
+          </div>
+          <div className="flex gap-2 pt-3">
+            <button onClick={handleGuardar} disabled={sending}
+              className="flex items-center gap-1.5 flex-1 justify-center border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 disabled:opacity-50">
+              <Save size={14} /> Guardar
+            </button>
+            <button onClick={handleEnviar} disabled={sending || totalFact === 0}
+              className="flex items-center gap-1.5 flex-1 justify-center bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50">
+              {sending ? <span className="animate-spin">⏳</span> : <Send size={14} />}
+              {sending ? "Enviando…" : "Emitir"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
