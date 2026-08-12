@@ -15,8 +15,12 @@ export default defineConfig({
       "/api": {
         target: "https://31.97.141.124",
         changeOrigin: true,
-        secure: false,          // acepta cert autofirmado — corre en Node.js, no en browser
-        followRedirects: true,  // sigue 301/302 server-side → el browser nunca ve ni cachea el redirect
+        secure: false,
+        followRedirects: true,
+        headers: {
+          // nginx en 443 tiene server_name api.organizalo.ai — sin este header devuelve 404
+          host: "api.organizalo.ai",
+        },
       },
       "/socket.io": {
         target: "https://31.97.141.124",
@@ -24,6 +28,7 @@ export default defineConfig({
         secure: false,
         followRedirects: true,
         ws: true,
+        headers: { host: "api.organizalo.ai" },
       },
     },
   },
