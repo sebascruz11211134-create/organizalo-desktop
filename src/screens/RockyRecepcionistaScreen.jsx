@@ -10,6 +10,7 @@ import {
   AlertCircle, ExternalLink, RefreshCw, Copy,
 } from "lucide-react";
 import { getToken } from "../utils/auth";
+import { fetchWithTimeout } from "../utils/fetchTimeout";
 
 const BACKEND = "http://31.97.141.124:3001";
 
@@ -112,12 +113,12 @@ export default function RockyRecepcionistaScreen() {
     setCargando(true);
     try {
       const [resConfig, resHist] = await Promise.all([
-        fetch(`${BACKEND}/api/rocky/config`, {
+        fetchWithTimeout(`${BACKEND}/api/rocky/config`, {
           headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${BACKEND}/api/rocky/historial`, {
+        }, 5000),
+        fetchWithTimeout(`${BACKEND}/api/rocky/historial`, {
           headers: { Authorization: `Bearer ${token}` },
-        }),
+        }, 5000),
       ]);
       if (resConfig.ok) {
         const json = await resConfig.json();

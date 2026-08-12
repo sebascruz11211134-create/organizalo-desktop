@@ -8,6 +8,7 @@ import {
   User, Calendar, CheckCircle2, Circle, Trash2, Edit3,
 } from "lucide-react";
 import { getToken } from "../utils/auth";
+import { fetchWithTimeout } from "../utils/fetchTimeout";
 
 const BACKEND = "http://31.97.141.124:3001";
 
@@ -186,9 +187,9 @@ export default function CalendarioScreen() {
     try {
       const desde = `${año}-${padTwo(mes+1)}-01`;
       const hasta = `${año}-${padTwo(mes+1)}-31`;
-      const res = await fetch(`${BACKEND}/api/eventos?desde=${desde}&hasta=${hasta}`, {
+      const res = await fetchWithTimeout(`${BACKEND}/api/eventos?desde=${desde}&hasta=${hasta}`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      }, 5000);
       if (res.ok) {
         const json = await res.json();
         setEventos(json.eventos || []);

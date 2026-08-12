@@ -34,6 +34,7 @@ export default function RecepcionScreen() {
   const [cargando,   setCargando]   = useState(false);
   const [subiendo,   setSubiendo]   = useState(false);
   const [dragging,   setDragging]   = useState(false);
+  const [errorConex, setErrorConex] = useState(false);
   const [msg,        setMsg]        = useState(null);   // { type, text }
   const [procesando, setProcesando] = useState({});     // { [id]: true }
   const [aceptTodos, setAceptTodos] = useState(false);
@@ -44,13 +45,24 @@ export default function RecepcionScreen() {
 
   async function cargar() {
     setCargando(true);
+    setErrorConex(false);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000); // 5s timeout
     try {
       const token = await getToken();
       const url = `${BACKEND}/api/recepcion/lista${filtroEst ? `?estado=${filtroEst}` : ""}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
       if (res.ok) setFacturas(await res.json());
-    } catch {}
-    setCargando(false);
+      else setErrorConex(true);
+    } catch {
+      setErrorConex(true);
+    } finally {
+      clearTimeout(timer);
+      setCargando(false);
+    }
   }
 
   // ── Subir XMLs ─────────────────────────────────────────────────────────────
@@ -225,6 +237,13 @@ export default function RecepcionScreen() {
         {cargando ? (
           <div className="flex items-center justify-center py-16 text-slate-400 gap-2">
             <Loader2 size={20} className="animate-spin" /> Cargando…
+          </div>
+        ) : errorConex ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
+            <AlertCircle size={36} className="text-amber-400" />
+            <p className="text-sm font-medium text-slate-600">No se pudo conectar al servidor</p>
+            <p className="text-xs text-slate-400">El módulo de recepción requiere conexión al backend. Verificá que el servidor esté activo.</p>
+            <button onClick={cargar} className="mt-2 text-xs text-green-700 underline">Reintentar</button>
           </div>
         ) : facturas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
