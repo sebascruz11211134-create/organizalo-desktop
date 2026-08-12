@@ -1,7 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, session } = require("electron");
 
-// Puerto 443 del VPS tiene cert autofirmado — aceptarlo mientras no haya Let's Encrypt
-// Solo afecta conexiones a 31.97.141.124 (el proxy Vite ya lo maneja en dev via Node.js)
+// Acepta cert autofirmado del VPS (Let's Encrypt pendiente)
 app.commandLine.appendSwitch("ignore-certificate-errors");
 const path = require("path");
 const Store = require("electron-store");
@@ -57,7 +56,25 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => mainWindow.show());
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Limpiar caché de HTTP (redirecciones 301 cacheadas del proxy previo que bypaseaban el proxy)
+  await session.defaultSession.clearCache();
+
+  // Inyectar CORS en todas las respuestas del VPS (por si alguna petición llega directo al 443)
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: ["https://31.97.141.124/*"] },
+    (details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          "access-control-allow-origin":  ["*"],
+          "access-control-allow-methods": ["GET, POST, PUT, DELETE, OPTIONS, PATCH"],
+          "access-control-allow-headers": ["Content-Type, Authorization, X-Requested-With"],
+        },
+      });
+    }
+  );
+
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
