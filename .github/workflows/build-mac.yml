@@ -35,10 +35,18 @@ jobs:
 
       - name: Actualizar Electron a la versión más reciente
         run: |
-          LATEST_ELECTRON=$(npm view electron version)
+          STABLE=$(npm view electron version)
+          BETA=$(npm view electron dist-tags.beta 2>/dev/null || echo "")
           LATEST_BUILDER=$(npm view electron-builder dist-tags.v26 || npm view electron-builder version)
-          echo "Usando Electron $LATEST_ELECTRON y electron-builder $LATEST_BUILDER"
-          npm pkg set devDependencies.electron="$LATEST_ELECTRON"
+          # Usar beta si existe (puede tener fixes para macOS 26 Tahoe)
+          if [ -n "$BETA" ]; then
+            TARGET="$BETA"
+            echo "Usando Electron beta $TARGET (compatibilidad macOS 26)"
+          else
+            TARGET="$STABLE"
+            echo "Usando Electron stable $TARGET"
+          fi
+          npm pkg set devDependencies.electron="$TARGET"
           npm pkg set devDependencies.electron-builder="$LATEST_BUILDER"
 
       - name: Instalar dependencias
