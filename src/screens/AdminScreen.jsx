@@ -6,7 +6,7 @@
  * No expone datos de negocio del cliente.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../utils/api";
 import {
   Users, CheckCircle, Clock, AlertCircle, XCircle,
   RefreshCw, ChevronDown, Search, Shield, TrendingUp,
@@ -84,7 +84,7 @@ function SoportePanel({ u, token }) {
   const cargarClaves = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const res = await axios.get(`${BACKEND}/api/admin/usuarios/${u.id}/datos`, { headers });
+      const res = await api.get(`/api/admin/usuarios/${u.id}/datos`, { headers });
       setClaves(res.data.claves || []);
     } catch (e) {
       setError(e.response?.data?.error || "Error al cargar datos.");
@@ -99,7 +99,7 @@ function SoportePanel({ u, token }) {
     if (detalle[clave]) return;
     setDetalle(d => ({ ...d, [clave]: { loading: true } }));
     try {
-      const res = await axios.get(`${BACKEND}/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { headers });
+      const res = await api.get(`/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { headers });
       setDetalle(d => ({ ...d, [clave]: { valor: JSON.stringify(res.data.valor, null, 2), loading: false } }));
     } catch (e) {
       setDetalle(d => ({ ...d, [clave]: { error: e.response?.data?.error || "Error", loading: false } }));
@@ -110,7 +110,7 @@ function SoportePanel({ u, token }) {
     setOpLoading(true); setMsgOp("");
     try {
       const parsed = JSON.parse(editVal);
-      await axios.put(`${BACKEND}/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { valor: parsed }, { headers });
+      await api.put(`/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { valor: parsed }, { headers });
       setDetalle(d => ({ ...d, [clave]: { valor: JSON.stringify(parsed, null, 2), loading: false } }));
       setEditando(null);
       setMsgOp("✅ Guardado correctamente.");
@@ -124,7 +124,7 @@ function SoportePanel({ u, token }) {
     if (!window.confirm(`¿Eliminar la clave "${clave}" para este cliente? Esta acción no se puede deshacer.`)) return;
     setOpLoading(true); setMsgOp("");
     try {
-      await axios.delete(`${BACKEND}/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { headers });
+      await api.delete(`/api/admin/usuarios/${u.id}/datos/${encodeURIComponent(clave)}`, { headers });
       setMsgOp(`✅ Clave '${clave}' eliminada.`);
       setExpandida(null);
       setDetalle(d => { const nd = { ...d }; delete nd[clave]; return nd; });
@@ -296,7 +296,7 @@ function FilaCliente({ u, token, onRefresh }) {
     setAccion(endpoint);
     setMsg("");
     try {
-      const res = await axios.post(`${BACKEND}/api/admin/usuarios/${u.id}/${endpoint}`, body, { headers });
+      const res = await api.post(`/api/admin/usuarios/${u.id}/${endpoint}`, body, { headers });
       setMsg(res.data.mensaje || "Listo.");
       onRefresh();
     } catch (e) {
@@ -307,7 +307,7 @@ function FilaCliente({ u, token, onRefresh }) {
   const guardarNota = async () => {
     setGuardando(true);
     try {
-      await axios.post(`${BACKEND}/api/admin/usuarios/${u.id}/nota`, { nota }, { headers });
+      await api.post(`/api/admin/usuarios/${u.id}/nota`, { nota }, { headers });
       setMsg("Nota guardada.");
     } catch { setMsg("Error al guardar."); }
     finally { setGuardando(false); }
@@ -524,7 +524,7 @@ function ModulosPanel({ u, token }) {
   const headers = { Authorization: `Bearer ${token}` };
 
   useEffect(() => {
-    axios.get(`${BACKEND}/api/admin/usuarios/${u.id}/modulos`, { headers })
+    api.get(`/api/admin/usuarios/${u.id}/modulos`, { headers })
       .then(r => setModulos(r.data.modulosHabilitados))
       .catch(() => setMsg("Error al cargar."))
       .finally(() => setLoading(false));
@@ -552,7 +552,7 @@ function ModulosPanel({ u, token }) {
   const guardar = async () => {
     setGuardando(true); setMsg("");
     try {
-      await axios.put(`${BACKEND}/api/admin/usuarios/${u.id}/modulos`, { modulos }, { headers });
+      await api.put(`/api/admin/usuarios/${u.id}/modulos`, { modulos }, { headers });
       setMsg("✅ Módulos guardados.");
     } catch (e) {
       setMsg(e.response?.data?.error || "Error al guardar.");
@@ -648,7 +648,7 @@ function CodigosPanel({ token }) {
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BACKEND}/api/admin/codigos`, { headers });
+      const res = await api.get(`/api/admin/codigos`, { headers });
       setCodigos(res.data.codigos || []);
     } catch (e) {
       setMsg("Error al cargar códigos.");
@@ -667,7 +667,7 @@ function CodigosPanel({ token }) {
         expiraDias:    form.expiraDias ? parseInt(form.expiraDias) : undefined,
         maxUsos:       parseInt(form.maxUsos) || 1,
       };
-      const res = await axios.post(`${BACKEND}/api/admin/codigos`, body, { headers });
+      const res = await api.post(`/api/admin/codigos`, body, { headers });
       setMsg(`✅ Código generado: ${res.data.codigo} (máx. ${res.data.maxUsos} usuario${res.data.maxUsos !== 1 ? "s" : ""})`);
       setForm({ nombreCliente: "", emailEsperado: "", expiraDias: "", maxUsos: "1" });
       cargar();
@@ -679,7 +679,7 @@ function CodigosPanel({ token }) {
   const revocar = async (id, codigo) => {
     if (!window.confirm(`¿Revocar el código ${codigo}?`)) return;
     try {
-      await axios.delete(`${BACKEND}/api/admin/codigos/${id}`, { headers });
+      await api.delete(`/api/admin/codigos/${id}`, { headers });
       setMsg(`✅ Código ${codigo} revocado.`);
       cargar();
     } catch (e) {
@@ -879,13 +879,13 @@ export default function AdminScreen() {
   }, []);
 
   const cargar = useCallback(async () => {
-    if (!token) return;
+    if (!token) { setLoading(false); return; }
     setLoading(true); setError("");
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [resU, resS] = await Promise.all([
-        axios.get(`${BACKEND}/api/admin/usuarios`, { headers }),
-        axios.get(`${BACKEND}/api/admin/stats`,    { headers }),
+        api.get(`/api/admin/usuarios`, { headers }),
+        api.get(`/api/admin/stats`,    { headers }),
       ]);
       setUsuarios(resU.data.usuarios || []);
       setStats(resS.data);

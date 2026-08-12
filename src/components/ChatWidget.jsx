@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/api";
 
 const BACKEND = "http://31.97.141.124:3001";
 
@@ -47,8 +47,8 @@ export default function ChatWidget() {
   const cargarMensajes = useCallback(async (canal) => {
     if (!authToken) return;
     try {
-      const res = await axios.get(
-        `${BACKEND}/api/chat/mensajes/${canal}`,
+      const res = await api.get(
+        `/api/chat/mensajes/${canal}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const nuevos = res.data.mensajes || [];
@@ -92,8 +92,8 @@ export default function ChatWidget() {
     const textoEnviar = texto.trim();
     setTexto("");
     try {
-      const res = await axios.post(
-        `${BACKEND}/api/chat/mensajes/${canalActivo}`,
+      const res = await api.post(
+        `/api/chat/mensajes/${canalActivo}`,
         { texto: textoEnviar },
         { headers: { Authorization: `Bearer ${authToken}` } }
       );

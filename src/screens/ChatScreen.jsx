@@ -5,7 +5,7 @@
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Hash, Users, Plus, Link, Copy, Check } from "lucide-react";
-import axios from "axios";
+import api from "../utils/api";
 
 const BACKEND = "http://31.97.141.124:3001";
 const CANALES = [
@@ -78,7 +78,7 @@ function InviteModal({ onClose, authToken }) {
     setLoading(true); setError("");
     try {
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
-      const res = await axios.post(`${BACKEND}/api/auth/invite`, { email, rol }, { headers });
+      const res = await api.post(`/api/auth/invite`, { email, rol }, { headers });
       setLink(res.data.inviteLink);
     } catch (e) {
       setError(e.response?.data?.error || "Error al generar invitación");
@@ -170,7 +170,7 @@ export default function ChatScreen() {
   const cargarMensajes = useCallback(async (canal) => {
     if (!authToken) return;               // esperar token
     try {
-      const res = await axios.get(`${BACKEND}/api/chat/mensajes/${canal}`, { headers: { Authorization: `Bearer ${authToken}` } });
+      const res = await api.get(`/api/chat/mensajes/${canal}`, { headers: { Authorization: `Bearer ${authToken}` } });
       setMensajes(res.data.mensajes || []);
     } catch (e) { console.error(e); }
   }, [authToken]);
@@ -208,8 +208,8 @@ export default function ChatScreen() {
     const textoEnviar = texto.trim();
     setTexto("");
     try {
-      const res = await axios.post(
-        `${BACKEND}/api/chat/mensajes/${canalActivo}`,
+      const res = await api.post(
+        `/api/chat/mensajes/${canalActivo}`,
         { texto: textoEnviar },
         { headers: authHeaders }
       );
