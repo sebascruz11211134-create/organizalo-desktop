@@ -73,7 +73,7 @@
       "dist/**/*",
       "electron/**/*",
       "assets/**/*",
-      "!node_modules"
+      "node_modules/**/*"
     ],
     "extraMetadata": {
       "main": "electron/main.js"
