@@ -28,7 +28,6 @@
       ],
       "darkModeSupport": true,
       "identity": "-",
-      "hardenedRuntime": true,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist"
     },
