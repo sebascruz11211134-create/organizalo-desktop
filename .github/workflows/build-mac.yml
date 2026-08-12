@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Rebuild el primer día de cada mes a las 6am UTC
+    # Así el .dmg siempre usa el Electron más reciente automáticamente
+    - cron: '0 6 1 * *'
 
 permissions:
   contents: write
@@ -28,6 +32,14 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           npm version "1.0.$COUNT" --no-git-tag-version
           echo "Versión: 1.0.$COUNT"
+
+      - name: Actualizar Electron a la versión más reciente
+        run: |
+          LATEST_ELECTRON=$(npm view electron version)
+          LATEST_BUILDER=$(npm view electron-builder dist-tags.v26 || npm view electron-builder version)
+          echo "Usando Electron $LATEST_ELECTRON y electron-builder $LATEST_BUILDER"
+          npm pkg set devDependencies.electron="$LATEST_ELECTRON"
+          npm pkg set devDependencies.electron-builder="$LATEST_BUILDER"
 
       - name: Instalar dependencias
         run: npm install --legacy-peer-deps
