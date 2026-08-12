@@ -1,11 +1,6 @@
 /**
  * BACKEND URL centralizada.
- * - Dev mode (localhost): "" → URLs relativas, Vite hace proxy server-side → sin CORS.
- * - Producción (file:// o cualquier otro origen): URL absoluta directa al VPS.
+ * Puerto 3001 = Express directo (sin nginx), HTTP, CORS *.
+ * Funciona en dev mode (localhost:5173) y en la app empaquetada (file://).
  */
-const isLocalhost =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" ||
-   window.location.hostname === "127.0.0.1");
-
-export const BACKEND = isLocalhost ? "" : "https://31.97.141.124";
+export const BACKEND = "http://31.97.141.124:3001";

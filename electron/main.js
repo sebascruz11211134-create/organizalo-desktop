@@ -1,13 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, session } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const Store = require("electron-store");
 const XLSX = require("xlsx");
 const fs = require("fs");
 const { autoUpdater } = require("electron-updater");
 
-// Aceptar cert autofirmado del VPS mientras no haya SSL válido (Let's Encrypt pendiente)
-// TODO: Remover cuando se configure SSL en el VPS
-app.commandLine.appendSwitch("ignore-certificate-errors");
 
 // ── Store (base de datos local) ───────────────────────────────────────────────
 const store = new Store({ name: "organizalo-data" });
@@ -57,32 +54,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // ── Interceptores de red para el VPS ─────────────────────────────────────────
-  // 1. Reescribir http:// → https:// ANTES de que nginx haga el redirect.
-  //    Así OPTIONS/preflight van directo a HTTPS y nunca reciben 301.
-  session.defaultSession.webRequest.onBeforeRequest(
-    { urls: ["http://31.97.141.124/*"] },
-    (details, callback) => {
-      callback({ redirectUrl: details.url.replace("http://", "https://") });
-    }
-  );
-
-  // 2. Inyectar headers CORS en todas las respuestas del VPS (https).
-  //    Necesario porque el browser bloquea la respuesta si Origin != Access-Control-Allow-Origin.
-  session.defaultSession.webRequest.onHeadersReceived(
-    { urls: ["https://31.97.141.124/*"] },
-    (details, callback) => {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          "access-control-allow-origin":  ["*"],
-          "access-control-allow-methods": ["GET, POST, PUT, DELETE, OPTIONS, PATCH"],
-          "access-control-allow-headers": ["Content-Type, Authorization, X-Requested-With"],
-        },
-      });
-    }
-  );
-
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
