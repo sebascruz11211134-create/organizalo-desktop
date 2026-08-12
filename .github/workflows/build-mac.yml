@@ -3,13 +3,7 @@ name: Build & Deploy Mac Installer
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'vite.config.js'
-      - 'electron/**'
-  workflow_dispatch:   # También se puede lanzar manualmente desde GitHub
+  workflow_dispatch:
 
 jobs:
   build-mac:
@@ -19,28 +13,30 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22'
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install
 
       - name: Build macOS (.dmg)
         run: npm run build:mac
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false   # Sin firma de código por ahora
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
       - name: Encontrar el .dmg generado
         id: dmg
         run: |
-          DMG=$(find dist -name "*.dmg" | head -1)
+          DMG=$(find . -name "*.dmg" | head -1)
           echo "path=$DMG" >> $GITHUB_OUTPUT
-          echo "Archivo: $DMG"
+          echo "Archivo encontrado: $DMG"
+          ls -lh "$DMG" || echo "No se encontró .dmg"
 
       - name: Subir .dmg al VPS
+        if: steps.dmg.outputs.path != ''
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
