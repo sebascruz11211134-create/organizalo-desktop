@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AlarmClock, X } from "lucide-react";
 import Sidebar from "./components/Sidebar";
@@ -7,58 +7,70 @@ import LoginScreen from "./screens/LoginScreen";
 import { syncAll, startAutoSync, connectSocket, disconnectSocket } from "./utils/sync";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
 
-// ── Screens ───────────────────────────────────────────────────────────────────
-import DashboardScreen      from "./screens/DashboardScreen";
-import FacturacionScreen    from "./screens/FacturacionScreen";
-import CotizacionesScreen   from "./screens/CotizacionesScreen";
-import POSScreen            from "./screens/POSScreen";
-import PedidosScreen        from "./screens/PedidosScreen";
-import FacturasHistScreen   from "./screens/FacturasHistorialScreen";
-import ComprasScreen        from "./screens/ComprasScreen";
-import InventarioScreen     from "./screens/InventarioScreen";
-import CatalogoScreen       from "./screens/CatalogoScreen";
-import OrdenesScreen        from "./screens/OrdenesTrabajoScreen";
-import CXCScreen            from "./screens/CXCScreen";
-import CXPScreen            from "./screens/CXPScreen";
-import RecibosScreen        from "./screens/RecibosScreen";
-import ConciliacionScreen   from "./screens/ConciliacionScreen";
-import ImportarCSVScreen    from "./screens/ImportarCSVScreen";
-import ContactosScreen      from "./screens/ContactosScreen";
-import EmpleadosScreen      from "./screens/EmpleadosScreen";
-import EstadoCuentaScreen   from "./screens/EstadoCuentaScreen";
-import NotasCreditoScreen   from "./screens/NotasCreditoScreen";
-import ReporteCXCScreen     from "./screens/ReporteCXCScreen";
-import ReporteRecibosScreen from "./screens/ReporteRecibosScreen";
-import ReporteVencidosScreen from "./screens/ReporteVencidosScreen";
-import AnalyticsScreen      from "./screens/AnalyticsScreen";
-import MigracionScreen      from "./screens/MigracionScreen";
-import PlanillasScreen      from "./screens/PlanillasScreen";
-import D104Screen           from "./screens/D104Screen";
-import CatalogoCuentasScreen from "./screens/CatalogoCuentasScreen";
-import AsientosScreen       from "./screens/AsientosScreen";
-import BalancesScreen       from "./screens/BalancesScreen";
-import UsuariosScreen       from "./screens/UsuariosScreen";
-import EmpresasScreen       from "./screens/EmpresasScreen";
-import CajaScreen           from "./screens/CajaScreen";
-import ActivosFijosScreen   from "./screens/ActivosFijosScreen";
-import PresupuestoScreen    from "./screens/PresupuestoScreen";
-import ProyectosScreen      from "./screens/ProyectosScreen";
-import TiendaScreen         from "./screens/TiendaScreen";
-import PortalClienteScreen  from "./screens/PortalClienteScreen";
-import RecordatoriosScreen  from "./screens/RecordatoriosScreen";
-import AsistenteScreen           from "./screens/AsistenteScreen";
-import RockyRecepcionistaScreen  from "./screens/RockyRecepcionistaScreen";
-import CalendarioScreen          from "./screens/CalendarioScreen";
-import CRMClientesScreen         from "./screens/CRMClientesScreen";
-import ChatScreen           from "./screens/ChatScreen";
-import ConfiguracionScreen  from "./screens/ConfiguracionScreen";
-import AdminScreen, { SUPERADMIN_EMAIL } from "./screens/AdminScreen";
-import ChatWidget           from "./components/ChatWidget";
-import FlujoCajaScreen      from "./screens/FlujoCajaScreen";
-import RecepcionScreen      from "./screens/RecepcionScreen";
+// ── Lazy imports — solo cargan al navegar a cada pantalla ─────────────────────
+const DashboardScreen       = lazy(() => import("./screens/DashboardScreen"));
+const FacturacionScreen     = lazy(() => import("./screens/FacturacionScreen"));
+const CotizacionesScreen    = lazy(() => import("./screens/CotizacionesScreen"));
+const POSScreen             = lazy(() => import("./screens/POSScreen"));
+const PedidosScreen         = lazy(() => import("./screens/PedidosScreen"));
+const FacturasHistScreen    = lazy(() => import("./screens/FacturasHistorialScreen"));
+const ComprasScreen         = lazy(() => import("./screens/ComprasScreen"));
+const RecepcionScreen       = lazy(() => import("./screens/RecepcionScreen"));
+const InventarioScreen      = lazy(() => import("./screens/InventarioScreen"));
+const CatalogoScreen        = lazy(() => import("./screens/CatalogoScreen"));
+const OrdenesScreen         = lazy(() => import("./screens/OrdenesTrabajoScreen"));
+const CXCScreen             = lazy(() => import("./screens/CXCScreen"));
+const CXPScreen             = lazy(() => import("./screens/CXPScreen"));
+const RecibosScreen         = lazy(() => import("./screens/RecibosScreen"));
+const ConciliacionScreen    = lazy(() => import("./screens/ConciliacionScreen"));
+const ImportarCSVScreen     = lazy(() => import("./screens/ImportarCSVScreen"));
+const ContactosScreen       = lazy(() => import("./screens/ContactosScreen"));
+const EmpleadosScreen       = lazy(() => import("./screens/EmpleadosScreen"));
+const EstadoCuentaScreen    = lazy(() => import("./screens/EstadoCuentaScreen"));
+const NotasCreditoScreen    = lazy(() => import("./screens/NotasCreditoScreen"));
+const ReporteCXCScreen      = lazy(() => import("./screens/ReporteCXCScreen"));
+const ReporteRecibosScreen  = lazy(() => import("./screens/ReporteRecibosScreen"));
+const ReporteVencidosScreen = lazy(() => import("./screens/ReporteVencidosScreen"));
+const AnalyticsScreen       = lazy(() => import("./screens/AnalyticsScreen"));
+const MigracionScreen       = lazy(() => import("./screens/MigracionScreen"));
+const PlanillasScreen       = lazy(() => import("./screens/PlanillasScreen"));
+const FlujoCajaScreen       = lazy(() => import("./screens/FlujoCajaScreen"));
+const D104Screen            = lazy(() => import("./screens/D104Screen"));
+const CatalogoCuentasScreen = lazy(() => import("./screens/CatalogoCuentasScreen"));
+const AsientosScreen        = lazy(() => import("./screens/AsientosScreen"));
+const BalancesScreen        = lazy(() => import("./screens/BalancesScreen"));
+const UsuariosScreen        = lazy(() => import("./screens/UsuariosScreen"));
+const EmpresasScreen        = lazy(() => import("./screens/EmpresasScreen"));
+const CajaScreen            = lazy(() => import("./screens/CajaScreen"));
+const ActivosFijosScreen    = lazy(() => import("./screens/ActivosFijosScreen"));
+const PresupuestoScreen     = lazy(() => import("./screens/PresupuestoScreen"));
+const ProyectosScreen       = lazy(() => import("./screens/ProyectosScreen"));
+const TiendaScreen          = lazy(() => import("./screens/TiendaScreen"));
+const PortalClienteScreen   = lazy(() => import("./screens/PortalClienteScreen"));
+const RecordatoriosScreen   = lazy(() => import("./screens/RecordatoriosScreen"));
+const AsistenteScreen            = lazy(() => import("./screens/AsistenteScreen"));
+const RockyRecepcionistaScreen   = lazy(() => import("./screens/RockyRecepcionistaScreen"));
+const CalendarioScreen           = lazy(() => import("./screens/CalendarioScreen"));
+const CRMClientesScreen          = lazy(() => import("./screens/CRMClientesScreen"));
+const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
+const ConfiguracionScreen   = lazy(() => import("./screens/ConfiguracionScreen"));
+const AdminScreen           = lazy(() => import("./screens/AdminScreen"));
+const ChatWidget            = lazy(() => import("./components/ChatWidget"));
+
+// SUPERADMIN_EMAIL se exporta desde AdminScreen — lo duplicamos aquí para no
+// necesitar un import síncrono de ese módulo pesado.
+const SUPERADMIN_EMAIL = "sebascruz11211134@gmail.com";
+
+// ── Spinner de pantalla durante lazy-load ─────────────────────────────────────
+function ScreenFallback() {
+  return (
+    <div className="flex h-full items-center justify-center text-slate-400 text-sm">
+      Cargando…
+    </div>
+  );
+}
 
 // ── Títulos por ruta ──────────────────────────────────────────────────────────
-
 const TITULOS = {
   "/":                  "Inicio",
   "/facturacion":       "Facturación electrónica",
@@ -86,6 +98,7 @@ const TITULOS = {
   "/analytics":         "Análisis de ventas",
   "/migracion":         "Importar datos",
   "/planillas":         "Planillas — Nómina",
+  "/flujo-caja":        "Flujo de caja",
   "/d104":              "Declaración D-104 (IVA)",
   "/catalogo-cuentas":  "Catálogo de cuentas",
   "/asientos":          "Asientos contables",
@@ -106,7 +119,6 @@ const TITULOS = {
 };
 
 // ── TrialBanner ───────────────────────────────────────────────────────────────
-
 function TrialBanner({ plan }) {
   const [visible, setVisible] = useState(true);
   if (!visible || plan?.plan !== "trial" || plan.daysLeft > 5) return null;
@@ -129,7 +141,6 @@ function TrialBanner({ plan }) {
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
-
 export default function App() {
   const [collapsed,          setCollapsed]          = useState(false);
   const [syncStatus,         setSyncStatus]         = useState("idle");
@@ -147,24 +158,30 @@ export default function App() {
       const authed = await isAuthenticated();
       if (!authed) { setAuthState("unauthenticated"); return; }
 
-      // Verificar contra el servidor (puede fallar si no hay internet → ok igual)
-      const serverOk = await verifySession(); // también guarda modulosHabilitados
-      const storedUser = await getUser();
-      const planStatus = await getPlanStatus();
-      const modulos    = await getModulosHabilitados();
+      // Leer datos locales PRIMERO (instantáneo desde electron-store)
+      const [storedUser, planStatus, modulos] = await Promise.all([
+        getUser(),
+        getPlanStatus(),
+        getModulosHabilitados(),
+      ]);
 
-      if (!serverOk && !storedUser) {
-        setAuthState("unauthenticated");
-        return;
-      }
+      if (!storedUser) { setAuthState("unauthenticated"); return; }
 
-      // Expandir ventana ANTES de mostrar la app (auto-login con token guardado)
+      // Mostrar la app INMEDIATAMENTE con datos cacheados
       window.electronAPI?.window?.loginSuccess?.();
-
       setUser(storedUser);
       setPlan(planStatus);
       setModulosHabilitados(modulos);
       setAuthState("authenticated");
+
+      // Verificar sesión en el servidor en BACKGROUND (no bloquea el splash)
+      verifySession().then((ok) => {
+        if (!ok) return; // si falla red, ignorar — el usuario ya está adentro
+        // Refrescar datos si el servidor actualizó algo
+        Promise.all([getUser(), getPlanStatus(), getModulosHabilitados()]).then(
+          ([u, p, m]) => { setUser(u); setPlan(p); setModulosHabilitados(m); }
+        );
+      }).catch(() => {});
     }
     checkAuth();
   }, []);
@@ -277,65 +294,69 @@ export default function App() {
           />
 
           <main className="flex-1 overflow-auto">
-            <Routes>
-            <Route path="/"                 element={<DashboardScreen />} />
-            <Route path="/facturacion"      element={<FacturacionScreen />} />
-            <Route path="/cotizaciones"     element={<CotizacionesScreen />} />
-            <Route path="/pos"              element={<POSScreen />} />
-            <Route path="/pedidos"          element={<PedidosScreen />} />
-            <Route path="/facturas-historial" element={<FacturasHistScreen />} />
-            <Route path="/compras"          element={<ComprasScreen />} />
-            <Route path="/recepcion"        element={<RecepcionScreen />} />
-            <Route path="/inventario"       element={<InventarioScreen />} />
-            <Route path="/catalogo"         element={<CatalogoScreen />} />
-            <Route path="/ordenes"          element={<OrdenesScreen />} />
-            <Route path="/cxc"              element={<CXCScreen />} />
-            <Route path="/cxp"              element={<CXPScreen />} />
-            <Route path="/recibos"          element={<RecibosScreen />} />
-            <Route path="/conciliacion"     element={<ConciliacionScreen />} />
-            <Route path="/importar-csv"     element={<ImportarCSVScreen />} />
-            <Route path="/contactos"        element={<ContactosScreen />} />
-            <Route path="/empleados"        element={<EmpleadosScreen />} />
-            <Route path="/estado-cuenta"    element={<EstadoCuentaScreen />} />
-            <Route path="/notas-credito"    element={<NotasCreditoScreen />} />
-            <Route path="/reporte-cxc"      element={<ReporteCXCScreen />} />
-            <Route path="/reporte-recibos"  element={<ReporteRecibosScreen />} />
-            <Route path="/reporte-vencidos" element={<ReporteVencidosScreen />} />
-            <Route path="/analytics"        element={<AnalyticsScreen />} />
-            <Route path="/migracion"        element={<MigracionScreen />} />
-            <Route path="/planillas"        element={<PlanillasScreen />} />
-            <Route path="/flujo-caja"       element={<FlujoCajaScreen />} />
-            <Route path="/d104"             element={<D104Screen />} />
-            <Route path="/catalogo-cuentas" element={<CatalogoCuentasScreen />} />
-            <Route path="/asientos"         element={<AsientosScreen />} />
-            <Route path="/balances"         element={<BalancesScreen />} />
-            <Route path="/usuarios"         element={<UsuariosScreen />} />
-            <Route path="/empresas"         element={<EmpresasScreen />} />
-            <Route path="/caja"             element={<CajaScreen />} />
-            <Route path="/activos-fijos"    element={<ActivosFijosScreen />} />
-            <Route path="/presupuesto"      element={<PresupuestoScreen />} />
-            <Route path="/proyectos"        element={<ProyectosScreen />} />
-            <Route path="/tienda"           element={<TiendaScreen />} />
-            <Route path="/portal-cliente"   element={<PortalClienteScreen />} />
-            <Route path="/recordatorios"    element={<RecordatoriosScreen />} />
-            <Route path="/asistente"             element={<AsistenteScreen />} />
-            <Route path="/rocky-asistente"       element={<AsistenteScreen />} />
-            <Route path="/rocky-recepcionista"   element={<RockyRecepcionistaScreen />} />
-            <Route path="/rocky-config"          element={<RockyRecepcionistaScreen />} />
-            <Route path="/chat"             element={<ChatScreen />} />
-            <Route path="/configuracion"    element={<ConfiguracionScreen />} />
-            <Route path="/calendario"       element={<CalendarioScreen />} />
-            <Route path="/crm-clientes"     element={<CRMClientesScreen />} />
-            {user?.email === SUPERADMIN_EMAIL && (
-              <Route path="/admin"          element={<AdminScreen />} />
-            )}
-          </Routes>
+            <Suspense fallback={<ScreenFallback />}>
+              <Routes>
+                <Route path="/"                   element={<DashboardScreen />} />
+                <Route path="/facturacion"         element={<FacturacionScreen />} />
+                <Route path="/cotizaciones"        element={<CotizacionesScreen />} />
+                <Route path="/pos"                 element={<POSScreen />} />
+                <Route path="/pedidos"             element={<PedidosScreen />} />
+                <Route path="/facturas-historial"  element={<FacturasHistScreen />} />
+                <Route path="/compras"             element={<ComprasScreen />} />
+                <Route path="/recepcion"           element={<RecepcionScreen />} />
+                <Route path="/inventario"          element={<InventarioScreen />} />
+                <Route path="/catalogo"            element={<CatalogoScreen />} />
+                <Route path="/ordenes"             element={<OrdenesScreen />} />
+                <Route path="/cxc"                 element={<CXCScreen />} />
+                <Route path="/cxp"                 element={<CXPScreen />} />
+                <Route path="/recibos"             element={<RecibosScreen />} />
+                <Route path="/conciliacion"        element={<ConciliacionScreen />} />
+                <Route path="/importar-csv"        element={<ImportarCSVScreen />} />
+                <Route path="/contactos"           element={<ContactosScreen />} />
+                <Route path="/empleados"           element={<EmpleadosScreen />} />
+                <Route path="/estado-cuenta"       element={<EstadoCuentaScreen />} />
+                <Route path="/notas-credito"       element={<NotasCreditoScreen />} />
+                <Route path="/reporte-cxc"         element={<ReporteCXCScreen />} />
+                <Route path="/reporte-recibos"     element={<ReporteRecibosScreen />} />
+                <Route path="/reporte-vencidos"    element={<ReporteVencidosScreen />} />
+                <Route path="/analytics"           element={<AnalyticsScreen />} />
+                <Route path="/migracion"           element={<MigracionScreen />} />
+                <Route path="/planillas"           element={<PlanillasScreen />} />
+                <Route path="/flujo-caja"          element={<FlujoCajaScreen />} />
+                <Route path="/d104"                element={<D104Screen />} />
+                <Route path="/catalogo-cuentas"    element={<CatalogoCuentasScreen />} />
+                <Route path="/asientos"            element={<AsientosScreen />} />
+                <Route path="/balances"            element={<BalancesScreen />} />
+                <Route path="/usuarios"            element={<UsuariosScreen />} />
+                <Route path="/empresas"            element={<EmpresasScreen />} />
+                <Route path="/caja"                element={<CajaScreen />} />
+                <Route path="/activos-fijos"       element={<ActivosFijosScreen />} />
+                <Route path="/presupuesto"         element={<PresupuestoScreen />} />
+                <Route path="/proyectos"           element={<ProyectosScreen />} />
+                <Route path="/tienda"              element={<TiendaScreen />} />
+                <Route path="/portal-cliente"      element={<PortalClienteScreen />} />
+                <Route path="/recordatorios"       element={<RecordatoriosScreen />} />
+                <Route path="/asistente"           element={<AsistenteScreen />} />
+                <Route path="/rocky-asistente"     element={<AsistenteScreen />} />
+                <Route path="/rocky-recepcionista" element={<RockyRecepcionistaScreen />} />
+                <Route path="/rocky-config"        element={<RockyRecepcionistaScreen />} />
+                <Route path="/chat"                element={<ChatScreen />} />
+                <Route path="/configuracion"       element={<ConfiguracionScreen />} />
+                <Route path="/calendario"          element={<CalendarioScreen />} />
+                <Route path="/crm-clientes"        element={<CRMClientesScreen />} />
+                {user?.email === SUPERADMIN_EMAIL && (
+                  <Route path="/admin"             element={<AdminScreen />} />
+                )}
+              </Routes>
+            </Suspense>
           </main>
         </div>
       </div>
 
       {/* Chat flotante — visible en cualquier pantalla */}
-      <ChatWidget />
+      <Suspense fallback={null}>
+        <ChatWidget />
+      </Suspense>
     </div>
   );
 }

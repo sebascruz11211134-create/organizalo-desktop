@@ -97,7 +97,7 @@ export async function verifySession() {
   try {
     const res = await axios.get(
       `${BACKEND}/api/auth/me`,
-      { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
+      { headers: { Authorization: `Bearer ${token}` }, timeout: 3000 }
     );
     // Actualizar datos del usuario y módulos con los del servidor
     await storeSet(USER_KEY, res.data.user);

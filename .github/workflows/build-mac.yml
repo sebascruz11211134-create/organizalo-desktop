@@ -52,6 +52,16 @@ jobs:
       - name: Instalar dependencias
         run: npm install --legacy-peer-deps
 
+      - name: Crear y pushear git tag de versión
+        run: |
+          COUNT=$(git rev-list --count HEAD)
+          VERSION="v1.0.$COUNT"
+          git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git tag "$VERSION" -m "Release $VERSION" --force
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git "$VERSION" --force
+          echo "Tag creado: $VERSION"
+
       - name: Build Vite (frontend)
         run: npx vite build
 
