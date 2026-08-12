@@ -8,7 +8,7 @@ import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
 
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "../utils/config";
 
 const CANALES = [
   { id: "general",      emoji: "💬", nombre: "General" },

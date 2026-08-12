@@ -5,8 +5,7 @@
  * El usuario decodificado también se cachea localmente.
  */
 import axios from "axios";
-
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "./config";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";

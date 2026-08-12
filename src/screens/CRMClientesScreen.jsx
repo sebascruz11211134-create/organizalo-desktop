@@ -13,7 +13,7 @@ import db from "../utils/db";
 import { fmtMoney } from "../utils/fmt";
 import { getToken } from "../utils/auth";
 
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "../utils/config";
 
 const ETAPAS = [
   { id: "prospecto",  label: "Prospecto",  color: "#94a3b8", bg: "bg-slate-100" },

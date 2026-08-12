@@ -10,7 +10,7 @@ import {
 import { getToken } from "../utils/auth";
 import { fetchWithTimeout } from "../utils/fetchTimeout";
 
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "../utils/config";
 
 const TIPOS = [
   { id: "evento",      label: "Evento",      color: "#10b981" },

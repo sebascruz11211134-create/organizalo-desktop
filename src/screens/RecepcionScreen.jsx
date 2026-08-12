@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { getToken } from "../utils/auth";
 
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "../utils/config";
 
 const ESTADO_BADGE = {
   pendiente:        { label: "Pendiente",       cls: "bg-amber-100 text-amber-700" },

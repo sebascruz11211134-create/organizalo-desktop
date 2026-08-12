@@ -4,7 +4,7 @@ import db from "../utils/db";
 import { pushSync, pullSync } from "../utils/sync";
 import { getToken } from "../utils/auth";
 
-const BACKEND = "http://31.97.141.124";
+import { BACKEND } from "../utils/config";
 
 export default function ConfiguracionScreen() {
   const [s,       setS]       = useState({ nombreNegocio: "", cedula: "", moneda: "CRC", correo: "", sinpe: "", direccion: "" });

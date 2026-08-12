@@ -4,9 +4,10 @@
  * que todas las llamadas al backend tengan un timeout de 5 segundos.
  */
 import axios from "axios";
+import { BACKEND } from "./config";
 
 const api = axios.create({
-  baseURL: "http://31.97.141.124",
+  baseURL: BACKEND,
   timeout: 5000,
 });
 
