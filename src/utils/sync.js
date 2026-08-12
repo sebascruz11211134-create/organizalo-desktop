@@ -15,7 +15,7 @@ import { io as socketIO } from "socket.io-client";
 import db       from "./db";
 import { getToken } from "./auth";
 
-const BACKEND = "http://31.97.141.124:3001";
+const BACKEND = "http://31.97.141.124";
 
 // ── Header auth ───────────────────────────────────────────────────────────────
 

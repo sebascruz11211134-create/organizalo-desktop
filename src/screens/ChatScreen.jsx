@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Hash, Users, Plus, Link, Copy, Check } from "lucide-react";
 import api from "../utils/api";
 
-const BACKEND = "http://31.97.141.124:3001";
+const BACKEND = "http://31.97.141.124";
 const CANALES = [
   { id: "general",       emoji: "💬", nombre: "General" },
   { id: "facturación",   emoji: "🧾", nombre: "Facturación" },

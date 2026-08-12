@@ -8,7 +8,7 @@ import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
 
-const BACKEND = "http://31.97.141.124:3001";
+const BACKEND = "http://31.97.141.124";
 
 const CANALES = [
   { id: "general",      emoji: "💬", nombre: "General" },
@@ -30,8 +30,10 @@ export default function ChatWidget() {
   const [showCanales,  setShowCanales]  = useState(false);
   const [prevLen,      setPrevLen]      = useState(0);
 
-  const bottomRef = useRef(null);
-  const inputRef  = useRef(null);
+  const bottomRef   = useRef(null);
+  const inputRef    = useRef(null);
+  const fallosRef   = useRef(0);      // circuit breaker: fallos consecutivos
+  const cortadoRef  = useRef(false);  // true = polling detenido
 
   // ── Cargar token y usuario async (store.get es IPC, no síncrono) ──────────
   useEffect(() => {
@@ -46,11 +48,13 @@ export default function ChatWidget() {
   // ── Cargar mensajes del canal activo ──────────────────────────────────────
   const cargarMensajes = useCallback(async (canal) => {
     if (!authToken) return;
+    if (cortadoRef.current) return;   // circuit breaker abierto
     try {
       const res = await api.get(
         `/api/chat/mensajes/${canal}`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
+      fallosRef.current = 0;  // éxito → resetear contador
       const nuevos = res.data.mensajes || [];
       setMensajes(nuevos);
       // Contar no leídos solo si el panel está cerrado
@@ -59,7 +63,12 @@ export default function ChatWidget() {
         if (!abierto && diff > 0) setNoLeidos(n => n + diff);
         return nuevos.length;
       });
-    } catch { /* silencioso */ }
+    } catch {
+      fallosRef.current += 1;
+      if (fallosRef.current >= 3) {
+        cortadoRef.current = true;  // cortar polling tras 3 fallos seguidos
+      }
+    }
   }, [authToken, abierto]);
 
   // Polling cada 5 s
@@ -70,9 +79,12 @@ export default function ChatWidget() {
   }, [canalActivo, cargarMensajes]);
 
   // Al abrir → limpiar badge, scroll al fondo, focus en input
+  // También resetea el circuit breaker para reintentar polling
   useEffect(() => {
     if (abierto) {
       setNoLeidos(0);
+      fallosRef.current = 0;
+      cortadoRef.current = false;
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         inputRef.current?.focus();

@@ -16,7 +16,7 @@ import {
   Key, Plus, ChevronUp,
 } from "lucide-react";
 
-const BACKEND = "http://31.97.141.124:3001";
+const BACKEND = "http://31.97.141.124";
 export const SUPERADMIN_EMAIL = "sebascruz11211134@gmail.com";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

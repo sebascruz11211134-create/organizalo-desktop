@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Sparkles, RotateCcw, Bot, Shield } from "lucide-react";
 import { getToken, getUser } from "../utils/auth";
 
-const BACKEND = "http://31.97.141.124:3001";
+const BACKEND = "http://31.97.141.124";
 
 const ROL_LABEL = {
   admin:        "Administrador",
