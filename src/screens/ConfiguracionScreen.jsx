@@ -27,13 +27,19 @@ export default function ConfiguracionScreen() {
 
   // ── Certificado BCCR ──────────────────────────────────────────────────────
   const fileInputRef = useRef(null);
-  const [certStatus,    setCertStatus]    = useState(null);  // null | { configured, cedula, nombre, subidoEn }
+  const [certStatus,    setCertStatus]    = useState(null);  // null | { configured, cedula, nombre, subidoEn, atvConfigurado, atvUsuario }
   const [certLoading,   setCertLoading]   = useState(false);
   const [certMsg,       setCertMsg]       = useState(null);  // { type: "ok"|"err", text }
   const [certFile,      setCertFile]      = useState(null);
   const [certPass,      setCertPass]      = useState("");
   const [certCedula,    setCertCedula]    = useState("");
   const [certNombre,    setCertNombre]    = useState("");
+
+  // ── Credenciales ATV (Hacienda) ───────────────────────────────────────────
+  const [atvUsuario,    setAtvUsuario]    = useState("");
+  const [atvPass,       setAtvPass]       = useState("");
+  const [atvLoading,    setAtvLoading]    = useState(false);
+  const [atvMsg,        setAtvMsg]        = useState(null);  // { type: "ok"|"err", text }
 
   useEffect(() => {
     db.getSettings().then((st) => setS((prev) => ({ ...prev, ...st })));
@@ -190,6 +196,33 @@ export default function ConfiguracionScreen() {
     }
   }
 
+  async function subirATV() {
+    if (!atvUsuario) return setAtvMsg({ type: "err", text: "Ingresá el usuario de ATV" });
+    if (!atvPass)    return setAtvMsg({ type: "err", text: "Ingresá la contraseña de ATV" });
+    if (!certStatus?.configured) return setAtvMsg({ type: "err", text: "Primero subí el certificado .p12" });
+    setAtvLoading(true); setAtvMsg(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/cert/atv`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario: atvUsuario, password: atvPass }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAtvMsg({ type: "ok", text: "Credenciales ATV guardadas correctamente" });
+        setAtvPass("");
+        cargarCertStatus();
+      } else {
+        setAtvMsg({ type: "err", text: data.error || "Error al guardar credenciales ATV" });
+      }
+    } catch (e) {
+      setAtvMsg({ type: "err", text: e.message });
+    } finally {
+      setAtvLoading(false);
+    }
+  }
+
   const guardar = async () => {
     await db.setSettings(s);
     setSaved(true);
@@ -285,11 +318,11 @@ export default function ConfiguracionScreen() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-2 mb-1">
           <Shield size={16} className="text-green-700" />
-          <h2 className="text-base font-bold text-slate-900">Certificado BCCR (.p12)</h2>
+          <h2 className="text-base font-bold text-slate-900">Facturación Electrónica</h2>
         </div>
         <p className="text-xs text-slate-500 mb-5">
-          Necesario para firmar el Mensaje Receptor ante Hacienda al recibir facturas electrónicas.
-          El archivo se guarda encriptado con AES-256-GCM y nunca se registra en texto plano.
+          Configurá el certificado BCCR (.p12) y las credenciales ATV de Hacienda para enviar y recibir
+          facturas electrónicas. El certificado se guarda encriptado con AES-256-GCM y nunca se registra en texto plano.
         </p>
 
         {/* Estado actual */}
@@ -376,6 +409,65 @@ export default function ConfiguracionScreen() {
           <Upload size={14} />
           {certLoading ? "Guardando…" : certStatus?.configured ? "Reemplazar certificado" : "Guardar certificado"}
         </button>
+
+        {/* ── Credenciales ATV (Hacienda) ───────────────────────────────── */}
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <p className="text-xs font-bold text-slate-500 uppercase mb-1">Credenciales ATV · Hacienda</p>
+          <p className="text-xs text-slate-400 mb-4">
+            Usuario y contraseña del sistema ATV (<span className="font-mono">atv.hacienda.go.cr</span>) para enviar facturas electrónicas.
+            La contraseña se guarda encriptada — nunca en texto plano.
+          </p>
+
+          {/* Estado ATV */}
+          {certStatus?.atvConfigurado ? (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle size={14} className="text-green-600 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-green-800">ATV configurado</p>
+                <p className="text-xs text-green-600">
+                  Usuario: <span className="font-mono">{certStatus.atvUsuario}</span>
+                  {certStatus.atvActualizadoEn && ` · Actualizado el ${new Date(certStatus.atvActualizadoEn).toLocaleDateString("es-CR")}`}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <AlertCircle size={14} className="text-amber-600 shrink-0" />
+              <p className="text-xs text-amber-700">Sin credenciales ATV — necesarias para emitir facturas electrónicas.</p>
+            </div>
+          )}
+
+          {/* Mensaje resultado ATV */}
+          {atvMsg && (
+            <div className={`mb-3 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm
+              ${atvMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+              {atvMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+              {atvMsg.text}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Usuario ATV</label>
+              <input type="text" value={atvUsuario} onChange={e => setAtvUsuario(e.target.value)}
+                placeholder="usuario@empresa.com"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña ATV</label>
+              <input type="password" value={atvPass} onChange={e => setAtvPass(e.target.value)}
+                placeholder="Contraseña del sistema ATV"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            </div>
+          </div>
+
+          <button onClick={subirATV} disabled={atvLoading || !certStatus?.configured}
+            title={!certStatus?.configured ? "Primero subí el certificado .p12" : ""}
+            className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+            <Shield size={14} />
+            {atvLoading ? "Guardando…" : certStatus?.atvConfigurado ? "Actualizar credenciales ATV" : "Guardar credenciales ATV"}
+          </button>
+        </div>
       </div>
 
       {/* WhatsApp ───────────────────────────────────────────────────────────── */}
