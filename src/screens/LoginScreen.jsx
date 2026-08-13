@@ -127,6 +127,8 @@ function PasswordField({ value, onChange, placeholder = "Contraseña" }) {
 }
 
 // ── Formulario de registro ────────────────────────────────────────────────────
+const SUPERADMIN_REG_EMAIL = "sebascruz11211134@gmail.com";
+
 function RegisterForm({ onSuccess, onBack }) {
   const [form, setForm]     = useState({ nombre: "", email: "", telefono: "", password: "", confirm: "", codigoAcceso: "" });
   const [loading, setLoading] = useState(false);
@@ -135,13 +137,15 @@ function RegisterForm({ onSuccess, onBack }) {
 
   const u = (k) => (e) => { setForm(p => ({ ...p, [k]: e.target.value })); setErrors(p => ({ ...p, [k]: "" })); };
 
+  const esSuperAdmin = form.email.trim().toLowerCase() === SUPERADMIN_REG_EMAIL;
+
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim())            e.nombre       = "Requerido";
-    if (!form.email.includes("@"))      e.email        = "Correo inválido";
-    if (form.password.length < 6)       e.password     = "Mínimo 6 caracteres";
-    if (form.password !== form.confirm) e.confirm      = "No coinciden";
-    if (!form.codigoAcceso.trim())      e.codigoAcceso = "Requerido";
+    if (!form.nombre.trim())            e.nombre   = "Requerido";
+    if (!form.email.includes("@"))      e.email    = "Correo inválido";
+    if (form.password.length < 6)       e.password = "Mínimo 6 caracteres";
+    if (form.password !== form.confirm) e.confirm  = "No coinciden";
+    if (!esSuperAdmin && !form.codigoAcceso.trim()) e.codigoAcceso = "Requerido";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -199,26 +203,28 @@ function RegisterForm({ onSuccess, onBack }) {
         {errors.confirm && <p className="text-[11px] text-red-200 mt-0.5">{errors.confirm}</p>}
       </div>
 
-      <div>
-        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Código de acceso</label>
-        <input
-          type="text"
-          value={form.codigoAcceso}
-          onChange={(e) => {
-            let v = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
-            if (v.length === 5 && !v.includes("-")) v = v.slice(0,4) + "-" + v[4];
-            if (v.length > 9) v = v.slice(0,9);
-            setForm(p => ({ ...p, codigoAcceso: v }));
-            setErrors(p => ({ ...p, codigoAcceso: "" }));
-          }}
-          placeholder="XXXX-XXXX"
-          maxLength={9}
-          className={`${inputCls("codigoAcceso")} font-mono tracking-widest`}
-        />
-        {errors.codigoAcceso
-          ? <p className="text-[11px] text-red-200 mt-0.5">{errors.codigoAcceso}</p>
-          : <p className="text-[11px] text-white/65 mt-0.5">Solicitalo a Organízalo.AI al contratar.</p>}
-      </div>
+      {!esSuperAdmin && (
+        <div>
+          <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Código de acceso</label>
+          <input
+            type="text"
+            value={form.codigoAcceso}
+            onChange={(e) => {
+              let v = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+              if (v.length === 5 && !v.includes("-")) v = v.slice(0,4) + "-" + v[4];
+              if (v.length > 9) v = v.slice(0,9);
+              setForm(p => ({ ...p, codigoAcceso: v }));
+              setErrors(p => ({ ...p, codigoAcceso: "" }));
+            }}
+            placeholder="XXXX-XXXX"
+            maxLength={9}
+            className={`${inputCls("codigoAcceso")} font-mono tracking-widest`}
+          />
+          {errors.codigoAcceso
+            ? <p className="text-[11px] text-red-200 mt-0.5">{errors.codigoAcceso}</p>
+            : <p className="text-[11px] text-white/65 mt-0.5">Solicitalo a Organízalo.AI al contratar.</p>}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/20 border border-red-300/30 text-red-100 text-xs">

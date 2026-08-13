@@ -7,6 +7,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../utils/api";
+import { getToken } from "../utils/auth";
 import {
   Users, CheckCircle, Clock, AlertCircle, XCircle,
   RefreshCw, ChevronDown, Search, Shield, TrendingUp,
@@ -872,10 +873,7 @@ export default function AdminScreen() {
   const [verCodigos,     setVerCodigos]     = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const t = await window.electronAPI?.store?.get("@finanzia/authToken");
-      if (t) setToken(t);
-    })();
+    getToken().then(t => { if (t) setToken(t); });
   }, []);
 
   const cargar = useCallback(async () => {
