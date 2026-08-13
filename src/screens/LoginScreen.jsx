@@ -1,11 +1,11 @@
 /**
- * LoginScreen — Pantalla compacta de login para el desktop.
+ * LoginScreen â Pantalla compacta de login para el desktop.
  *
- * Diseño: 360×500 ventana; fondo navy oscuro, cubo isométrico + wordmark,
- * dropdown de usuarios guardados (electron-store) + campo contraseña.
+ * DiseÃ±o: 360Ã500 ventana; fondo navy oscuro, cubo isomÃ©trico + wordmark,
+ * dropdown de usuarios guardados (electron-store) + campo contraseÃ±a.
  *
- * Al login exitoso → guarda el usuario en store y llama loginSuccess()
- * (IPC → main.js expande la ventana a 1280×800).
+ * Al login exitoso â guarda el usuario en store y llama loginSuccess()
+ * (IPC â main.js expande la ventana a 1280Ã800).
  *
  * Modo "crear cuenta" se muestra en la misma ventana (scrollable dentro del card).
  */
@@ -18,7 +18,7 @@ import { login, register } from "../utils/auth";
 
 const STORE_USERS_KEY = "savedUsers";
 
-// ── Cubo isométrico (reutiliza el SVG del Sidebar) ───────────────────────────
+// ââ Cubo isomÃ©trico (reutiliza el SVG del Sidebar) âââââââââââââââââââââââââââ
 function CubeLogo({ size = 36 }) {
   const s = size;
   const h = Math.round(s * 0.88);
@@ -34,7 +34,7 @@ function CubeLogo({ size = 36 }) {
   );
 }
 
-// ── Dropdown de usuarios guardados ────────────────────────────────────────────
+// ââ Dropdown de usuarios guardados ââââââââââââââââââââââââââââââââââââââââââââ
 function UserDropdown({ users, value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -59,7 +59,7 @@ function UserDropdown({ users, value, onChange }) {
           <User size={12} className="text-white" />
         </div>
         <span className="flex-1 text-left font-medium truncate">
-          {selected ? selected.nombre : value || "Seleccioná un usuario"}
+          {selected ? selected.nombre : value || "SeleccionÃ¡ un usuario"}
         </span>
         <ChevronDown size={14} className={`text-white/80 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
@@ -92,7 +92,7 @@ function UserDropdown({ users, value, onChange }) {
             onClick={() => { onChange("__custom__"); setOpen(false); }}
             className="w-full px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors text-left"
           >
-            + Otra cuenta…
+            + Otra cuentaâ¦
           </button>
         </div>
       )}
@@ -100,8 +100,8 @@ function UserDropdown({ users, value, onChange }) {
   );
 }
 
-// ── Campo de contraseña ───────────────────────────────────────────────────────
-function PasswordField({ value, onChange, placeholder = "Contraseña" }) {
+// ââ Campo de contraseÃ±a âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function PasswordField({ value, onChange, placeholder = "ContraseÃ±a" }) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -126,7 +126,7 @@ function PasswordField({ value, onChange, placeholder = "Contraseña" }) {
   );
 }
 
-// ── Formulario de registro ────────────────────────────────────────────────────
+// ââ Formulario de registro ââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function RegisterForm({ onSuccess, onBack }) {
   const [form, setForm]     = useState({ nombre: "", email: "", telefono: "", password: "", confirm: "", codigoAcceso: "" });
   const [loading, setLoading] = useState(false);
@@ -138,8 +138,8 @@ function RegisterForm({ onSuccess, onBack }) {
   const validate = () => {
     const e = {};
     if (!form.nombre.trim())            e.nombre       = "Requerido";
-    if (!form.email.includes("@"))      e.email        = "Correo inválido";
-    if (form.password.length < 6)       e.password     = "Mínimo 6 caracteres";
+    if (!form.email.includes("@"))      e.email        = "Correo invÃ¡lido";
+    if (form.password.length < 6)       e.password     = "MÃ­nimo 6 caracteres";
     if (form.password !== form.confirm) e.confirm      = "No coinciden";
     if (!form.codigoAcceso.trim())      e.codigoAcceso = "Requerido";
     setErrors(e);
@@ -184,23 +184,23 @@ function RegisterForm({ onSuccess, onBack }) {
   return (
     <form onSubmit={submit} className="space-y-3">
       {field("Nombre completo", "nombre", { placeholder: "Tu nombre o el del negocio" })}
-      {field("Correo electrónico", "email", { type: "email", placeholder: "tu@empresa.com" })}
-      {field("Teléfono (opcional)", "telefono", { placeholder: "8888-8888" })}
+      {field("Correo electrÃ³nico", "email", { type: "email", placeholder: "tu@empresa.com" })}
+      {field("TelÃ©fono (opcional)", "telefono", { placeholder: "8888-8888" })}
 
       <div>
-        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Contraseña</label>
-        <PasswordField value={form.password} onChange={u("password")} placeholder="Mínimo 6 caracteres" />
+        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">ContraseÃ±a</label>
+        <PasswordField value={form.password} onChange={u("password")} placeholder="MÃ­nimo 6 caracteres" />
         {errors.password && <p className="text-[11px] text-red-200 mt-0.5">{errors.password}</p>}
       </div>
 
       <div>
         <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Confirmar</label>
-        <PasswordField value={form.confirm} onChange={u("confirm")} placeholder="Repetí la contraseña" />
+        <PasswordField value={form.confirm} onChange={u("confirm")} placeholder="RepetÃ­ la contraseÃ±a" />
         {errors.confirm && <p className="text-[11px] text-red-200 mt-0.5">{errors.confirm}</p>}
       </div>
 
       <div>
-        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Código de acceso</label>
+        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">CÃ³digo de acceso</label>
         <input
           type="text"
           value={form.codigoAcceso}
@@ -217,7 +217,7 @@ function RegisterForm({ onSuccess, onBack }) {
         />
         {errors.codigoAcceso
           ? <p className="text-[11px] text-red-200 mt-0.5">{errors.codigoAcceso}</p>
-          : <p className="text-[11px] text-white/65 mt-0.5">Solicitalo a Organízalo.AI al contratar.</p>}
+          : <p className="text-[11px] text-white/65 mt-0.5">Solicitalo a OrganÃ­zalo.AI al contratar.</p>}
       </div>
 
       {error && (
@@ -231,17 +231,17 @@ function RegisterForm({ onSuccess, onBack }) {
         disabled={loading}
         className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
       >
-        {loading ? <><Loader2 size={15} className="animate-spin" /> Creando cuenta…</> : <><ArrowRight size={15} /> Crear cuenta</>}
+        {loading ? <><Loader2 size={15} className="animate-spin" /> Creando cuentaâ¦</> : <><ArrowRight size={15} /> Crear cuenta</>}
       </button>
 
       <button type="button" onClick={onBack} className="w-full text-xs text-white/50 hover:text-white transition-colors py-1">
-        ← Volver al login
+        â Volver al login
       </button>
     </form>
   );
 }
 
-// ── Pantalla principal ────────────────────────────────────────────────────────
+// ââ Pantalla principal ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export default function LoginScreen({ onLogin }) {
   const [mode, setMode]         = useState("login"); // "login" | "register"
   const [savedUsers, setSavedUsers] = useState([]);
@@ -264,13 +264,13 @@ export default function LoginScreen({ onLogin }) {
     });
   }, []);
 
-  // Si no hay usuarios guardados o eligió "Otra cuenta", usa el campo libre
+  // Si no hay usuarios guardados o eligiÃ³ "Otra cuenta", usa el campo libre
   const effectiveId = (identifier === "__custom__" || savedUsers.length === 0) ? customId : identifier;
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const id = effectiveId.trim();
-    if (!id || !password) return setError("Completá usuario y contraseña.");
+    if (!id || !password) return setError("CompletÃ¡ usuario y contraseÃ±a.");
     setLoading(true);
     setError("");
     try {
@@ -286,7 +286,7 @@ export default function LoginScreen({ onLogin }) {
             { identifier: idLower, nombre: data.user.nombre },
           ]);
         }
-        // Señal IPC → main.js expande la ventana
+        // SeÃ±al IPC â main.js expande la ventana
         window.electronAPI.window?.loginSuccess?.();
       }
       onLogin?.(data.user, data.token);
@@ -309,19 +309,19 @@ export default function LoginScreen({ onLogin }) {
     onLogin?.({ id: "guest", nombre: "Usuario Demo", email: "", plan: "trial", trialEnds }, null);
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ââ Render ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   return (
     <div
       className="login-screen flex flex-col h-screen overflow-hidden font-sans select-none relative"
       style={{ background: "linear-gradient(135deg, #047857 0%, #059669 40%, #10b981 75%, #34d399 100%)" }}
     >
-      {/* Círculos decorativos */}
+      {/* CÃ­rculos decorativos */}
       <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full pointer-events-none"
         style={{ background: "rgba(255,255,255,0.07)" }} />
       <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
         style={{ background: "rgba(255,255,255,0.06)" }} />
 
-      {/* Drag region — espacio para semáforos macOS */}
+      {/* Drag region â espacio para semÃ¡foros macOS */}
       <div className="drag-region h-9 shrink-0" />
 
       {/* Contenido centrado */}
@@ -332,10 +332,10 @@ export default function LoginScreen({ onLogin }) {
             <CubeLogo size={44} />
           </div>
           <div className="flex items-baseline gap-0.5">
-            <span className="text-[22px] font-bold text-white tracking-tight leading-none">Organízalo</span>
+            <span className="text-[22px] font-bold text-white tracking-tight leading-none">OrganÃ­zalo</span>
             <span className="text-[14px] font-bold leading-none text-white/90">.AI</span>
           </div>
-          <p className="text-[11px] text-white/80 mt-1 tracking-wide">Sistema de gestión empresarial</p>
+          <p className="text-[11px] text-white/80 mt-1 tracking-wide">Sistema de gestiÃ³n empresarial</p>
         </div>
 
         {/* Separador */}
@@ -387,7 +387,7 @@ export default function LoginScreen({ onLogin }) {
 
               <div>
                 <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1.5">
-                  Contraseña
+                  ContraseÃ±a
                 </label>
                 <PasswordField
                   value={password}
@@ -407,7 +407,7 @@ export default function LoginScreen({ onLogin }) {
                 className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
               >
                 {loading
-                  ? <><Loader2 size={15} className="animate-spin" /> Iniciando…</>
+                  ? <><Loader2 size={15} className="animate-spin" /> Iniciandoâ¦</>
                   : <><ArrowRight size={15} /> Ingresar</>}
               </button>
 
@@ -418,14 +418,7 @@ export default function LoginScreen({ onLogin }) {
                   onClick={() => setMode("register")}
                   className="text-xs text-white/80 hover:text-white transition-colors"
                 >
-                  ¿Primera vez? Crear una cuenta
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGuest}
-                  className="text-[11px] text-white/55 hover:text-white/80 transition-colors"
-                >
-                  Explorar sin cuenta →
+                  Â¿Primera vez? Crear una cuenta
                 </button>
               </div>
             </form>
@@ -440,7 +433,7 @@ export default function LoginScreen({ onLogin }) {
 
       {/* Footer */}
       <p className="relative z-10 no-drag text-center text-[10px] text-white/55 pb-3 shrink-0">
-        Organízalo.AI · Costa Rica · v1.0
+        OrganÃ­zalo.AI Â· Costa Rica Â· v1.0
       </p>
     </div>
   );
