@@ -60,9 +60,9 @@ app.whenReady().then(async () => {
   // Limpiar caché de HTTP (redirecciones 301 cacheadas del proxy previo que bypaseaban el proxy)
   await session.defaultSession.clearCache();
 
-  // Inyectar CORS en todas las respuestas del VPS (por si alguna petición llega directo al 443)
+  // Inyectar CORS en respuestas del VPS y Railway (por si alguna petición llega directo)
   session.defaultSession.webRequest.onHeadersReceived(
-    { urls: ["https://31.97.141.124/*"] },
+    { urls: ["https://31.97.141.124/*", "https://organizalo-backend-production.up.railway.app/*"] },
     (details, callback) => {
       callback({
         responseHeaders: {
