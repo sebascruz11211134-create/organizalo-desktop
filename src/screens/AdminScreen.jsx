@@ -15,7 +15,7 @@ import {
   Database, Trash2, Edit3, Save, Eye, EyeOff, AlertTriangle,
   HardDrive, FileText, Package, UserCheck, DollarSign,
   CreditCard, Landmark, BarChart2, Settings, Copy,
-  Key, Plus, ChevronUp,
+  Key, Plus, ChevronUp, Sparkles, Sliders,
 } from "lucide-react";
 
 import { BACKEND } from "../utils/config";
@@ -865,6 +865,131 @@ function StatCard({ label, value, color, icon: Icon }) {
   );
 }
 
+// ── Panel de uso de API por empresa ──────────────────────────────────────────
+function ApiUsagePanel({ token }) {
+  const [rows,      setRows]      = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [editando,  setEditando]  = useState(null); // empresaId
+  const [nuevoLim,  setNuevoLim]  = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [msg,       setMsg]       = useState("");
+
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await api.get("/api/admin/api-usage?dias=7", { headers });
+      // Agrupar por empresa — tomar el más reciente por empresa
+      const porEmpresa = {};
+      for (const r of (res.data.rows || [])) {
+        const k = r.empresa_id;
+        if (!porEmpresa[k] || r.fecha > porEmpresa[k].fecha) porEmpresa[k] = r;
+      }
+      setRows(Object.values(porEmpresa).sort((a, b) =>
+        (b.mensajes_usados || 0) - (a.mensajes_usados || 0)
+      ));
+    } catch {}
+    setLoading(false);
+  }, [token]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const guardarLimite = async (empresaId) => {
+    const lim = parseInt(nuevoLim);
+    if (!lim || lim < 1) return;
+    setGuardando(true);
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await api.put(`/api/admin/api-quota/${empresaId}`, { limite: lim }, { headers });
+      setMsg(`✅ Límite actualizado a ${lim} msg/día`);
+      setEditando(null);
+      setNuevoLim("");
+      cargar();
+    } catch (e) {
+      setMsg("❌ " + (e.response?.data?.error || "Error"));
+    } finally {
+      setGuardando(false);
+      setTimeout(() => setMsg(""), 3000);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center gap-2 py-4 text-slate-400 text-xs">
+      <RefreshCw size={12} className="animate-spin" /> Cargando uso de API…
+    </div>
+  );
+
+  if (!rows.length) return (
+    <p className="text-xs text-slate-400 py-4">Sin datos de uso aún (los clientes no han usado el asistente).</p>
+  );
+
+  return (
+    <div className="space-y-2 mt-3">
+      {msg && <p className="text-xs text-emerald-700 font-medium">{msg}</p>}
+      {rows.map(r => {
+        const pct = Math.min(100, ((r.mensajes_usados || 0) / (r.limite_mensajes || 50)) * 100);
+        const barColor = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-emerald-500";
+        const tokTotal = (r.tokens_entrada || 0) + (r.tokens_salida || 0);
+        return (
+          <div key={r.empresa_id} className="border border-slate-200 rounded-xl p-4 bg-white">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {r.empresa_nombre || r.empresa_id}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Hoy: {r.mensajes_usados || 0} / {r.limite_mensajes || 50} consultas
+                  {tokTotal > 0 && ` · ${(tokTotal / 1000).toFixed(1)}K tokens`}
+                </p>
+              </div>
+
+              {/* Barra de uso */}
+              <div className="flex items-center gap-2 min-w-[140px]">
+                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs font-medium text-slate-600 w-10 text-right">{Math.round(pct)}%</span>
+              </div>
+
+              {/* Editar límite */}
+              {editando === r.empresa_id ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number" min="1" max="9999"
+                    value={nuevoLim}
+                    onChange={e => setNuevoLim(e.target.value)}
+                    className="w-20 text-xs border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    placeholder="msg/día"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => guardarLimite(r.empresa_id)}
+                    disabled={guardando}
+                    className="text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {guardando ? "…" : "Guardar"}
+                  </button>
+                  <button
+                    onClick={() => { setEditando(null); setNuevoLim(""); }}
+                    className="text-xs text-slate-400 hover:text-slate-700 px-1"
+                  >✕</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setEditando(r.empresa_id); setNuevoLim(String(r.limite_mensajes || 50)); }}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 border border-slate-200 px-2 py-1 rounded-lg"
+                >
+                  <Sliders size={10} /> Límite
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Pantalla principal ────────────────────────────────────────────────────────
 
 export default function AdminScreen() {
@@ -877,6 +1002,7 @@ export default function AdminScreen() {
   const [filtro,         setFiltro]         = useState("todos");
   const [error,          setError]          = useState("");
   const [verCodigos,     setVerCodigos]     = useState(false);
+  const [verApiUsage,    setVerApiUsage]    = useState(false);
 
   useEffect(() => {
     getToken().then(t => { if (t) setToken(t); });
@@ -957,6 +1083,21 @@ export default function AdminScreen() {
           <div className="mt-3">
             <CodigosPanel token={token} />
           </div>
+        )}
+      </div>
+
+      {/* Uso de API por empresa — toggle */}
+      <div>
+        <button
+          onClick={() => setVerApiUsage(v => !v)}
+          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+        >
+          <Sparkles size={14} className="text-emerald-600"/>
+          Uso de IA por empresa
+          {verApiUsage ? <ChevronUp size={13} className="text-slate-400"/> : <ChevronDown size={13} className="text-slate-400"/>}
+        </button>
+        {verApiUsage && token && (
+          <ApiUsagePanel token={token} />
         )}
       </div>
 
