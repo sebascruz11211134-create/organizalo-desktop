@@ -14,9 +14,68 @@ import {
   Eye, EyeOff, AlertCircle, Loader2, ChevronDown, User,
   ArrowRight, CheckCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { login, register } from "../utils/auth";
 
 const STORE_USERS_KEY = "savedUsers";
+
+// ── Fortaleza de contraseña ───────────────────────────────────────────────────
+function passwordStrength(pwd) {
+  const reqs = [
+    { key: "len",     label: "Mínimo 8 caracteres",      ok: pwd.length >= 8 },
+    { key: "upper",   label: "Una mayúscula (A-Z)",       ok: /[A-Z]/.test(pwd) },
+    { key: "lower",   label: "Una minúscula (a-z)",       ok: /[a-z]/.test(pwd) },
+    { key: "num",     label: "Un número (0-9)",           ok: /[0-9]/.test(pwd) },
+    { key: "special", label: "Un carácter especial (!@#$%...)", ok: /[^A-Za-z0-9]/.test(pwd) },
+  ];
+  const score = reqs.filter(r => r.ok).length;
+  return { score, reqs };
+}
+
+function PasswordStrengthMeter({ password }) {
+  if (!password) return null;
+  const { score, reqs } = passwordStrength(password);
+  const levels = [
+    { min: 0, label: "Muy débil",  color: "bg-red-500" },
+    { min: 1, label: "Débil",      color: "bg-orange-500" },
+    { min: 2, label: "Regular",    color: "bg-yellow-400" },
+    { min: 3, label: "Buena",      color: "bg-lime-400" },
+    { min: 4, label: "Fuerte",     color: "bg-emerald-400" },
+    { min: 5, label: "Muy fuerte", color: "bg-emerald-400" },
+  ];
+  const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      {/* Barras */}
+      <div className="flex items-center gap-1">
+        {[1,2,3,4,5].map(i => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-200
+            ${score >= i ? level.color : "bg-white/15"}`} />
+        ))}
+        <span className={`text-[10px] font-semibold ml-1 whitespace-nowrap
+          ${score <= 1 ? "text-red-300" : score <= 2 ? "text-orange-300" : score <= 3 ? "text-yellow-300" : "text-emerald-300"}`}>
+          {level.label}
+        </span>
+      </div>
+      {/* Checklist de requisitos — solo si no es fuerte */}
+      {score < 5 && (
+        <ul className="space-y-0.5">
+          {reqs.map(r => (
+            <li key={r.key} className={`flex items-center gap-1 text-[10px] transition-colors
+              ${r.ok ? "text-emerald-300" : "text-white/40"}`}>
+              <span className={`w-2.5 h-2.5 rounded-full flex items-center justify-center shrink-0
+                ${r.ok ? "bg-emerald-400/30" : "bg-white/10"}`}>
+                {r.ok ? "✓" : "·"}
+              </span>
+              {r.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // ── Cubo isométrico (reutiliza el SVG del Sidebar) ───────────────────────────
 function CubeLogo({ size = 36 }) {
@@ -36,6 +95,7 @@ function CubeLogo({ size = 36 }) {
 
 // ── Dropdown de usuarios guardados ────────────────────────────────────────────
 function UserDropdown({ users, value, onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -59,7 +119,7 @@ function UserDropdown({ users, value, onChange }) {
           <User size={12} className="text-white" />
         </div>
         <span className="flex-1 text-left font-medium truncate">
-          {selected ? selected.nombre : value || "Seleccioná un usuario"}
+          {selected ? selected.nombre : value || t("login.selectUser")}
         </span>
         <ChevronDown size={14} className={`text-white/80 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
@@ -92,7 +152,7 @@ function UserDropdown({ users, value, onChange }) {
             onClick={() => { onChange("__custom__"); setOpen(false); }}
             className="w-full px-3 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors text-left"
           >
-            + Otra cuenta…
+            {t("login.otherAccount")}
           </button>
         </div>
       )}
@@ -101,7 +161,7 @@ function UserDropdown({ users, value, onChange }) {
 }
 
 // ── Campo de contraseña ───────────────────────────────────────────────────────
-function PasswordField({ value, onChange, placeholder = "Contraseña" }) {
+function PasswordField({ value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -130,6 +190,7 @@ function PasswordField({ value, onChange, placeholder = "Contraseña" }) {
 const SUPERADMIN_REG_EMAIL = "sebascruz11211134@gmail.com";
 
 function RegisterForm({ onSuccess, onBack }) {
+  const { t } = useTranslation();
   const [form, setForm]     = useState({ nombre: "", email: "", telefono: "", password: "", confirm: "", codigoAcceso: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState("");
@@ -141,11 +202,12 @@ function RegisterForm({ onSuccess, onBack }) {
 
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim())            e.nombre   = "Requerido";
-    if (!form.email.includes("@"))      e.email    = "Correo inválido";
-    if (form.password.length < 6)       e.password = "Mínimo 6 caracteres";
-    if (form.password !== form.confirm) e.confirm  = "No coinciden";
-    if (!esSuperAdmin && !form.codigoAcceso.trim()) e.codigoAcceso = "Requerido";
+    if (!form.nombre.trim())            e.nombre   = t("common.required");
+    if (!form.email.includes("@"))      e.email    = t("login.register.errorInvalidEmail");
+    const { score } = passwordStrength(form.password);
+    if (score < 5)                      e.password = "La contraseña no cumple todos los requisitos de seguridad";
+    if (form.password !== form.confirm) e.confirm  = t("login.register.errorPasswordMismatch");
+    if (!esSuperAdmin && !form.codigoAcceso.trim()) e.codigoAcceso = t("common.required");
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -165,7 +227,7 @@ function RegisterForm({ onSuccess, onBack }) {
       });
       onSuccess(data.user, data.token);
     } catch (err) {
-      setError(err.response?.data?.error || "No se pudo crear la cuenta.");
+      setError(err.response?.data?.error || t("login.register.errorCreate"));
     } finally {
       setLoading(false);
     }
@@ -187,25 +249,26 @@ function RegisterForm({ onSuccess, onBack }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      {field("Nombre completo", "nombre", { placeholder: "Tu nombre o el del negocio" })}
-      {field("Correo electrónico", "email", { type: "email", placeholder: "tu@empresa.com" })}
-      {field("Teléfono (opcional)", "telefono", { placeholder: "8888-8888" })}
+      {field(t("login.register.fullName"), "nombre", { placeholder: t("login.register.fullNamePlaceholder") })}
+      {field(t("common.email"), "email", { type: "email", placeholder: t("login.register.emailPlaceholder") })}
+      {field(t("login.register.phoneLabel"), "telefono", { placeholder: t("login.register.phonePlaceholder") })}
 
       <div>
-        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Contraseña</label>
-        <PasswordField value={form.password} onChange={u("password")} placeholder="Mínimo 6 caracteres" />
-        {errors.password && <p className="text-[11px] text-red-200 mt-0.5">{errors.password}</p>}
+        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">{t("login.passwordLabel")}</label>
+        <PasswordField value={form.password} onChange={u("password")} placeholder="Mín. 8 caracteres, mayúscula, número y símbolo" />
+        <PasswordStrengthMeter password={form.password} />
+        {errors.password && <p className="text-[11px] text-red-200 mt-1">{errors.password}</p>}
       </div>
 
       <div>
-        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Confirmar</label>
-        <PasswordField value={form.confirm} onChange={u("confirm")} placeholder="Repetí la contraseña" />
+        <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">{t("login.register.confirmLabel")}</label>
+        <PasswordField value={form.confirm} onChange={u("confirm")} placeholder={t("login.register.confirmPlaceholder")} />
         {errors.confirm && <p className="text-[11px] text-red-200 mt-0.5">{errors.confirm}</p>}
       </div>
 
       {!esSuperAdmin && (
         <div>
-          <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">Código de acceso</label>
+          <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1">{t("login.register.accessCodeLabel")}</label>
           <input
             type="text"
             value={form.codigoAcceso}
@@ -222,7 +285,7 @@ function RegisterForm({ onSuccess, onBack }) {
           />
           {errors.codigoAcceso
             ? <p className="text-[11px] text-red-200 mt-0.5">{errors.codigoAcceso}</p>
-            : <p className="text-[11px] text-white/65 mt-0.5">Solicitalo a Organízalo.AI al contratar.</p>}
+            : <p className="text-[11px] text-white/65 mt-0.5">{t("login.register.accessCodeHint")}</p>}
         </div>
       )}
 
@@ -237,11 +300,11 @@ function RegisterForm({ onSuccess, onBack }) {
         disabled={loading}
         className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
       >
-        {loading ? <><Loader2 size={15} className="animate-spin" /> Creando cuenta…</> : <><ArrowRight size={15} /> Crear cuenta</>}
+        {loading ? <><Loader2 size={15} className="animate-spin" /> {t("login.register.creating")}</> : <><ArrowRight size={15} /> {t("login.register.submit")}</>}
       </button>
 
       <button type="button" onClick={onBack} className="w-full text-xs text-white/50 hover:text-white transition-colors py-1">
-        ← Volver al login
+        {t("login.register.back")}
       </button>
     </form>
   );
@@ -249,6 +312,7 @@ function RegisterForm({ onSuccess, onBack }) {
 
 // ── Pantalla principal ────────────────────────────────────────────────────────
 export default function LoginScreen({ onLogin }) {
+  const { t, i18n } = useTranslation();
   const [mode, setMode]         = useState("login"); // "login" | "register"
   const [savedUsers, setSavedUsers] = useState([]);
   const [identifier, setIdentifier] = useState(""); // email o username seleccionado
@@ -276,7 +340,7 @@ export default function LoginScreen({ onLogin }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     const id = effectiveId.trim();
-    if (!id || !password) return setError("Completá usuario y contraseña.");
+    if (!id || !password) return setError(t("login.errorRequired"));
     setLoading(true);
     setError("");
     try {
@@ -297,7 +361,7 @@ export default function LoginScreen({ onLogin }) {
       }
       onLogin?.(data.user, data.token);
     } catch (err) {
-      setError(err.response?.data?.error || "No se pudo conectar al servidor.");
+      setError(err.response?.data?.error || t("login.errorServer"));
     } finally {
       setLoading(false);
     }
@@ -341,7 +405,7 @@ export default function LoginScreen({ onLogin }) {
             <span className="text-[22px] font-bold text-white tracking-tight leading-none">Organízalo</span>
             <span className="text-[14px] font-bold leading-none text-white/90">.AI</span>
           </div>
-          <p className="text-[11px] text-white/80 mt-1 tracking-wide">Sistema de gestión empresarial</p>
+          <p className="text-[11px] text-white/80 mt-1 tracking-wide">{t("login.tagline")}</p>
         </div>
 
         {/* Separador */}
@@ -353,7 +417,7 @@ export default function LoginScreen({ onLogin }) {
             <form onSubmit={handleLogin} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1.5">
-                  Usuario o correo
+                  {t("login.userLabel")}
                 </label>
 
                 {/* Dropdown si hay usuarios guardados, o input de texto si no */}
@@ -369,7 +433,7 @@ export default function LoginScreen({ onLogin }) {
                         type="text"
                         value={customId}
                         onChange={e => setCustomId(e.target.value)}
-                        placeholder="usuario o correo@empresa.com"
+                        placeholder={t("login.userPlaceholder")}
                         autoFocus
                         className="mt-2 w-full px-3 py-2.5 rounded-xl border border-white/20 bg-white/10
                           text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2
@@ -382,7 +446,7 @@ export default function LoginScreen({ onLogin }) {
                     type="text"
                     value={customId}
                     onChange={e => { setCustomId(e.target.value); setError(""); }}
-                    placeholder="usuario o correo@empresa.com"
+                    placeholder={t("login.userPlaceholder")}
                     autoComplete="username"
                     className="w-full px-3 py-2.5 rounded-xl border border-white/20 bg-white/10
                       text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2
@@ -393,11 +457,12 @@ export default function LoginScreen({ onLogin }) {
 
               <div>
                 <label className="block text-[11px] font-semibold text-white/90 uppercase tracking-wide mb-1.5">
-                  Contraseña
+                  {t("login.passwordLabel")}
                 </label>
                 <PasswordField
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError(""); }}
+                  placeholder={t("login.passwordPlaceholder")}
                 />
               </div>
 
@@ -413,8 +478,8 @@ export default function LoginScreen({ onLogin }) {
                 className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
               >
                 {loading
-                  ? <><Loader2 size={15} className="animate-spin" /> Iniciando…</>
-                  : <><ArrowRight size={15} /> Ingresar</>}
+                  ? <><Loader2 size={15} className="animate-spin" /> {t("login.signingIn")}</>
+                  : <><ArrowRight size={15} /> {t("login.signIn")}</>}
               </button>
 
               {/* Links secundarios */}
@@ -424,7 +489,7 @@ export default function LoginScreen({ onLogin }) {
                   onClick={() => setMode("register")}
                   className="text-xs text-white/80 hover:text-white transition-colors"
                 >
-                  ¿Primera vez? Crear una cuenta
+                  {t("login.createAccount")}
                 </button>
               </div>
             </form>
@@ -438,9 +503,24 @@ export default function LoginScreen({ onLogin }) {
       </div>
 
       {/* Footer */}
-      <p className="relative z-10 no-drag text-center text-[10px] text-white/55 pb-3 shrink-0">
-        Organízalo.AI · Costa Rica · v1.0
-      </p>
+      <div className="relative z-10 no-drag flex items-center justify-center gap-3 pb-3 shrink-0">
+        <p className="text-[10px] text-white/55">Organízalo.AI · Costa Rica · v1.0</p>
+        <div className="flex items-center gap-1 text-[10px] font-semibold">
+          <button
+            onClick={() => i18n.changeLanguage("es")}
+            className={`px-1.5 py-0.5 rounded transition-colors ${i18n.language === "es" ? "text-white bg-white/20" : "text-white/45 hover:text-white"}`}
+          >
+            ES
+          </button>
+          <span className="text-white/25">|</span>
+          <button
+            onClick={() => i18n.changeLanguage("en")}
+            className={`px-1.5 py-0.5 rounded transition-colors ${i18n.language === "en" ? "text-white bg-white/20" : "text-white/45 hover:text-white"}`}
+          >
+            EN
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
