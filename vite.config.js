@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "./",
+  base: "/",       // Web: rutas absolutas (no "./")
   build: {
     outDir: "dist",
     emptyOutDir: true,
@@ -13,22 +13,15 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "https://31.97.141.124",
-        changeOrigin: true,
+        target: "http://localhost:3001",
+        changeOrigin: false,
         secure: false,
-        followRedirects: true,
-        headers: {
-          // nginx en 443 tiene server_name api.organizalo.ai — sin este header devuelve 404
-          host: "api.organizalo.ai",
-        },
       },
       "/socket.io": {
-        target: "https://31.97.141.124",
-        changeOrigin: true,
+        target: "http://localhost:3001",
+        changeOrigin: false,
         secure: false,
-        followRedirects: true,
         ws: true,
-        headers: { host: "api.organizalo.ai" },
       },
     },
   },

@@ -304,6 +304,8 @@ export default function LoginScreen({ onLogin }) {
 
   const handleGuest = () => {
     const trialEnds = new Date(Date.now() + 7 * 86400_000).toISOString();
+    // Expandir ventana igual que en login exitoso
+    if (isElectron) window.electronAPI.window?.loginSuccess?.();
     onLogin?.({ id: "guest", nombre: "Usuario Demo", email: "", plan: "trial", trialEnds }, null);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode } from "lucide-react";
+import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode, Bell } from "lucide-react";
 import db from "../utils/db";
 import { pushSync, pullSync } from "../utils/sync";
 import { getToken } from "../utils/auth";
@@ -20,6 +20,11 @@ export default function ConfiguracionScreen() {
   const [waTelTest,    setWaTelTest]    = useState("64693392");
   const [waSending,    setWaSending]    = useState(false);
 
+  // ── Notificaciones ntfy ───────────────────────────────────────────────────
+  const [ntfyConfig,    setNtfyConfig]   = useState(null);   // { topic, url, instrucciones }
+  const [ntfyLoading,   setNtfyLoading]  = useState(false);
+  const [ntfyMsg,       setNtfyMsg]      = useState(null);   // { type, text }
+
   // ── Certificado BCCR ──────────────────────────────────────────────────────
   const fileInputRef = useRef(null);
   const [certStatus,    setCertStatus]    = useState(null);  // null | { configured, cedula, nombre, subidoEn }
@@ -34,6 +39,7 @@ export default function ConfiguracionScreen() {
     db.getSettings().then((st) => setS((prev) => ({ ...prev, ...st })));
     cargarCertStatus();
     cargarWaEstado();
+    cargarNtfyConfig();
   }, []);
 
   // ── WhatsApp helpers ──────────────────────────────────────────────────────
@@ -50,26 +56,45 @@ export default function ConfiguracionScreen() {
 
   async function cargarQR() {
     setWaLoading(true); setWaMsg(null); setWaQR(null);
-    try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/whatsapp/qr`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.yaConectado) {
-        setWaMsg({ type: "ok", text: "WhatsApp ya está conectado ✓" });
-        setWaEstado("open");
-      } else if (data.qr?.base64) {
-        setWaQR(data.qr.base64);
-      } else if (data.qr?.code) {
-        setWaQR(null);
-        setWaMsg({ type: "info", text: "Escaneá el código: " + data.qr.code });
-      } else {
-        setWaMsg({ type: "err", text: "No se pudo obtener el QR. Verificá que Evolution API esté corriendo." });
+    const token = await getToken();
+    const deadline = Date.now() + 60000; // polling hasta 60s
+
+    const poll = async () => {
+      try {
+        const res  = await fetch(`${BACKEND}/api/whatsapp/qr`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.yaConectado || data.estado === "open") {
+          setWaMsg({ type: "ok", text: "WhatsApp ya está conectado ✓" });
+          setWaEstado("open");
+          setWaLoading(false);
+        } else if (data.qr?.base64) {
+          setWaQR({ tipo: "base64", src: `data:image/png;base64,${data.qr.base64}` });
+          setWaLoading(false);
+        } else if (data.qr?.base64url) {
+          setWaQR({ tipo: "url", src: data.qr.base64url });
+          setWaLoading(false);
+        } else if (data.conectando || data.estado === "connecting") {
+          // Aún iniciando — reintentar en 3s
+          if (Date.now() < deadline) {
+            setTimeout(poll, 3000);
+          } else {
+            setWaMsg({ type: "err", text: "Tiempo agotado esperando el QR. Intentá de nuevo." });
+            setWaLoading(false);
+          }
+        } else {
+          setWaMsg({ type: "err", text: data.error || "No se pudo obtener el QR." });
+          setWaLoading(false);
+        }
+      } catch (e) {
+        setWaMsg({ type: "err", text: "No se pudo conectar al backend." });
+        setWaLoading(false);
       }
-    } catch (e) {
-      setWaMsg({ type: "err", text: e.message });
-    } finally { setWaLoading(false); }
+    };
+
+    poll();
   }
 
   async function reconectarWA() {
@@ -193,6 +218,32 @@ export default function ConfiguracionScreen() {
         className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
     </div>
   );
+
+  // ── ntfy helpers ─────────────────────────────────────────────────────────
+  async function cargarNtfyConfig() {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/ntfy/config`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setNtfyConfig(await res.json());
+    } catch {}
+  }
+
+  async function enviarNotifPrueba() {
+    setNtfyLoading(true); setNtfyMsg(null);
+    try {
+      const token = await getToken();
+      await fetch(`${BACKEND}/api/ntfy/test`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNtfyMsg({ type: "ok", text: "¡Notificación de prueba enviada! Revisá la app ntfy." });
+    } catch {
+      setNtfyMsg({ type: "err", text: "No se pudo enviar la prueba." });
+    }
+    setNtfyLoading(false);
+  }
 
   return (
     <div className="p-6 max-w-2xl fade-in">
@@ -332,7 +383,7 @@ export default function ConfiguracionScreen() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <MessageCircle size={16} className="text-green-600" />
-            <h2 className="text-base font-bold text-slate-900">WhatsApp — Evolution API</h2>
+            <h2 className="text-base font-bold text-slate-900">WhatsApp Business</h2>
           </div>
           {/* Estado badge */}
           <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
@@ -378,7 +429,7 @@ export default function ConfiguracionScreen() {
           <div className="mb-5 flex flex-col items-center gap-3 p-5 border-2 border-dashed border-green-300 rounded-xl bg-green-50">
             <p className="text-sm font-semibold text-green-800">Abrí WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo</p>
             <img
-              src={`data:image/png;base64,${waQR}`}
+              src={waQR.src}
               alt="QR WhatsApp"
               className="w-52 h-52 rounded-lg border-4 border-white shadow-md"
             />
@@ -440,6 +491,69 @@ export default function ConfiguracionScreen() {
         <p className="text-xs text-slate-400 mt-4">
           Backend: https://organizalo-backend-production.up.railway.app
         </p>
+      </div>
+
+      {/* ── Notificaciones Push (ntfy) ─────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Bell size={16} className="text-violet-600" />
+          <h2 className="text-base font-bold text-slate-900">Notificaciones Push</h2>
+        </div>
+        <p className="text-xs text-slate-500 mb-4">
+          Recibí alertas en tu teléfono aunque el navegador esté cerrado: cobros vencidos,
+          WhatsApp desconectado, y más. Gratis, sin registrarte en ningún servicio.
+        </p>
+
+        {ntfyConfig ? (
+          <div className="space-y-4">
+            {/* Instrucciones */}
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
+              <p className="text-xs font-bold text-violet-800 mb-2">Cómo configurarlo:</p>
+              <ol className="text-xs text-violet-700 space-y-1">
+                <li>1. Instalá la app <strong>ntfy</strong> en tu teléfono (iOS o Android, es gratis)</li>
+                <li>2. Abrí la app → toca "+" → pegá este topic:</li>
+                <li className="ml-3">
+                  <code className="bg-violet-100 px-2 py-0.5 rounded font-mono text-violet-900 select-all">
+                    {ntfyConfig.topic}
+                  </code>
+                </li>
+                <li>3. Listo — vas a recibir alertas de Organízalo.AI</li>
+              </ol>
+            </div>
+
+            {/* URL copiable */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">URL del topic</label>
+              <div className="flex gap-2">
+                <input readOnly value={ntfyConfig.url}
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono text-slate-600 bg-gray-50" />
+                <button onClick={() => navigator.clipboard?.writeText(ntfyConfig.url)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-xs text-slate-600 hover:bg-gray-50">
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            {/* Botón de prueba */}
+            <button onClick={enviarNotifPrueba} disabled={ntfyLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
+              <Bell size={13} /> {ntfyLoading ? "Enviando…" : "Enviar notificación de prueba"}
+            </button>
+
+            {ntfyMsg && (
+              <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
+                ${ntfyMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                {ntfyMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                {ntfyMsg.text}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button onClick={cargarNtfyConfig}
+            className="text-sm text-violet-600 hover:underline">
+            Cargar configuración de notificaciones
+          </button>
+        )}
       </div>
     </div>
   );

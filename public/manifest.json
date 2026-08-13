@@ -1,12 +1,12 @@
 {
   "name": "Organízalo.AI",
   "short_name": "Organízalo",
-  "description": "Sistema contable para pymes de Costa Rica",
+  "description": "Sistema de gestión empresarial para pymes costarricenses",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#059669",
-  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "landscape-primary",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -21,7 +21,19 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "categories": ["business", "finance", "productivity"],
-  "lang": "es-CR"
+  "lang": "es-CR",
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Facturación",
+      "url": "/facturacion",
+      "description": "Emitir facturas electrónicas"
+    },
+    {
+      "name": "Dashboard",
+      "url": "/",
+      "description": "Panel principal"
+    }
+  ]
 }

@@ -7,7 +7,7 @@ import * as XLSX from "xlsx";
 import {
   FileSpreadsheet, Download, Upload, CheckCircle, AlertTriangle,
   X, ChevronRight, Loader2, Globe, ArrowRight, RefreshCw,
-  Users, Package, DollarSign, Receipt,
+  Users, Package, DollarSign, Receipt, Trash2,
 } from "lucide-react";
 import db from "../utils/db";
 import { genId, hoy } from "../utils/fmt";
@@ -28,24 +28,27 @@ const MODULOS = [
       { "nombre*": "Juan Pérez Rodríguez",    cedula: "1-0987-0654",  "tipo (Física/Jurídica)": "Física",   telefono: "8888-9999", correo: "juan@gmail.com",   direccion: "Heredia",          notas: "Cliente VIP" },
     ],
     mapear: (row) => ({
-      id:        genId(),
-      nombre:    row["nombre*"] || row["nombre"] || "",
-      cedula:    row["cedula"] || "",
-      tipo:      row["tipo (Física/Jurídica)"] || row["tipo"] || "Física",
-      telefono:  row["telefono"] || "",
-      correo:    row["correo"] || "",
-      direccion: row["direccion"] || "",
-      notas:     row["notas"] || "",
-      creadoEn:  new Date().toISOString(),
+      id:             genId(),
+      nombre:         row["nombre*"] || row["nombre"] || row["NOMBRE CLIENTE"] || row["RAZON SOCIAL"] || row["Nombre"] || "",
+      cedula:         row["cedula"] || row["CÉDULA JURÍDICA"] || row["CEDULA JURIDICA"] || row["Cedula"] || row["cédula jurídica"] || "",
+      tipo:           row["tipo (Física/Jurídica)"] || row["tipo"] || "Física",
+      tel:            row["tel"] || row["telefono"] || row["TELEFONO 1"] || row["TELEFONO"] || row["Teléfono"] || "",
+      email:          row["email"] || row["correo"] || row["CORREO ELECTRONICO"] || row["CORREO"] || row["Email"] || "",
+      direccion:      row["direccion"] || row["DIRECCION 1"] || row["DIRECCION"] || row["Dirección"] || "",
+      notas:          row["notas"] || row["OBSERVACION 1"] || row["OBSERVACION"] || row["Observación"] || "",
+      codigoCliente:  row["codigoCliente"] || row["codigo"] || row["CLIENTE"] || row["Código"] || "",
+      creadoEn:       new Date().toISOString(),
     }),
-    validar: (r) => !r.nombre ? "Nombre requerido" : null,
+    validar: (r) => !r.nombre || r.nombre.toUpperCase() === "ESTIMADO CLIENTE" ? "Nombre requerido" : null,
     guardar: async (items) => {
+      const validos  = items.filter((x) => x.nombre?.toUpperCase() !== "ESTIMADO CLIENTE");
       const existing = await db.getContactos();
-      const nombres = new Set(existing.map((x) => x.nombre?.toLowerCase()));
-      const nuevos  = items.filter((x) => !nombres.has(x.nombre?.toLowerCase()));
+      const nombres  = new Set(existing.map((x) => x.nombre?.toLowerCase()));
+      const nuevos   = validos.filter((x) => !nombres.has(x.nombre?.toLowerCase()));
       await db.setContactos([...existing, ...nuevos]);
       return { total: items.length, nuevos: nuevos.length, duplicados: items.length - nuevos.length };
     },
+    limpiar: async () => { await db.setContactos([]); },
   },
   {
     id: "productos",
@@ -79,6 +82,7 @@ const MODULOS = [
       await db.setProductos([...existing, ...nuevos]);
       return { total: items.length, nuevos: nuevos.length, duplicados: items.length - nuevos.length };
     },
+    limpiar: async () => { await db.setProductos([]); },
   },
   {
     id: "cxc",
@@ -107,6 +111,7 @@ const MODULOS = [
       await db.setDebts([...existing, ...items]);
       return { total: items.length, nuevos: items.length, duplicados: 0 };
     },
+    limpiar: async () => { await db.setDebts([]); },
   },
   {
     id: "recibos",
@@ -138,6 +143,7 @@ const MODULOS = [
       await db.setRecibos([...existing, ...conNumero]);
       return { total: items.length, nuevos: items.length, duplicados: 0 };
     },
+    limpiar: async () => { await db.setRecibos([]); },
   },
 ];
 
@@ -160,7 +166,27 @@ function leerExcel(file) {
       try {
         const wb   = XLSX.read(e.target.result, { type: "array" });
         const ws   = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+        // Leer todas las filas como arrays para detectar la fila de encabezados real
+        const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+        // Encontrar la fila de encabezados: primera fila con ≥3 celdas no vacías
+        let headerIdx = 0;
+        for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
+          const nonEmpty = rawRows[i].filter(c => c && String(c).trim() !== "").length;
+          if (nonEmpty >= 3) { headerIdx = i; break; }
+        }
+
+        const headers = rawRows[headerIdx].map(h => String(h).trim());
+        const dataRows = rawRows.slice(headerIdx + 1).filter(r =>
+          r.some(c => c && String(c).trim() !== "")
+        );
+
+        const rows = dataRows.map(row => {
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+          return obj;
+        });
+
         resolve(rows);
       } catch (err) { reject(err); }
     };
@@ -172,11 +198,12 @@ function leerExcel(file) {
 // ── Componente ImportarExcel ────────────────────────────────────────────────
 
 function ImportarExcel() {
-  const [moduloId, setModuloId] = useState("clientes");
-  const [filas,    setFilas]    = useState(null);   // null | []
-  const [errors,   setErrors]   = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const [resultado,setResultado]= useState(null);
+  const [moduloId,   setModuloId]   = useState("clientes");
+  const [filas,      setFilas]      = useState(null);
+  const [errors,     setErrors]     = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [resultado,  setResultado]  = useState(null);
+  const [limpiando,  setLimpiando]  = useState(false);
   const inputRef = useRef();
 
   const modulo = MODULOS.find((m) => m.id === moduloId);
@@ -186,6 +213,19 @@ function ImportarExcel() {
     setFilas(null);
     setErrors([]);
     setResultado(null);
+  };
+
+  const limpiarTodo = async () => {
+    if (!modulo.limpiar) return;
+    if (!window.confirm(`¿Borrar TODOS los ${modulo.label.toLowerCase()} guardados? Esto no se puede deshacer.`)) return;
+    setLimpiando(true);
+    try {
+      await modulo.limpiar();
+      setResultado({ _limpiado: true });
+      setFilas(null);
+      setErrors([]);
+    } catch (err) { alert("Error al limpiar: " + err.message); }
+    setLimpiando(false);
   };
 
   const onFileChange = useCallback(async (e) => {
@@ -244,12 +284,24 @@ function ImportarExcel() {
             <h3 className="font-semibold text-slate-900 text-base mb-1">{modulo.label}</h3>
             <p className="text-sm text-slate-500 max-w-lg">{modulo.desc}</p>
           </div>
-          <button
-            onClick={() => descargarPlantilla(modulo)}
-            className="flex items-center gap-2 shrink-0 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
-          >
-            <Download size={14} /> Descargar plantilla
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => descargarPlantilla(modulo)}
+              className="flex items-center gap-2 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+            >
+              <Download size={14} /> Descargar plantilla
+            </button>
+            {modulo.limpiar && (
+              <button
+                onClick={limpiarTodo}
+                disabled={limpiando}
+                className="flex items-center gap-2 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                {limpiando ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Limpiar todo
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Columnas */}
@@ -353,16 +405,27 @@ function ImportarExcel() {
 
       {/* Resultado */}
       {resultado && (
-        <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-xl p-5">
-          <CheckCircle size={24} className="text-green-600 shrink-0" />
+        <div className={`flex items-center gap-4 rounded-xl p-5 ${resultado._limpiado ? "bg-red-50 border border-red-200" : "bg-green-50 border border-green-200"}`}>
+          {resultado._limpiado
+            ? <Trash2 size={24} className="text-red-500 shrink-0" />
+            : <CheckCircle size={24} className="text-green-600 shrink-0" />}
           <div>
-            <p className="font-semibold text-green-900">¡Importación exitosa!</p>
-            <p className="text-sm text-green-700 mt-0.5">
-              {resultado.nuevos} {modulo.label.toLowerCase()} importados.
-              {resultado.duplicados > 0 && ` ${resultado.duplicados} omitidos (ya existían).`}
-            </p>
+            {resultado._limpiado ? (
+              <>
+                <p className="font-semibold text-red-900">Datos eliminados</p>
+                <p className="text-sm text-red-700 mt-0.5">Todos los {modulo.label.toLowerCase()} fueron borrados.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-green-900">¡Importación exitosa!</p>
+                <p className="text-sm text-green-700 mt-0.5">
+                  {resultado.nuevos} {modulo.label.toLowerCase()} importados.
+                  {resultado.duplicados > 0 && ` ${resultado.duplicados} omitidos (ya existían).`}
+                </p>
+              </>
+            )}
           </div>
-          <button onClick={() => setResultado(null)} className="ml-auto text-green-500 hover:text-green-700">
+          <button onClick={() => setResultado(null)} className="ml-auto text-slate-400 hover:text-slate-700">
             <X size={16} />
           </button>
         </div>

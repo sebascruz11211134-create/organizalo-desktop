@@ -45,14 +45,37 @@ function fmt(num, moneda = "CRC") {
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 
-// ── Imprimir HTML vía Electron ────────────────────────────────────────────────
+// ── Imprimir HTML (Electron o browser nativo) ─────────────────────────────────
 export async function printHTML(html) {
-  return window.electronAPI.print.html(html);
+  if (window.electronAPI?.print?.html) {
+    return window.electronAPI.print.html(html);
+  }
+  // Fallback web: abrir ventana y disparar window.print()
+  const win = window.open("", "_blank", "width=900,height=700");
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
 }
 
-// ── Exportar Excel vía Electron ───────────────────────────────────────────────
+// ── Exportar Excel (Electron o SheetJS en browser) ───────────────────────────
 export async function exportExcel(sheets, nombre) {
-  return window.electronAPI.excel.export(sheets, nombre);
+  if (window.electronAPI?.excel?.export) {
+    return window.electronAPI.excel.export(sheets, nombre);
+  }
+  // Fallback web: generar XLSX con SheetJS (importado dinámicamente)
+  try {
+    const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
+    const wb   = XLSX.utils.book_new();
+    for (const sheet of sheets) {
+      const ws = XLSX.utils.aoa_to_sheet([sheet.columnas, ...sheet.filas]);
+      XLSX.utils.book_append_sheet(wb, ws, sheet.nombre.slice(0, 31));
+    }
+    XLSX.writeFile(wb, `${nombre || "reporte"}.xlsx`);
+  } catch (e) {
+    console.error("Error exportando Excel:", e);
+    alert("No se pudo exportar Excel. Intentá desde la app de escritorio.");
+  }
 }
 
 // ── HTML por tipo de reporte ──────────────────────────────────────────────────
