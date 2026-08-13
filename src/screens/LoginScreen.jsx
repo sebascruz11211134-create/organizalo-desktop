@@ -420,13 +420,6 @@ export default function LoginScreen({ onLogin }) {
                 >
                   ¿Primera vez? Crear una cuenta
                 </button>
-                <button
-                  type="button"
-                  onClick={handleGuest}
-                  className="text-[11px] text-white/55 hover:text-white/80 transition-colors"
-                >
-                  Explorar sin cuenta →
-                </button>
               </div>
             </form>
           ) : (
