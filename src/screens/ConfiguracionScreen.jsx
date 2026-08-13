@@ -21,9 +21,11 @@ export default function ConfiguracionScreen() {
   const [waSending,    setWaSending]    = useState(false);
 
   // ── Notificaciones ntfy ───────────────────────────────────────────────────
-  const [ntfyConfig,    setNtfyConfig]   = useState(null);   // { topic, url, instrucciones }
+  const [ntfyConfig,    setNtfyConfig]   = useState(null);   // { topic, url } — topic personal
   const [ntfyLoading,   setNtfyLoading]  = useState(false);
   const [ntfyMsg,       setNtfyMsg]      = useState(null);   // { type, text }
+  const [ntfyPrefs,     setNtfyPrefs]    = useState(null);   // { prefs: {tipo:bool}, tipos: [{id,label,icon}] }
+  const [ntfySaving,    setNtfySaving]   = useState(false);
 
   // ── Certificado BCCR ──────────────────────────────────────────────────────
   const fileInputRef = useRef(null);
@@ -45,7 +47,8 @@ export default function ConfiguracionScreen() {
     db.getSettings().then((st) => setS((prev) => ({ ...prev, ...st })));
     cargarCertStatus();
     cargarWaEstado();
-    cargarNtfyConfig();
+    cargarNtfyUserConfig();
+    cargarNtfyPrefs();
   }, []);
 
   // ── WhatsApp helpers ──────────────────────────────────────────────────────
@@ -253,29 +256,65 @@ export default function ConfiguracionScreen() {
   );
 
   // ── ntfy helpers ─────────────────────────────────────────────────────────
-  async function cargarNtfyConfig() {
+  async function cargarNtfyUserConfig() {
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/ntfy/config`, {
+      const res = await fetch(`${BACKEND}/api/ntfy/user-config`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) setNtfyConfig(await res.json());
     } catch {}
   }
 
+  async function cargarNtfyPrefs() {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/ntfy/prefs`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) setNtfyPrefs(await res.json());
+    } catch {}
+  }
+
+  async function guardarNtfyPrefs(nuevasPrefs) {
+    setNtfySaving(true); setNtfyMsg(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/ntfy/prefs`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ prefs: nuevasPrefs }),
+      });
+      if (res.ok) {
+        setNtfyPrefs(p => ({ ...p, prefs: nuevasPrefs }));
+        setNtfyMsg({ type: "ok", text: "Preferencias guardadas" });
+        setTimeout(() => setNtfyMsg(null), 2500);
+      }
+    } catch {
+      setNtfyMsg({ type: "err", text: "No se pudieron guardar las preferencias." });
+    }
+    setNtfySaving(false);
+  }
+
   async function enviarNotifPrueba() {
     setNtfyLoading(true); setNtfyMsg(null);
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/ntfy/test`, {
+      await fetch(`${BACKEND}/api/ntfy/test-user`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
-      setNtfyMsg({ type: "ok", text: "¡Notificación de prueba enviada! Revisá la app ntfy." });
+      setNtfyMsg({ type: "ok", text: "¡Notificación enviada a tu topic personal! Revisá la app ntfy." });
     } catch {
       setNtfyMsg({ type: "err", text: "No se pudo enviar la prueba." });
     }
     setNtfyLoading(false);
+  }
+
+  function togglePref(tipo) {
+    if (!ntfyPrefs) return;
+    const nuevas = { ...ntfyPrefs.prefs, [tipo]: !ntfyPrefs.prefs[tipo] };
+    guardarNtfyPrefs(nuevas);
   }
 
   return (
@@ -592,46 +631,58 @@ export default function ConfiguracionScreen() {
           <h2 className="text-base font-bold text-slate-900">Notificaciones Push</h2>
         </div>
         <p className="text-xs text-slate-500 mb-4">
-          Recibí alertas en tu teléfono aunque el navegador esté cerrado: cobros vencidos,
-          WhatsApp desconectado, y más. Gratis, sin registrarte en ningún servicio.
+          Cada usuario tiene su propio canal privado en ntfy. Solo vos recibís tus notificaciones —
+          nadie más en la empresa las ve. Configurá cuáles querés recibir.
         </p>
 
-        {ntfyConfig ? (
+        {ntfyConfig && (
           <div className="space-y-4">
-            {/* Instrucciones */}
+            {/* Topic personal */}
             <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
-              <p className="text-xs font-bold text-violet-800 mb-2">Cómo configurarlo:</p>
-              <ol className="text-xs text-violet-700 space-y-1">
-                <li>1. Instalá la app <strong>ntfy</strong> en tu teléfono (iOS o Android, es gratis)</li>
-                <li>2. Abrí la app → toca "+" → pegá este topic:</li>
-                <li className="ml-3">
-                  <code className="bg-violet-100 px-2 py-0.5 rounded font-mono text-violet-900 select-all">
-                    {ntfyConfig.topic}
-                  </code>
-                </li>
-                <li>3. Listo — vas a recibir alertas de Organízalo.AI</li>
+              <p className="text-xs font-bold text-violet-800 mb-2">Tu canal personal:</p>
+              <ol className="text-xs text-violet-700 space-y-1 mb-3">
+                <li>1. Instalá <strong>ntfy</strong> en tu teléfono (iOS o Android, gratis)</li>
+                <li>2. Abrí la app → tocá "+" → pegá este topic:</li>
               </ol>
-            </div>
-
-            {/* URL copiable */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">URL del topic</label>
               <div className="flex gap-2">
-                <input readOnly value={ntfyConfig.url}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono text-slate-600 bg-gray-50" />
-                <button onClick={() => navigator.clipboard?.writeText(ntfyConfig.url)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-xs text-slate-600 hover:bg-gray-50">
+                <input readOnly value={ntfyConfig.topic}
+                  className="flex-1 px-2 py-1.5 border border-violet-200 rounded-lg text-xs font-mono text-violet-900 bg-white" />
+                <button onClick={() => navigator.clipboard?.writeText(ntfyConfig.topic)}
+                  className="px-3 py-1.5 border border-violet-200 rounded-lg text-xs text-violet-700 hover:bg-violet-100">
                   Copiar
                 </button>
               </div>
             </div>
 
-            {/* Botón de prueba */}
-            <button onClick={enviarNotifPrueba} disabled={ntfyLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
-              <Bell size={13} /> {ntfyLoading ? "Enviando…" : "Enviar notificación de prueba"}
-            </button>
+            {/* Preferencias por tipo */}
+            {ntfyPrefs && (
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase mb-2">Qué querés recibir</p>
+                <div className="space-y-1">
+                  {ntfyPrefs.tipos.map(tipo => (
+                    <button
+                      key={tipo.id}
+                      onClick={() => togglePref(tipo.id)}
+                      disabled={ntfySaving}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left
+                        ${ntfyPrefs.prefs[tipo.id]
+                          ? "bg-violet-50 border-violet-200 text-violet-800"
+                          : "bg-gray-50 border-gray-200 text-slate-400"}`}
+                    >
+                      <span className="text-base leading-none">{tipo.icon}</span>
+                      <span className="flex-1 font-medium">{tipo.label}</span>
+                      <span className={`w-8 h-4 rounded-full relative transition-colors shrink-0
+                        ${ntfyPrefs.prefs[tipo.id] ? "bg-violet-500" : "bg-gray-300"}`}>
+                        <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all
+                          ${ntfyPrefs.prefs[tipo.id] ? "left-4" : "left-0.5"}`} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {/* Mensaje */}
             {ntfyMsg && (
               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
                 ${ntfyMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
@@ -639,9 +690,17 @@ export default function ConfiguracionScreen() {
                 {ntfyMsg.text}
               </div>
             )}
+
+            {/* Botón de prueba */}
+            <button onClick={enviarNotifPrueba} disabled={ntfyLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
+              <Bell size={13} /> {ntfyLoading ? "Enviando…" : "Enviar notificación de prueba"}
+            </button>
           </div>
-        ) : (
-          <button onClick={cargarNtfyConfig}
+        )}
+
+        {!ntfyConfig && (
+          <button onClick={cargarNtfyUserConfig}
             className="text-sm text-violet-600 hover:underline">
             Cargar configuración de notificaciones
           </button>
