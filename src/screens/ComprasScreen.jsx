@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, ShoppingCart } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
-import { crearCXP } from "../utils/clienteUtils";
+import { crearCXP, aumentarInventario } from "../utils/clienteUtils";
 
 const CATEGORIAS = ["Mercadería","Materia prima","Servicios","Equipo","Suministros","Alquiler","Publicidad","Transporte","Otro"];
 const MEDIOS = ["Efectivo","Transferencia","SINPE Móvil","Tarjeta","Cheque","Crédito proveedor"];
@@ -22,7 +22,7 @@ function Badge({ estado }) {
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.cls}`}>{e.label}</span>;
 }
 
-function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
+function FormCompra({ compra, contactos, productos, onGuardar, onCancelar }) {
   const [proveedor,  setProveedor]  = useState(compra?.proveedor || "");
   const [numFactura, setNumFactura] = useState(compra?.numFactura || "");
   const [fecha,      setFecha]      = useState(compra?.fecha || hoy());
@@ -35,8 +35,16 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
   const [notas,      setNotas]      = useState(compra?.notas || "");
   const [busq,       setBusq]       = useState(compra?.proveedor || "");
   const [showProv,   setShowProv]   = useState(false);
-  // Guardar días de crédito del proveedor seleccionado
   const [diasProvee, setDiasProvee] = useState(0);
+  // Líneas de productos recibidos (solo Mercadería/Materia prima)
+  const [lineas,     setLineas]     = useState(compra?.lineas || []);
+  const [busqProd,   setBusqProd]   = useState("");
+  const [showProds,  setShowProds]  = useState(false);
+
+  const INVENTARIABLE = ["Mercadería", "Materia prima"];
+  const prodsFiltrados = (productos||[]).filter(p =>
+    p.nombre?.toLowerCase().includes(busqProd.toLowerCase())
+  ).slice(0, 6);
 
   const base      = parseFloat(montoBase) || 0;
   const montoIVA  = (base * pctIVA) / 100;
@@ -64,11 +72,22 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
     }
   };
 
+  const agregarLinea = (p) => {
+    const ya = lineas.find(l => l.productoId === p.id);
+    if (ya) {
+      setLineas(lineas.map(l => l.productoId === p.id ? { ...l, cantidad: (parseFloat(l.cantidad)||0) + 1 } : l));
+    } else {
+      setLineas([...lineas, { productoId: p.id, descripcion: p.nombre, cantidad: 1 }]);
+    }
+    setBusqProd(""); setShowProds(false);
+  };
+
   const guardar = () => {
     onGuardar({
       id: compra?.id || genId(),
       proveedor, numFactura, fecha, fechaVence, categoria, medio, estado,
       montoBase: base, pctIVA, montoIVA, total, notas,
+      lineas: INVENTARIABLE.includes(categoria) ? lineas : [],
       creadoEn: compra?.creadoEn || new Date().toISOString(),
     });
   };
@@ -201,6 +220,51 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
               placeholder="Observaciones, referencia interna…"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
           </div>
+
+          {/* Productos recibidos (solo categorías inventariables) */}
+          {INVENTARIABLE.includes(categoria) && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-500 uppercase">📦 Productos recibidos (aumenta inventario)</h3>
+              </div>
+              <div className="relative">
+                <input
+                  value={busqProd}
+                  onChange={e=>{setBusqProd(e.target.value);setShowProds(true);}}
+                  onFocus={()=>setShowProds(true)} onBlur={()=>setTimeout(()=>setShowProds(false),150)}
+                  placeholder="Buscar producto del catálogo…"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+                />
+                {showProds && prodsFiltrados.length>0 && (
+                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
+                    {prodsFiltrados.map(p=>(
+                      <button key={p.id} onMouseDown={()=>agregarLinea(p)}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0 flex justify-between">
+                        <span className="font-semibold">{p.nombre}</span>
+                        <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {lineas.length > 0 && (
+                <div className="space-y-1">
+                  {lineas.map((l,i)=>(
+                    <div key={i} className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-1.5">
+                      <span className="flex-1 text-sm text-slate-700">{l.descripcion}</span>
+                      <input type="number" min="0.01" step="any" value={l.cantidad}
+                        onChange={e=>setLineas(lineas.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
+                        className="w-20 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none"
+                      />
+                      <span className="text-xs text-slate-400">unds.</span>
+                      <button onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-emerald-600 mt-1">✓ Al guardar se aumentará el stock de estos productos</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -211,6 +275,7 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
 export default function ComprasScreen() {
   const [compras,   setCompras]   = useState([]);
   const [contactos, setContactos] = useState([]);
+  const [productos, setProductos] = useState([]);
   const [vista,     setVista]     = useState("lista");
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
@@ -218,9 +283,10 @@ export default function ComprasScreen() {
   const [authToken, setAuthToken] = useState(null);
 
   const cargar = useCallback(async () => {
-    const [c, ct] = await Promise.all([db.getCompras(), db.getContactos()]);
+    const [c, ct, pr] = await Promise.all([db.getCompras(), db.getContactos(), db.getProductos()]);
     setCompras(c || []);
     setContactos(ct || []);
+    setProductos(pr || []);
     import("../utils/auth").then(m => m.getToken()).then(setAuthToken);
   }, []);
 
@@ -244,6 +310,11 @@ export default function ComprasScreen() {
       });
     }
 
+    // Si tiene líneas de productos inventariables → aumentar stock
+    if (esNueva && c.lineas?.length) {
+      await aumentarInventario(c.lineas);
+    }
+
     cargar(); setVista("lista"); setEditando(null);
   };
 
@@ -261,7 +332,7 @@ export default function ComprasScreen() {
   };
 
   if (vista==="form") {
-    return <FormCompra compra={editando} contactos={contactos}
+    return <FormCompra compra={editando} contactos={contactos} productos={productos}
       onGuardar={guardar} onCancelar={()=>{setVista("lista");setEditando(null);}} />;
   }
 

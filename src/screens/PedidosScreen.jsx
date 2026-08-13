@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, Package } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
+import { reducirInventario } from "../utils/clienteUtils";
 
 const COLS = [
   { key:"pendiente",  label:"Pendiente",   color:"bg-amber-50  border-amber-200",  dot:"bg-amber-400" },
@@ -10,7 +11,7 @@ const COLS = [
   { key:"entregado",  label:"Entregado",   color:"bg-slate-50  border-slate-200",  dot:"bg-slate-400" },
 ];
 
-function FormPedido({ pedido, contactos, onGuardar, onCancelar }) {
+function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
   const [cliente,  setCliente]  = useState(pedido?.cliente || "");
   const [busq,     setBusq]     = useState(pedido?.cliente || "");
   const [showC,    setShowC]    = useState(false);
@@ -20,6 +21,20 @@ function FormPedido({ pedido, contactos, onGuardar, onCancelar }) {
   const [entrega,  setEntrega]  = useState(pedido?.fechaEntrega || "");
   const [estado,   setEstado]   = useState(pedido?.estado || "pendiente");
   const [notas,    setNotas]    = useState(pedido?.notas || "");
+  const [lineas,   setLineas]   = useState(pedido?.lineas || []);
+  const [busqProd, setBusqProd] = useState("");
+  const [showProd, setShowProd] = useState(false);
+
+  const prodsFilt = (productos||[]).filter(p =>
+    p.nombre?.toLowerCase().includes(busqProd.toLowerCase())
+  ).slice(0,6);
+
+  const agregarProd = (p) => {
+    const ya = lineas.find(l => l.productoId === p.id);
+    if (ya) setLineas(lineas.map(l => l.productoId === p.id ? { ...l, cantidad: (parseFloat(l.cantidad)||0) + 1 } : l));
+    else setLineas([...lineas, { productoId: p.id, descripcion: p.nombre, cantidad: 1 }]);
+    setBusqProd(""); setShowProd(false);
+  };
 
   const filtrados = contactos.filter(c =>
     c.nombre?.toLowerCase().includes(busq.toLowerCase()) ||
@@ -99,11 +114,45 @@ function FormPedido({ pedido, contactos, onGuardar, onCancelar }) {
               placeholder="Notas adicionales…"
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
           </div>
+
+          {/* Productos del pedido (opcional — reduce inventario al entregar) */}
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">📦 Productos (reduce inventario al entregar)</label>
+            <div className="relative">
+              <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowProd(true);}}
+                onFocus={()=>setShowProd(true)} onBlur={()=>setTimeout(()=>setShowProd(false),150)}
+                placeholder="Buscar producto…"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              {showProd && prodsFilt.length>0 && (
+                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
+                  {prodsFilt.map(p=>(
+                    <button key={p.id} onMouseDown={()=>agregarProd(p)}
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 border-b last:border-0 flex justify-between">
+                      <span>{p.nombre}</span><span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {lineas.length>0 && (
+              <div className="mt-2 space-y-1">
+                {lineas.map((l,i)=>(
+                  <div key={i} className="flex items-center gap-2 bg-slate-50 rounded px-2 py-1">
+                    <span className="flex-1 text-xs">{l.descripcion}</span>
+                    <input type="number" min="0.01" value={l.cantidad}
+                      onChange={e=>setLineas(lineas.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
+                      className="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-right" />
+                    <button onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))} className="text-red-400 text-xs">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
-          <button onClick={()=>onGuardar({ id:pedido?.id||genId(), cliente, descripcion:desc, monto:parseFloat(monto)||0, fecha, fechaEntrega:entrega, estado, notas, creadoEn:pedido?.creadoEn||new Date().toISOString() })}
+          <button onClick={()=>onGuardar({ id:pedido?.id||genId(), cliente, descripcion:desc, monto:parseFloat(monto)||0, fecha, fechaEntrega:entrega, estado, notas, lineas, creadoEn:pedido?.creadoEn||new Date().toISOString() })}
             className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600">
             <Check size={14}/> Guardar
           </button>
@@ -116,13 +165,14 @@ function FormPedido({ pedido, contactos, onGuardar, onCancelar }) {
 export default function PedidosScreen() {
   const [pedidos,   setPedidos]   = useState([]);
   const [contactos, setContactos] = useState([]);
+  const [productos, setProductos] = useState([]);
   const [form,      setForm]      = useState(false);
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
 
   const cargar = useCallback(async () => {
-    const [p,c] = await Promise.all([db.getPedidos(), db.getContactos()]);
-    setPedidos(p||[]); setContactos(c||[]);
+    const [p,c,pr] = await Promise.all([db.getPedidos(), db.getContactos(), db.getProductos()]);
+    setPedidos(p||[]); setContactos(c||[]); setProductos(pr||[]);
   },[]);
 
   useEffect(()=>{ cargar(); },[cargar]);
@@ -136,7 +186,14 @@ export default function PedidosScreen() {
 
   const mover = async (id, nuevoEstado) => {
     const all = await db.getPedidos();
+    const pedido = all.find(x => x.id === id);
     await db.setPedidos(all.map(x=>x.id===id?{...x,estado:nuevoEstado}:x));
+
+    // Al entregar → reducir inventario si tiene líneas de productos
+    if (nuevoEstado === "entregado" && pedido?.lineas?.length) {
+      await reducirInventario(pedido.lineas);
+    }
+
     cargar();
   };
 
@@ -154,7 +211,7 @@ export default function PedidosScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      {form && <FormPedido pedido={editando} contactos={contactos}
+      {form && <FormPedido pedido={editando} contactos={contactos} productos={productos}
         onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}} />}
 
       {/* Barra */}

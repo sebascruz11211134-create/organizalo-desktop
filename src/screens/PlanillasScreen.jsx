@@ -11,7 +11,7 @@ import {
   AlertCircle, CheckCircle2, TrendingDown
 } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney, genId } from "../utils/fmt";
+import { fmtMoney, genId, hoy } from "../utils/fmt";
 
 // ── Tasas CCSS 2024 ──────────────────────────────────────────────────────────
 const TASA_TRAB_CCSS = 0.1067;
@@ -362,8 +362,45 @@ export default function PlanillasScreen() {
               </table>
             )}
           </div>
-          <div className="px-6 py-2 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-400">
-            Tasas CCSS 2024 · Clic en empleado para ver desglose
+          <div className="px-6 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400">Tasas CCSS 2024 · Clic en empleado para ver desglose</span>
+            {empleados.length > 0 && (
+              <button
+                onClick={async () => {
+                  if (!confirm(`¿Confirmar planilla de ${mesLabel(mes)}? Se creará un asiento contable automático.`)) return;
+                  try {
+                    const asientos = await db.getAsientos();
+                    const seq = String(asientos.length + 1).padStart(5, "0");
+                    const bruto = totNomina.bruto;
+                    const cargas = totNomina.patTotal;
+
+                    const lineas = [
+                      { cuentaCodigo:"5101", cuentaNombre:"Gasto salarios",          debe: bruto,  haber: 0 },
+                      { cuentaCodigo:"5102", cuentaNombre:"Cargas sociales patronales", debe: cargas, haber: 0 },
+                      { cuentaCodigo:"2101", cuentaNombre:"CxP nómina — empleados",  debe: 0, haber: bruto },
+                      { cuentaCodigo:"2102", cuentaNombre:"CxP CCSS patronal",       debe: 0, haber: cargas },
+                    ];
+                    const totalDebe  = lineas.reduce((s, l) => s + l.debe, 0);
+                    const totalHaber = lineas.reduce((s, l) => s + l.haber, 0);
+
+                    const asiento = {
+                      id: genId(), numero: `AJ-${seq}`,
+                      descripcion: `Planilla ${mesLabel(mes)} — ${empleados.length} empleados`,
+                      fecha: hoy(), totalDebe, totalHaber,
+                      estado: "confirmado", lineas,
+                      creadoEn: new Date().toISOString(), autoGenerado: true,
+                    };
+                    await db.setAsientos([asiento, ...asientos]);
+                    alert(`✓ Asiento ${asiento.numero} creado en Contabilidad`);
+                  } catch (e) {
+                    alert("Error al crear asiento: " + e.message);
+                  }
+                }}
+                className="flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700"
+              >
+                ✓ Confirmar planilla → Asiento contable
+              </button>
+            )}
           </div>
         </>
       )}

@@ -26,6 +26,20 @@ async function crearEvento({ token, titulo, descripcion, fecha, tipo = "recordat
   }
 }
 
+// ── Eliminar evento de calendario por título (al saldar CXC/CXP) ─────────────
+export async function cancelarEventoCalendario({ token, tituloMatch, fecha }) {
+  if (!token || !tituloMatch) return;
+  try {
+    await fetch(`${BACKEND}/api/eventos/por-titulo`, {
+      method:  "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ tituloMatch, fecha }),
+    });
+  } catch (e) {
+    console.warn("[clienteUtils] No se pudo cancelar evento:", e.message);
+  }
+}
+
 // ── Código de cliente ─────────────────────────────────────────────────────────
 
 /**
@@ -64,6 +78,34 @@ export async function reducirInventario(lineas) {
       changed = true;
       const cant = parseFloat(linea.cantidad) || 0;
       return { ...p, stock: Math.max(0, (parseFloat(p.stock) || 0) - cant) };
+    }
+    return p;
+  });
+
+  if (changed) await db.setProductos(actualizados);
+}
+
+/**
+ * Aumenta el stock de los productos que aparecen en las líneas de una compra.
+ * Inverso de reducirInventario. Solo afecta productos con campo 'stock' definido.
+ *
+ * @param {Array} lineas - Líneas de la compra/pedido
+ */
+export async function aumentarInventario(lineas) {
+  if (!lineas?.length) return;
+  const productos = await db.getProductos();
+  let changed = false;
+
+  const actualizados = productos.map((p) => {
+    const linea = lineas.find(
+      (l) =>
+        (l.productoId && l.productoId === p.id) ||
+        (l.descripcion?.toLowerCase().trim() === p.nombre?.toLowerCase().trim())
+    );
+    if (linea && p.stock != null) {
+      changed = true;
+      const cant = parseFloat(linea.cantidad) || 0;
+      return { ...p, stock: (parseFloat(p.stock) || 0) + cant };
     }
     return p;
   });

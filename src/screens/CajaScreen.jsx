@@ -7,6 +7,51 @@ import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, Chevron
 import db from "../utils/db";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
 
+// Crea un asiento contable automático al cerrar la caja
+async function crearAsientoCaja({ fecha, totalIngresos, totalEgresos, saldoInicial }) {
+  try {
+    const asientos = await db.getAsientos();
+    const seq = String(asientos.length + 1).padStart(5, "0");
+    const neto = totalIngresos - totalEgresos;
+    if (neto === 0 && totalIngresos === 0) return; // nada que registrar
+
+    const lineas = [];
+    if (totalIngresos > 0) {
+      lineas.push({ cuentaCodigo:"1101", cuentaNombre:"Caja / Efectivo",  debe: totalIngresos, haber: 0 });
+      lineas.push({ cuentaCodigo:"4101", cuentaNombre:"Ingresos del día", debe: 0, haber: totalIngresos });
+    }
+    if (totalEgresos > 0) {
+      lineas.push({ cuentaCodigo:"5201", cuentaNombre:"Gastos operativos", debe: totalEgresos, haber: 0 });
+      lineas.push({ cuentaCodigo:"1101", cuentaNombre:"Caja / Efectivo",   debe: 0, haber: totalEgresos });
+    }
+
+    // Agrupa líneas del mismo código
+    const agrupadas = [];
+    for (const l of lineas) {
+      const ex = agrupadas.find(a => a.cuentaCodigo === l.cuentaCodigo);
+      if (ex) { ex.debe += l.debe; ex.haber += l.haber; }
+      else agrupadas.push({ ...l });
+    }
+
+    const totalDebe  = agrupadas.reduce((s, l) => s + l.debe, 0);
+    const totalHaber = agrupadas.reduce((s, l) => s + l.haber, 0);
+    if (Math.abs(totalDebe - totalHaber) > 0.01) return; // no balanceado, skip
+
+    const asiento = {
+      id: genId(), numero: `AJ-${seq}`,
+      descripcion: `Cierre de caja — ${fecha}`,
+      fecha, totalDebe, totalHaber,
+      estado: "confirmado",
+      lineas: agrupadas,
+      creadoEn: new Date().toISOString(),
+      autoGenerado: true,
+    };
+    await db.setAsientos([asiento, ...asientos]);
+  } catch (e) {
+    console.warn("[CajaScreen] No se pudo crear asiento:", e.message);
+  }
+}
+
 const TIPOS_MOV = ["Venta efectivo","Pago a proveedor","Gasto operativo","Fondo de cambio","Retiro","Depósito a banco","Otro ingreso","Otro egreso"];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -170,7 +215,12 @@ export default function CajaScreen() {
   const cerrarCaja = async (arqueo) => {
     const todas = await db.getCaja();
     const upd   = todas.map(c=>c.fecha===fecha?{...c,cerrada:true,arqueo,cierreEn:new Date().toISOString()}:c);
-    await db.setCaja(upd); cargar(); setModal(null);
+    await db.setCaja(upd);
+
+    // Crear asiento contable automático del día
+    await crearAsientoCaja({ fecha, totalIngresos, totalEgresos, saldoInicial: cajaDia?.saldoInicial || 0 });
+
+    cargar(); setModal(null);
   };
 
   return (

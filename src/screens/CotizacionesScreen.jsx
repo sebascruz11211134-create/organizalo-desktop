@@ -321,13 +321,31 @@ export default function CotizacionesScreen() {
   };
 
   const convertirAFactura = async (cot) => {
-    const facturas = await db.getFacturas();
+    const [facturas, contactos] = await Promise.all([db.getFacturas(), db.getContactos()]);
     const num = `FE-${String(facturas.length+1).padStart(5,"0")}`;
-    const factura = { id:genId(), numero:num, tipoDoc:"01", fecha:hoy(), condPago:"01", medioPago:"01", plazo:0, moneda:"CRC", cliente:cot.cliente, lineas:cot.lineas, subtotal:cot.subtotal, totalDescuento:0, totalIVA:cot.totalIVA, total:cot.total, notas:cot.notas, estado:"guardada", creadoEn:new Date().toISOString(), origenCotizacion:cot.numero };
+
+    // Buscar dias_credito del cliente en Contactos
+    const nombreCliente = (cot.cliente?.nombre || "").toLowerCase();
+    const contacto = contactos.find(c =>
+      c.nombre?.toLowerCase() === nombreCliente ||
+      (cot.cliente?.cedula && c.cedula === cot.cliente.cedula)
+    );
+    const diasCred = contacto?.dias_credito || 0;
+    const condPago = diasCred > 0 ? "02" : "01";
+
+    const factura = {
+      id: genId(), numero: num, tipoDoc: "01", fecha: hoy(),
+      condPago, medioPago: "01", plazo: diasCred, moneda: "CRC",
+      cliente: cot.cliente, lineas: cot.lineas,
+      subtotal: cot.subtotal, totalDescuento: 0, totalIVA: cot.totalIVA, total: cot.total,
+      notas: cot.notas, estado: "guardada",
+      creadoEn: new Date().toISOString(), origenCotizacion: cot.numero,
+    };
     await db.setFacturas([...facturas, factura]);
     // Marcar cotización como aceptada
     await guardar({ ...cot, estado:"aceptada" });
-    alert(`✓ Factura ${num} creada desde ${cot.numero}`);
+    const credMsg = diasCred > 0 ? ` — crédito ${diasCred} días` : "";
+    alert(`✓ Factura ${num} creada desde ${cot.numero}${credMsg}`);
   };
 
   if (vista === "form") {

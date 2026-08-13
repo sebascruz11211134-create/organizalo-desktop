@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, ChevronDown, ChevronUp } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
+import { cancelarEventoCalendario } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
@@ -79,17 +80,87 @@ function NuevaCXPModal({ onClose, onSave, settings }) {
   );
 }
 
+function PagoCXPModal({ deuda, settings, token, onClose, onSave }) {
+  const [monto,  setMonto]  = useState("");
+  const [metodo, setMetodo] = useState("Transferencia");
+  const [fecha,  setFecha]  = useState(hoy());
+  const [notas,  setNotas]  = useState("");
+
+  const saldo = Math.max(0, deuda.total - (deuda.pagado || 0));
+  const mon   = deuda.moneda || settings.moneda || "CRC";
+
+  const guardar = async () => {
+    const m = parseFloat(monto);
+    if (!m || m <= 0) return;
+    const todos = await db.getDebts();
+    const pago  = { id: genId(), fecha, monto: m, metodo, notas, creadoEn: new Date().toISOString() };
+    const upd   = todos.map((x) =>
+      x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + m, pagos: [...(x.pagos || []), pago] }
+    );
+    await db.setDebts(upd);
+
+    // Si queda saldada → eliminar eventos de calendario relacionados
+    const nuevoPagado = (deuda.pagado || 0) + m;
+    if (nuevoPagado >= deuda.total - 0.01 && token) {
+      await cancelarEventoCalendario({ token, tituloMatch: `Pago: ${deuda.nombre}`, fecha: deuda.fechaVencimiento });
+      await cancelarEventoCalendario({ token, tituloMatch: `Pago próximo: ${deuda.nombre}` });
+    }
+
+    onSave(); onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-slate-900 mb-1">Registrar pago a proveedor</h3>
+        <p className="text-sm text-slate-500 mb-5">{deuda.nombre} — Saldo: <strong>{fmtMoney(saldo, mon)}</strong></p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto ({mon})</label>
+            <input type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0" max={saldo}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Método</label>
+            <select value={metodo} onChange={e => setMetodo(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+              {["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque"].map(m => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
+            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
+            <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="Referencia, comprobante…"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          </div>
+        </div>
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-red-600 rounded-lg text-sm font-semibold text-white hover:bg-red-700">Guardar pago</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CXPScreen() {
   const [debts,    setDebts]    = useState([]);
   const [settings, setSettings] = useState({});
   const [busq,     setBusq]     = useState("");
   const [expanded, setExpanded] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [pagoModal, setPagoModal] = useState(null);
+  const [token,    setToken]    = useState(null);
 
   const cargar = useCallback(async () => {
     const [d, s] = await Promise.all([db.getDebts(), db.getSettings()]);
     setDebts(d.filter((x) => (x.tipo || "pagar") === "pagar"));
     setSettings(s);
+    import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -148,7 +219,17 @@ export default function CXPScreen() {
                     <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td>{fmtDate(d.fechaVencimiento)}</td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
-                    <td>{isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}</td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        {saldo > 0 && (
+                          <button onClick={e => { e.stopPropagation(); setPagoModal(d); }}
+                            className="px-3 py-1 bg-red-600 text-white text-xs rounded-lg font-semibold hover:bg-red-700">
+                            Pagar
+                          </button>
+                        )}
+                        {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                      </div>
+                    </td>
                   </tr>
                   {isExp && (
                     <tr><td colSpan={8} className="bg-gray-50 px-8 py-3 text-xs text-slate-500">
@@ -163,6 +244,7 @@ export default function CXPScreen() {
       </div>
 
       {showModal && <NuevaCXPModal settings={settings} onClose={() => setShowModal(false)} onSave={cargar} />}
+      {pagoModal && <PagoCXPModal deuda={pagoModal} settings={settings} token={token} onClose={() => setPagoModal(null)} onSave={cargar} />}
     </div>
   );
 }

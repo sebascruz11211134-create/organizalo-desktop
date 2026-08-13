@@ -7,6 +7,7 @@ import { Plus, Search, ChevronDown, ChevronUp, Printer, FileSpreadsheet } from "
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
+import { cancelarEventoCalendario } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
@@ -16,7 +17,7 @@ const ESTADO = (d) => {
   return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
 };
 
-function PagoModal({ deuda, onClose, onSave, settings }) {
+function PagoModal({ deuda, onClose, onSave, settings, token }) {
   const [monto,  setMonto]  = useState("");
   const [metodo, setMetodo] = useState("Transferencia");
   const [fecha,  setFecha]  = useState(hoy());
@@ -35,6 +36,22 @@ function PagoModal({ deuda, onClose, onSave, settings }) {
       x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + m, pagos: [...(x.pagos || []), pago] }
     );
     await db.setDebts(upd);
+
+    // Si queda saldada → eliminar eventos de calendario relacionados
+    const nuevoPagado = (deuda.pagado || 0) + m;
+    if (nuevoPagado >= deuda.total - 0.01 && token) {
+      await cancelarEventoCalendario({
+        token,
+        tituloMatch: `Cobro: ${deuda.nombre}`,
+        fecha: deuda.fechaVencimiento,
+      });
+      // También el recordatorio 3 días antes
+      await cancelarEventoCalendario({
+        token,
+        tituloMatch: `Cobro próximo: ${deuda.nombre}`,
+      });
+    }
+
     onSave();
     onClose();
   };
@@ -154,11 +171,13 @@ export default function CXCScreen() {
   const [expanded, setExpanded] = useState(null);
   const [modal,    setModal]    = useState(null);  // "nueva" | { deuda }
   const [filtro,   setFiltro]   = useState("todos"); // todos | pendientes | vencidas | saldadas
+  const [token,    setToken]    = useState(null);
 
   const cargar = useCallback(async () => {
     const [d, s] = await Promise.all([db.getDebts(), db.getSettings()]);
     setDebts(d.filter((x) => (x.tipo || "pagar") === "cobrar"));
     setSettings(s);
+    import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -311,7 +330,7 @@ export default function CXCScreen() {
 
       {/* Modales */}
       {modal === "nueva" && <NuevaCXCModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
-      {modal?.deuda && <PagoModal deuda={modal.deuda} settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
+      {modal?.deuda && <PagoModal deuda={modal.deuda} settings={settings} token={token} onClose={() => setModal(null)} onSave={cargar} />}
     </div>
   );
 }
