@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useCurrency } from "../contexts/CurrencyContext";
 import {
   LayoutDashboard, Receipt, FileText, ShoppingCart, Package,
   DollarSign, CreditCard, Landmark, Users, UserCheck,
@@ -251,6 +252,7 @@ function GroupItem({ item, collapsed }) {
 // ── Sidebar principal ──────────────────────────────────────────────────────────
 export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados }) {
   const esSuperAdmin = userEmail === SUPERADMIN_EMAIL;
+  const { moneda, setMoneda, tipoCambio, cargando } = useCurrency();
 
   const navVisible = modulosHabilitados === null
     ? NAV
@@ -339,6 +341,48 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
           </div>
         </>
       )}
+
+      {/* ── Selector de moneda ₡ | $ ────────────────────────────────────────── */}
+      <div className="mx-3" style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />
+      <div className={`px-3 py-2 flex ${collapsed ? "justify-center" : "items-center justify-between"}`}>
+        {!collapsed && (
+          <div className="min-w-0">
+            {tipoCambio ? (
+              <p className="text-[10px] text-slate-500 leading-tight">
+                BCCR: ₡{tipoCambio.compra?.toLocaleString("es-CR")}
+              </p>
+            ) : (
+              <p className="text-[10px] text-slate-600">
+                {cargando ? "Cargando..." : "Tipo de cambio"}
+              </p>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-0.5 bg-white/5 rounded-lg p-0.5">
+          <button
+            onClick={() => setMoneda("CRC")}
+            title="Colones"
+            className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+              moneda === "CRC"
+                ? "bg-emerald-500 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-200"
+            }`}
+          >
+            ₡
+          </button>
+          <button
+            onClick={() => setMoneda("USD")}
+            title="Dólares"
+            className={`px-1.5 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+              moneda === "USD"
+                ? "bg-emerald-500 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-200"
+            }`}
+          >
+            $
+          </button>
+        </div>
+      </div>
 
       {/* ── Toggle ──────────────────────────────────────────────────────────── */}
       <div className="mx-3" style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />

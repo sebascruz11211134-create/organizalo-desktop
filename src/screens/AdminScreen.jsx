@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../utils/api";
 import { getToken } from "../utils/auth";
+import { useTranslation } from "react-i18next";
 import {
   Users, CheckCircle, Clock, AlertCircle, XCircle,
   RefreshCw, ChevronDown, Search, Shield, TrendingUp,
@@ -70,6 +71,7 @@ function claveInfo(clave) {
 // ── Panel de Soporte Técnico ──────────────────────────────────────────────────
 
 function SoportePanel({ u, token }) {
+  const { t } = useTranslation();
   const [claves,    setClaves]    = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState("");
@@ -141,13 +143,13 @@ function SoportePanel({ u, token }) {
     setTimeout(() => setMsgOp(""), 2000);
   };
 
-  if (loading) return <p className="text-xs text-slate-400 py-4 text-center">Cargando datos del cliente…</p>;
+  if (loading) return <p className="text-xs text-slate-400 py-4 text-center">{t("admin.loadingClient")}</p>;
   if (error)   return <p className="text-xs text-red-500 py-4 text-center">{error}</p>;
 
   if (!u.empresa_id) return (
     <div className="py-4 text-center">
       <AlertTriangle size={20} className="text-amber-400 mx-auto mb-1"/>
-      <p className="text-xs text-slate-500">Este cliente no tiene empresa_id asignada aún (nunca hizo sync).</p>
+      <p className="text-xs text-slate-500">{t("admin.noCompany")}</p>
     </div>
   );
 
@@ -173,7 +175,7 @@ function SoportePanel({ u, token }) {
       )}
 
       {claves.length === 0 && (
-        <p className="text-xs text-slate-400 py-4 text-center">Sin datos sincronizados aún.</p>
+        <p className="text-xs text-slate-400 py-4 text-center">{t("admin.noSyncData")}</p>
       )}
 
       {/* Lista de claves */}
@@ -205,7 +207,7 @@ function SoportePanel({ u, token }) {
                 <button
                   onClick={() => verDetalle(k.clave)}
                   className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
-                  title={abierta ? "Ocultar" : "Ver datos"}
+                  title={abierta ? t("admin.hideData") : t("admin.viewData")}
                 >
                   {abierta ? <EyeOff size={13}/> : <Eye size={13}/>}
                 </button>
@@ -213,7 +215,7 @@ function SoportePanel({ u, token }) {
                   onClick={() => resetear(k.clave)}
                   disabled={opLoading}
                   className="p-1.5 rounded-md hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
-                  title="Eliminar esta clave (reset)"
+                  title={t("admin.deleteKey")}
                 >
                   <Trash2 size={13}/>
                 </button>
@@ -223,7 +225,7 @@ function SoportePanel({ u, token }) {
             {/* Detalle expandido */}
             {abierta && (
               <div className="border-t border-slate-100 bg-slate-50 p-3 space-y-2">
-                {det?.loading && <p className="text-xs text-slate-400">Cargando…</p>}
+                {det?.loading && <p className="text-xs text-slate-400">{t("common.loading")}</p>}
                 {det?.error   && <p className="text-xs text-red-500">{det.error}</p>}
                 {det?.valor   && (
                   <>
@@ -283,6 +285,7 @@ function SoportePanel({ u, token }) {
 // ── Fila de cliente expandible ────────────────────────────────────────────────
 
 function FilaCliente({ u, token, onRefresh }) {
+  const { t } = useTranslation();
   const [expandido,  setExpandido]  = useState(false);
   const [tab,        setTab]        = useState("cuenta"); // "cuenta" | "soporte"
   const [nota,       setNota]       = useState(u.nota_soporte || "");
@@ -348,13 +351,13 @@ function FilaCliente({ u, token, onRefresh }) {
             <p className="text-xs text-blue-600 font-medium">{u.diasRestantes}d restantes</p>
           )}
           {u.estado === "vencido" && (
-            <p className="text-xs text-amber-600">Venció {fmt(u.trial_ends)}</p>
+            <p className="text-xs text-amber-600">{t("admin.trialExpired")} {fmt(u.trial_ends)}</p>
           )}
           {u.estado === "activo" && (
-            <p className="text-xs text-slate-400">Plan activo</p>
+            <p className="text-xs text-slate-400">{t("admin.activePlan")}</p>
           )}
           {u.estado === "suspendido" && (
-            <p className="text-xs text-red-500">Suspendido</p>
+            <p className="text-xs text-red-500">{t("admin.suspended")}</p>
           )}
         </div>
 
@@ -372,19 +375,19 @@ function FilaCliente({ u, token, onRefresh }) {
           {/* Tabs */}
           <div className="flex border-b border-slate-200 px-4 pt-2">
             {[
-              { id: "cuenta",   label: "Cuenta & Plan" },
-              { id: "modulos",  label: "🧩 Módulos" },
-              { id: "soporte",  label: "🔧 Soporte Técnico" },
-            ].map(t => (
+              { id: "cuenta",   label: t("admin.tabs.account") },
+              { id: "modulos",  label: "🧩 " + t("admin.tabs.modules") },
+              { id: "soporte",  label: "🔧 " + t("admin.tabs.data") },
+            ].map(tab_ => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={tab_.id}
+                onClick={() => setTab(tab_.id)}
                 className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors -mb-px
-                  ${tab === t.id
+                  ${tab === tab_.id
                     ? "border-emerald-500 text-emerald-600"
                     : "border-transparent text-slate-400 hover:text-slate-600"}`}
               >
-                {t.label}
+                {tab_.label}
               </button>
             ))}
           </div>
@@ -398,19 +401,19 @@ function FilaCliente({ u, token, onRefresh }) {
           {/* Datos de contacto */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
-              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">Teléfono</p>
+              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">{t("admin.fieldPhone")}</p>
               <p className="text-slate-700">{u.telefono || "—"}</p>
             </div>
             <div>
-              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">Registrado</p>
+              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">{t("admin.fieldRegistered")}</p>
               <p className="text-slate-700">{fmt(u.creado_en)}</p>
             </div>
             <div>
-              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">Trial termina</p>
+              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">{t("admin.fieldTrialEnds")}</p>
               <p className="text-slate-700">{fmt(u.trial_ends)}</p>
             </div>
             <div>
-              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">Empresa ID</p>
+              <p className="text-slate-400 uppercase font-semibold tracking-wide mb-0.5">{t("admin.fieldCompanyId")}</p>
               <p className="text-slate-700 font-mono text-[10px] break-all">{u.empresa_id?.slice(0,8) || "—"}…</p>
             </div>
           </div>
@@ -475,7 +478,7 @@ function FilaCliente({ u, token, onRefresh }) {
             <textarea
               value={nota}
               onChange={e => setNota(e.target.value)}
-              placeholder="Ej: Preguntó sobre facturación electrónica. Llamar el lunes."
+              placeholder={t("admin.notePlaceholder")}
               rows={2}
               className="mt-1 w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none text-slate-700 placeholder-slate-300"
             />
@@ -484,7 +487,7 @@ function FilaCliente({ u, token, onRefresh }) {
               disabled={guardando}
               className="mt-1.5 text-xs px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-colors disabled:opacity-60"
             >
-              {guardando ? "Guardando…" : "Guardar nota"}
+              {guardando ? t("common.saving") : t("admin.saveNote")}
             </button>
           </div>
           </>)}
@@ -517,6 +520,7 @@ const MODULOS_DISPONIBLES = [
 // ── Panel de Módulos por empresa ──────────────────────────────────────────────
 
 function ModulosPanel({ u, token }) {
+  const { t } = useTranslation();
   const [modulos,  setModulos]  = useState(null); // null = todos, array = habilitados
   const [loading,  setLoading]  = useState(true);
   const [guardando,setGuardando]= useState(false);
@@ -560,11 +564,11 @@ function ModulosPanel({ u, token }) {
     } finally { setGuardando(false); }
   };
 
-  if (loading) return <p className="text-xs text-slate-400 py-4 text-center">Cargando…</p>;
+  if (loading) return <p className="text-xs text-slate-400 py-4 text-center">{t("common.loading")}</p>;
   if (!u.empresa_id) return (
     <div className="py-4 text-center">
       <AlertTriangle size={20} className="text-amber-400 mx-auto mb-1"/>
-      <p className="text-xs text-slate-500">Sin empresa asignada aún. El cliente debe iniciar sesión al menos una vez.</p>
+      <p className="text-xs text-slate-500">{t("admin.noCompany")}</p>
     </div>
   );
 
@@ -606,8 +610,8 @@ function ModulosPanel({ u, token }) {
                 {on && <CheckCircle size={10} className="text-white"/>}
               </div>
               <div className="min-w-0">
-                <p className={`text-[11px] font-semibold ${on ? "text-slate-800" : "text-slate-500"}`}>{m.label}</p>
-                <p className="text-[10px] text-slate-400 leading-tight">{m.desc}</p>
+                <p className={`text-[11px] font-semibold ${on ? "text-slate-800" : "text-slate-500"}`}>{t(`admin.modules.${m.id}.label`, m.label)}</p>
+                <p className="text-[10px] text-slate-400 leading-tight">{t(`admin.modules.${m.id}.desc`, m.desc)}</p>
               </div>
             </button>
           );
@@ -625,7 +629,7 @@ function ModulosPanel({ u, token }) {
         disabled={guardando}
         className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
       >
-        <Save size={12}/> {guardando ? "Guardando…" : "Guardar cambios"}
+        <Save size={12}/> {guardando ? t("common.saving") : t("admin.saveChanges")}
       </button>
 
       <p className="text-[10px] text-slate-400 text-center">
@@ -638,6 +642,7 @@ function ModulosPanel({ u, token }) {
 // ── Panel de Códigos de Acceso ────────────────────────────────────────────────
 
 function CodigosPanel({ token }) {
+  const { t } = useTranslation();
   const [codigos,       setCodigos]       = useState(null);
   const [loading,       setLoading]       = useState(true);
   const [generando,     setGenerando]     = useState(false);
@@ -702,8 +707,8 @@ function CodigosPanel({ token }) {
           <Key size={14} className="text-white"/>
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-slate-800">Códigos de Acceso</p>
-          <p className="text-[11px] text-slate-400">Generá códigos únicos para que los clientes puedan registrarse.</p>
+          <p className="text-sm font-bold text-slate-800">{t("admin.codes.title")}</p>
+          <p className="text-[11px] text-slate-400">{t("admin.codes.subtitle")}</p>
         </div>
         <button onClick={cargar} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
           <RefreshCw size={11}/> Actualizar
@@ -713,20 +718,20 @@ function CodigosPanel({ token }) {
       <div className="p-5 space-y-4">
         {/* Formulario de generación */}
         <form onSubmit={generar} className="bg-slate-50 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Nuevo código</p>
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t("admin.codes.newCode")}</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] text-slate-500 block mb-1">Cliente (opcional)</label>
+              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.clientLabel")}</label>
               <input
                 type="text"
                 value={form.nombreCliente}
                 onChange={e => setForm(p => ({ ...p, nombreCliente: e.target.value }))}
-                placeholder="Ej: Sodería La Palma"
+                placeholder={t("admin.codes.clientPlaceholder")}
                 className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700"
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-500 block mb-1">Email fijo (opcional)</label>
+              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.emailLabel")}</label>
               <input
                 type="email"
                 value={form.emailEsperado}
@@ -736,7 +741,7 @@ function CodigosPanel({ token }) {
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-500 block mb-1">Máx. usuarios <span className="text-emerald-600 font-semibold">*</span></label>
+              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.maxUsersLabel")} <span className="text-emerald-600 font-semibold">*</span></label>
               <input
                 type="number"
                 value={form.maxUsos}
@@ -747,12 +752,12 @@ function CodigosPanel({ token }) {
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-500 block mb-1">Vence en (días, opcional)</label>
+              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.expiresLabel")}</label>
               <input
                 type="number"
                 value={form.expiraDias}
                 onChange={e => setForm(p => ({ ...p, expiraDias: e.target.value }))}
-                placeholder="Sin vencimiento"
+                placeholder={t("admin.codes.expiresPlaceholder")}
                 min={1}
                 max={365}
                 className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700"
@@ -764,7 +769,7 @@ function CodigosPanel({ token }) {
             disabled={generando}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
           >
-            <Plus size={12}/> {generando ? "Generando…" : "Generar código"}
+            <Plus size={12}/> {generando ? t("common.generating") : t("admin.codes.generateBtn")}
           </button>
         </form>
 
@@ -776,9 +781,9 @@ function CodigosPanel({ token }) {
 
         {/* Lista de códigos */}
         {loading ? (
-          <p className="text-xs text-slate-400 text-center py-4">Cargando…</p>
+          <p className="text-xs text-slate-400 text-center py-4">{t("common.loading")}</p>
         ) : codigos?.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-4">Sin códigos generados aún.</p>
+          <p className="text-xs text-slate-400 text-center py-4">{t("admin.codes.noCodesYet")}</p>
         ) : (
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{codigos?.length} código{codigos?.length !== 1 ? "s" : ""}</p>
@@ -796,7 +801,7 @@ function CodigosPanel({ token }) {
                   <div className="flex-1 min-w-0">
                     {c.nombre_cliente && <p className="text-slate-700 font-medium truncate">{c.nombre_cliente}</p>}
                     {c.email_esperado && <p className="text-slate-400 truncate">{c.email_esperado}</p>}
-                    {c.expira_en && <p className="text-slate-400">Vence {fmt(c.expira_en)}</p>}
+                    {c.expira_en && <p className="text-slate-400">{t("admin.codes.expires")} {fmt(c.expira_en)}</p>}
                   </div>
                   {/* Contador de usuarios */}
                   <div className="text-right flex-shrink-0 w-20">
@@ -863,6 +868,7 @@ function StatCard({ label, value, color, icon: Icon }) {
 // ── Pantalla principal ────────────────────────────────────────────────────────
 
 export default function AdminScreen() {
+  const { t } = useTranslation();
   const [usuarios,       setUsuarios]       = useState([]);
   const [stats,          setStats]          = useState(null);
   const [loading,        setLoading]        = useState(true);
@@ -912,8 +918,8 @@ export default function AdminScreen() {
             <Shield size={18} className="text-white"/>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Panel de administración</h1>
-            <p className="text-xs text-slate-500">Solo visible para vos · Organízalo.AI</p>
+            <h1 className="text-lg font-bold text-slate-900">{t("admin.title")}</h1>
+            <p className="text-xs text-slate-500">{t("admin.subtitle")}</p>
           </div>
         </div>
         <button
@@ -944,7 +950,7 @@ export default function AdminScreen() {
           className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
         >
           <Key size={14}/>
-          Códigos de Acceso
+          {t("admin.codes.title")}
           {verCodigos ? <ChevronUp size={13} className="text-slate-400"/> : <ChevronDown size={13} className="text-slate-400"/>}
         </button>
         {verCodigos && token && (
@@ -961,22 +967,27 @@ export default function AdminScreen() {
           <input
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, email o empresa…"
+            placeholder={t("admin.searchPlaceholder")}
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
           />
         </div>
         <div className="flex gap-1.5 flex-wrap">
-          {["todos","activo","trial","vencido","suspendido"].map(f => (
+          {[
+            { id: "todos",      label: t("admin.filter.all") },
+            { id: "activo",     label: t("admin.filter.active") },
+            { id: "trial",      label: t("admin.filter.trial") },
+            { id: "suspendido", label: t("admin.filter.suspended") },
+          ].map(f => (
             <button
-              key={f}
-              onClick={() => setFiltro(f)}
+              key={f.id}
+              onClick={() => setFiltro(f.id)}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition-colors ${
-                filtro === f
+                filtro === f.id
                   ? "bg-slate-800 text-white"
                   : "border border-slate-200 text-slate-500 hover:bg-slate-50"
               }`}
             >
-              {f}
+              {f.label}
             </button>
           ))}
         </div>
@@ -989,21 +1000,21 @@ export default function AdminScreen() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
-          <RefreshCw size={18} className="animate-spin mr-2"/> Cargando clientes…
+          <RefreshCw size={18} className="animate-spin mr-2"/> {t("admin.loadingClient")}
         </div>
       ) : usuariosFiltrados.length === 0 ? (
         <div className="text-center py-16 text-slate-400 text-sm">
-          {busqueda || filtro !== "todos" ? "Sin resultados para ese filtro." : "Sin clientes registrados aún."}
+          {busqueda || filtro !== "todos" ? t("admin.noResults") : t("admin.noClients")}
         </div>
       ) : (
         <div className="space-y-2">
           {/* Encabezado */}
           <div className="hidden md:grid grid-cols-[36px_1fr_160px_120px_112px_20px] gap-4 px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
             <div/>
-            <div>Cliente</div>
-            <div>Empresa</div>
-            <div>Estado</div>
-            <div className="text-right">Trial / Plan</div>
+            <div>{t("admin.clientCol")}</div>
+            <div>{t("admin.companyCol")}</div>
+            <div>{t("admin.statusCol")}</div>
+            <div className="text-right">{t("admin.planCol")}</div>
             <div/>
           </div>
           {usuariosFiltrados.map(u => (

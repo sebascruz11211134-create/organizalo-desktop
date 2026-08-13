@@ -4,6 +4,7 @@ import { AlarmClock, X } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import LoginScreen from "./screens/LoginScreen";
+import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { syncAll, startAutoSync, connectSocket, disconnectSocket } from "./utils/sync";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
 
@@ -278,6 +279,7 @@ export default function App() {
 
   // ── App principal ──────────────────────────────────────────────────────────
   return (
+    <CurrencyProvider>
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 font-sans">
       <TrialBanner plan={plan} />
 
@@ -358,5 +360,6 @@ export default function App() {
         <ChatWidget />
       </Suspense>
     </div>
+    </CurrencyProvider>
   );
 }

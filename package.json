@@ -1,7 +1,7 @@
 {
   "name": "organizalo-desktop",
   "version": "1.0.0",
-  "description": "Organ\u00edzalo.AI \u2014 App de escritorio para Mac y Windows",
+  "description": "Organízalo.AI — App de escritorio para Mac y Windows",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
@@ -13,8 +13,8 @@
   },
   "build": {
     "appId": "ai.organizalo.desktop",
-    "productName": "Organ\u00edzalo.AI",
-    "copyright": "\u00a9 2025 Organ\u00edzalo.AI",
+    "productName": "Organízalo.AI",
+    "copyright": "© 2025 Organízalo.AI",
     "icon": "assets/icon.png",
     "mac": {
       "category": "public.app-category.business",
@@ -56,10 +56,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Organ\u00edzalo.AI"
+      "shortcutName": "Organízalo.AI"
     },
     "dmg": {
-      "title": "Organ\u00edzalo.AI",
+      "title": "Organízalo.AI",
       "background": null,
       "artifactName": "Organizalo-mac.dmg",
       "window": {
@@ -87,12 +87,15 @@
     "axios": "^1.6.8",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.3.4",
+    "i18next": "^26.3.6",
+    "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^0.383.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-i18next": "^17.0.11",
     "react-router-dom": "^6.22.3",
-    "xlsx": "^0.18.5",
-    "socket.io-client": "^4.7.5"
+    "socket.io-client": "^4.7.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
