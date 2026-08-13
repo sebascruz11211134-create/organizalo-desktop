@@ -10,6 +10,21 @@
  */
 import db from "./db";
 import { genId, hoy } from "./fmt";
+import { BACKEND } from "./config";
+
+// ── Crear evento en el calendario (backend) ───────────────────────────────────
+async function crearEvento({ token, titulo, descripcion, fecha, tipo = "recordatorio", color }) {
+  if (!token || !fecha) return;
+  try {
+    await fetch(`${BACKEND}/api/eventos`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ titulo, descripcion, tipo, fecha, hora: "08:00", todo_el_dia: true, color: color || "#f59e0b" }),
+    });
+  } catch (e) {
+    console.warn("[clienteUtils] No se pudo crear evento:", e.message);
+  }
+}
 
 // ── Código de cliente ─────────────────────────────────────────────────────────
 
@@ -94,25 +109,27 @@ export async function restaurarInventarioPorFactura(facturaRef) {
  * Crea una Cuenta por Cobrar a partir de una factura a crédito.
  * Solo se llama cuando condPago === "02".
  *
- * @param {{ cliente, total, moneda, plazo, facturaRef }} params
+ * @param {{ cliente, total, moneda, plazo, facturaRef, token }} params
  */
-export async function crearCXC({ cliente, total, moneda, plazo, facturaRef }) {
+export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, token }) {
   const debts = await db.getDebts();
 
-  // Calcular fecha de vencimiento según los días de plazo
-  let fechaVencimiento = null;
   const dias = parseInt(plazo) || 30;
   const vence = new Date();
   vence.setDate(vence.getDate() + dias);
-  fechaVencimiento = vence.toISOString().slice(0, 10);
+  const fechaVencimiento = vence.toISOString().slice(0, 10);
+
+  const monto = parseFloat(total) || 0;
+  const nombreCliente = cliente?.nombre || "Consumidor Final";
+  const montoFmt = monto.toLocaleString("es-CR", { style: "currency", currency: "CRC", minimumFractionDigits: 0 });
 
   const nueva = {
     id: genId(),
     tipo: "cobrar",
-    nombre: cliente?.nombre || "Consumidor Final",
+    nombre: nombreCliente,
     cedula: cliente?.cedula || "",
     email: cliente?.email || "",
-    total: parseFloat(total) || 0,
+    total: monto,
     pagado: 0,
     pagos: [],
     moneda: moneda || "CRC",
@@ -124,22 +141,50 @@ export async function crearCXC({ cliente, total, moneda, plazo, facturaRef }) {
   };
 
   await db.setDebts([nueva, ...debts]);
+
+  // Crear evento en el calendario para el día de vencimiento
+  await crearEvento({
+    token,
+    titulo:      `💰 Cobro: ${nombreCliente}`,
+    descripcion: `Vence ${facturaRef} por ${montoFmt}. Plazo: ${dias} días.`,
+    fecha:       fechaVencimiento,
+    tipo:        "recordatorio",
+    color:       "#10b981",
+  });
+
+  // También crear recordatorio 3 días antes si el plazo lo permite
+  if (dias > 3) {
+    const antes = new Date(vence);
+    antes.setDate(antes.getDate() - 3);
+    await crearEvento({
+      token,
+      titulo:      `⏰ Cobro próximo: ${nombreCliente}`,
+      descripcion: `Factura ${facturaRef} vence en 3 días (${fechaVencimiento}). ${montoFmt}`,
+      fecha:       antes.toISOString().slice(0, 10),
+      tipo:        "recordatorio",
+      color:       "#f59e0b",
+    });
+  }
 }
 
 /**
  * Crea una Cuenta por Pagar a partir de una compra a crédito.
  * Solo se llama cuando medio === "Crédito proveedor".
  *
- * @param {{ proveedor, total, moneda, fechaVence, facturaRef }} params
+ * @param {{ proveedor, total, moneda, fechaVence, facturaRef, token }} params
  */
-export async function crearCXP({ proveedor, total, moneda, fechaVence, facturaRef }) {
+export async function crearCXP({ proveedor, total, moneda, fechaVence, facturaRef, token }) {
   const debts = await db.getDebts();
+
+  const monto = parseFloat(total) || 0;
+  const nombreProveedor = proveedor || "Proveedor";
+  const montoFmt = monto.toLocaleString("es-CR", { style: "currency", currency: "CRC", minimumFractionDigits: 0 });
 
   const nueva = {
     id: genId(),
     tipo: "pagar",
-    nombre: proveedor || "Proveedor",
-    total: parseFloat(total) || 0,
+    nombre: nombreProveedor,
+    total: monto,
     pagado: 0,
     pagos: [],
     moneda: moneda || "CRC",
@@ -151,4 +196,32 @@ export async function crearCXP({ proveedor, total, moneda, fechaVence, facturaRe
   };
 
   await db.setDebts([nueva, ...debts]);
+
+  // Crear evento en el calendario para el día de pago
+  if (fechaVence) {
+    await crearEvento({
+      token,
+      titulo:      `🏦 Pago: ${nombreProveedor}`,
+      descripcion: `Vence pago ${facturaRef || ""} por ${montoFmt}`,
+      fecha:       fechaVence,
+      tipo:        "recordatorio",
+      color:       "#ef4444",
+    });
+
+    // Recordatorio 3 días antes
+    const vence = new Date(fechaVence);
+    const antes = new Date(vence);
+    antes.setDate(antes.getDate() - 3);
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    if (antes.toISOString().slice(0, 10) > hoyStr) {
+      await crearEvento({
+        token,
+        titulo:      `⏰ Pago próximo: ${nombreProveedor}`,
+        descripcion: `Factura ${facturaRef || ""} a ${nombreProveedor} vence en 3 días (${fechaVence}). ${montoFmt}`,
+        fecha:       antes.toISOString().slice(0, 10),
+        tipo:        "recordatorio",
+        color:       "#f97316",
+      });
+    }
+  }
 }

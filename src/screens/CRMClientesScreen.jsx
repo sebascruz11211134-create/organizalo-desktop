@@ -39,7 +39,14 @@ function NotaItem({ nota }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-700">{nota.texto}</p>
-        <p className="text-[11px] text-slate-400 mt-0.5">{nota.fecha}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-[11px] text-slate-400">{nota.fecha}</p>
+          {nota.seguimiento && (
+            <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+              <Calendar size={9} /> Seguimiento: {nota.seguimiento}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -47,10 +54,11 @@ function NotaItem({ nota }) {
 
 // ── Panel de detalle del cliente ──────────────────────────────────────────────
 function ClienteDetalle({ cliente, onClose, onActualizar }) {
-  const [tab,       setTab]       = useState("resumen");
-  const [nuevaNota, setNuevaNota] = useState("");
-  const [notas,     setNotas]     = useState(cliente.notas || []);
-  const [etapa,     setEtapa]     = useState(cliente.etapaCRM || ETAPA_DEFAULT);
+  const [tab,             setTab]             = useState("resumen");
+  const [nuevaNota,       setNuevaNota]       = useState("");
+  const [fechaSeguimiento, setFechaSeguimiento] = useState("");
+  const [notas,           setNotas]           = useState(cliente.notas || []);
+  const [etapa,           setEtapa]           = useState(cliente.etapaCRM || ETAPA_DEFAULT);
   const [facturas,  setFacturas]  = useState([]);
   const [cxc,       setCxc]       = useState([]);
   const [pedidos,   setPedidos]   = useState([]);
@@ -73,16 +81,42 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
     }).catch(() => {});
   }, [cliente]);
 
-  const agregarNota = () => {
+  const agregarNota = async () => {
     if (!nuevaNota.trim()) return;
     const nota = {
       texto: nuevaNota.trim(),
       fecha: new Date().toLocaleDateString("es-CR", { dateStyle: "medium" }),
+      ...(fechaSeguimiento ? { seguimiento: fechaSeguimiento } : {}),
     };
     const nuevasNotas = [nota, ...notas];
     setNotas(nuevasNotas);
     setNuevaNota("");
+    setFechaSeguimiento("");
     onActualizar(cliente.id, { notas: nuevasNotas });
+
+    // Si hay fecha de seguimiento futura, crear evento en el calendario
+    if (fechaSeguimiento && token) {
+      const hoy = new Date().toISOString().slice(0, 10);
+      if (fechaSeguimiento >= hoy) {
+        try {
+          await fetch(`${BACKEND}/api/eventos`, {
+            method:  "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              titulo:       `📋 Seguimiento: ${cliente.nombre}`,
+              descripcion:  nota.texto,
+              fecha:        fechaSeguimiento,
+              hora:         "09:00",
+              tipo:         "recordatorio",
+              todo_el_dia:  false,
+              color:        "#6366f1",
+            }),
+          });
+        } catch (e) {
+          console.warn("[CRM] No se pudo crear evento de seguimiento:", e.message);
+        }
+      }
+    }
   };
 
   const cambiarEtapa = (nueva) => {
@@ -175,21 +209,35 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
           {tab === "resumen" && (
             <div className="space-y-4">
               {/* Agregar nota */}
-              <div className="flex gap-2">
-                <input
-                  value={nuevaNota}
-                  onChange={e => setNuevaNota(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && agregarNota()}
-                  placeholder="Agregar nota de seguimiento…"
-                  className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-                />
-                <button
-                  onClick={agregarNota}
-                  disabled={!nuevaNota.trim()}
-                  className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors"
-                >
-                  <Plus size={15} />
-                </button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    value={nuevaNota}
+                    onChange={e => setNuevaNota(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && !fechaSeguimiento && agregarNota()}
+                    placeholder="Agregar nota de seguimiento…"
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <button
+                    onClick={agregarNota}
+                    disabled={!nuevaNota.trim()}
+                    className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+                  >
+                    <Plus size={15} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar size={13} className="text-slate-400 shrink-0" />
+                  <input
+                    type="date"
+                    value={fechaSeguimiento}
+                    onChange={e => setFechaSeguimiento(e.target.value)}
+                    className="border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
+                  />
+                  <span className="text-[11px] text-slate-400">
+                    {fechaSeguimiento ? "→ creará evento en calendario" : "Fecha de seguimiento (opcional)"}
+                  </span>
+                </div>
               </div>
 
               {notas.length === 0

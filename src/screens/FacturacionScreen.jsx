@@ -163,6 +163,7 @@ export default function FacturacionScreen() {
   const [facturas,   setFacturas]   = useState([]);
   const [sending,    setSending]    = useState(false);
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
+  const [authToken,  setAuthToken]  = useState(null);
 
   // Encabezado
   const [tipoDoc,    setTipoDoc]    = useState("01");
@@ -185,6 +186,7 @@ export default function FacturacionScreen() {
     setProductos(p);
     setFacturas(f);
     if (s.moneda) setMoneda(s.moneda);
+    import("../utils/auth").then(m => m.getToken()).then(setAuthToken);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -211,8 +213,13 @@ export default function FacturacionScreen() {
     // 1. Buscar en contactos locales
     const local = contactos.find((c) => c.cedula?.replace(/\D/g, "") === cedula);
     if (local) {
-      setCliente({ nombre: local.nombre, cedula: local.cedula || cedula, email: local.email || "", tipo: local.tipoCedula || "01" });
+      setCliente({ nombre: local.nombre, cedula: local.cedula || cedula, email: local.email || "", tipo: local.tipoCedula || "01", dias_credito: local.dias_credito || 0 });
       setBusqCliente(local.nombre);
+      // Auto-setear plazo de crédito si el cliente tiene uno configurado
+      if (local.dias_credito > 0) {
+        setCondPago("02"); // crédito
+        setPlazo(String(local.dias_credito));
+      }
       // Igual consultar Hacienda para situación fiscal actualizada
     }
 
@@ -277,7 +284,7 @@ export default function FacturacionScreen() {
     // 1. Reducir inventario por los productos vendidos
     await reducirInventario(factura.lineas);
 
-    // 2. Si es a crédito (condPago "02"), crear CXC automáticamente
+    // 2. Si es a crédito (condPago "02"), crear CXC + evento calendario
     if (factura.condPago === "02") {
       await crearCXC({
         cliente:    factura.cliente,
@@ -285,6 +292,7 @@ export default function FacturacionScreen() {
         moneda:     factura.moneda,
         plazo:      factura.plazo || 30,
         facturaRef: factura.numero,
+        token:      authToken,
       });
     }
 
@@ -535,11 +543,18 @@ export default function FacturacionScreen() {
                 {showClientes && clientesFiltrados.length > 0 && (
                   <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-36 overflow-auto">
                     {clientesFiltrados.map((c) => (
-                      <button key={c.id} onMouseDown={() => { setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01" }); setBusqCliente(c.nombre); setShowClientes(false); }}
+                      <button key={c.id} onMouseDown={() => {
+                        setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01", dias_credito: c.dias_credito || 0 });
+                        setBusqCliente(c.nombre);
+                        setShowClientes(false);
+                        // Auto-setear plazo de crédito del cliente
+                        if (c.dias_credito > 0) { setCondPago("02"); setPlazo(String(c.dias_credito)); }
+                      }}
                         className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b border-gray-50 last:border-0">
                         {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                         <span className="font-semibold">{c.nombre}</span>
                         <span className="text-slate-400 ml-2">{c.cedula}</span>
+                        {c.dias_credito > 0 && <span className="ml-2 text-[10px] text-emerald-600 font-semibold">{c.dias_credito}d crédito</span>}
                       </button>
                     ))}
                   </div>

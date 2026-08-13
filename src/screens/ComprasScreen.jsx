@@ -35,6 +35,8 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
   const [notas,      setNotas]      = useState(compra?.notas || "");
   const [busq,       setBusq]       = useState(compra?.proveedor || "");
   const [showProv,   setShowProv]   = useState(false);
+  // Guardar días de crédito del proveedor seleccionado
+  const [diasProvee, setDiasProvee] = useState(0);
 
   const base      = parseFloat(montoBase) || 0;
   const montoIVA  = (base * pctIVA) / 100;
@@ -45,6 +47,22 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
     c.cedula?.includes(busq) ||
     c.codigoCliente?.toUpperCase().includes(busq.toUpperCase())
   ).slice(0,6);
+
+  // Auto-calcular fechaVence cuando cambia el medio a crédito
+  const seleccionarProveedor = (c) => {
+    setProveedor(c.nombre);
+    setBusq(c.nombre);
+    setShowProv(false);
+    const dias = c.dias_credito || 0;
+    setDiasProvee(dias);
+    // Si tiene días de crédito, cambiar medio y calcular vencimiento
+    if (dias > 0) {
+      setMedio("Crédito proveedor");
+      const vence = new Date();
+      vence.setDate(vence.getDate() + dias);
+      setFechaVence(vence.toISOString().slice(0, 10));
+    }
+  };
 
   const guardar = () => {
     onGuardar({
@@ -83,14 +101,20 @@ function FormCompra({ compra, contactos, onGuardar, onCancelar }) {
               {showProv && filtrados.length>0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
                   {filtrados.map(c=>(
-                    <button key={c.id} onMouseDown={()=>{setProveedor(c.nombre);setBusq(c.nombre);setShowProv(false);}}
+                    <button key={c.id} onMouseDown={()=>seleccionarProveedor(c)}
                       className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
                       {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
                       <span className="text-slate-400 ml-2">{c.cedula}</span>
+                      {c.dias_credito > 0 && <span className="ml-2 text-[10px] text-red-600 font-semibold">{c.dias_credito}d pago</span>}
                     </button>
                   ))}
                 </div>
+              )}
+              {diasProvee > 0 && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">
+                  ⏱ Plazo de pago: {diasProvee} días — fecha vencimiento calculada automáticamente
+                </p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -191,11 +215,13 @@ export default function ComprasScreen() {
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
+  const [authToken, setAuthToken] = useState(null);
 
   const cargar = useCallback(async () => {
     const [c, ct] = await Promise.all([db.getCompras(), db.getContactos()]);
     setCompras(c || []);
     setContactos(ct || []);
+    import("../utils/auth").then(m => m.getToken()).then(setAuthToken);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -206,7 +232,7 @@ export default function ComprasScreen() {
     const esNueva = idx < 0;
     await db.setCompras(esNueva ? [...all, c] : all.map((x,i)=>i===idx?c:x));
 
-    // Si es nueva compra a crédito de proveedor → crear CXP automáticamente
+    // Si es nueva compra a crédito de proveedor → crear CXP + evento calendario
     if (esNueva && c.medio === "Crédito proveedor") {
       await crearCXP({
         proveedor:  c.proveedor,
@@ -214,6 +240,7 @@ export default function ComprasScreen() {
         moneda:     "CRC",
         fechaVence: c.fechaVence || null,
         facturaRef: c.numFactura || "",
+        token:      authToken,
       });
     }
 

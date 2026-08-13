@@ -12,15 +12,16 @@ function ContactoModal({ contacto, onClose, onSave }) {
   const [tel,           setTel]           = useState(contacto?.tel           || "");
   const [notas,         setNotas]         = useState(contacto?.notas         || "");
   const [codigoCli,     setCodigoCli]     = useState(contacto?.codigoCliente || "");
+  const [diasCredito,   setDiasCredito]   = useState(contacto?.dias_credito  ?? "");
 
   const guardar = async () => {
     if (!nombre.trim()) return;
     const todos = await db.getContactos();
-    // Si es nuevo contacto y no tiene código, generar uno automáticamente
     const codigo = codigoCli.trim() || (contacto ? contacto.codigoCliente : generarCodigoCliente(todos));
+    const dias = diasCredito === "" ? 0 : parseInt(diasCredito) || 0;
     const upd = contacto
-      ? todos.map((c) => c.id === contacto.id ? { ...c, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo } : c)
-      : [{ id: genId(), nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, creadoEn: new Date().toISOString() }, ...todos];
+      ? todos.map((c) => c.id === contacto.id ? { ...c, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias } : c)
+      : [{ id: genId(), nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias, creadoEn: new Date().toISOString() }, ...todos];
     await db.setContactos(upd);
     onSave(); onClose();
   };
@@ -69,10 +70,30 @@ function ContactoModal({ contacto, onClose, onSave }) {
             <input value={tel} onChange={(e) => setTel(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
-            <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm resize-none" />
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
+              <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm resize-none" />
+            </div>
+            <div className="w-32">
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                {tipo === "proveedor" ? "Días pago" : "Días crédito"}
+              </label>
+              <div className="relative">
+                <input
+                  type="number" min="0" max="365"
+                  value={diasCredito}
+                  onChange={(e) => setDiasCredito(e.target.value)}
+                  placeholder="0 = contado"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">días</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                {tipo === "proveedor" ? "Plazo para pagarle" : "Plazo que le das"}
+              </p>
+            </div>
           </div>
         </div>
         <div className="flex gap-3 mt-6">
@@ -130,10 +151,10 @@ export default function ContactosScreen() {
 
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr><th>Código</th><th>Nombre</th><th>Cédula / RUC</th><th>Tipo</th><th>Email</th><th>Teléfono</th><th>Notas</th><th></th></tr></thead>
+          <thead><tr><th>Código</th><th>Nombre</th><th>Cédula / RUC</th><th>Tipo</th><th>Crédito</th><th>Email</th><th>Teléfono</th><th>Notas</th><th></th></tr></thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin contactos</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin contactos</td></tr>
             ) : visibles.map((c) => (
               <tr key={c.id}>
                 <td>
@@ -144,6 +165,11 @@ export default function ContactosScreen() {
                 <td className="font-semibold">{c.nombre}</td>
                 <td className="font-mono text-sm text-slate-500">{c.cedula || "—"}</td>
                 <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[c.tipo] || "bg-gray-100 text-slate-600"}`}>{c.tipo}</span></td>
+                <td>
+                  {c.dias_credito > 0
+                    ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
+                    : <span className="text-xs text-slate-400">contado</span>}
+                </td>
                 <td className="text-slate-500">{c.email || "—"}</td>
                 <td className="text-slate-500">{c.tel || "—"}</td>
                 <td className="text-slate-400 text-xs">{c.notas || "—"}</td>
