@@ -17,7 +17,7 @@ export default function ConfiguracionScreen() {
   const [waLoading,    setWaLoading]    = useState(false);
   const [waMsg,        setWaMsg]        = useState(null);
   const [waMsgTest,    setWaMsgTest]    = useState("");
-  const [waTelTest,    setWaTelTest]    = useState("64693392");
+  const [waTelTest,    setWaTelTest]    = useState("");
   const [waSending,    setWaSending]    = useState(false);
 
   // ── Notificaciones ntfy ───────────────────────────────────────────────────
