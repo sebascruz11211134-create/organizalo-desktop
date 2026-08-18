@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Printer, Trash2 } from "lucide-react";
+import { Plus, Search, Printer, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
@@ -114,20 +114,31 @@ export default function RecibosScreen() {
   const [busq,      setBusq]      = useState("");
   const [mes,       setMes]       = useState(() => hoy().slice(0, 7));
   const [showModal, setShowModal] = useState(false);
+  const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {
     const [r, s, c] = await Promise.all([db.getRecibos(), db.getSettings(), db.getContactos()]);
     setRecibos(r); setSettings(s); setContactos(c || []);
   }, []);
+  useEffect(() => { cargar(); }, [cargar]);
+  useSyncRefresh(cargar);
 
-  const eliminar = async (r) => {
-    if (!confirm(`¿Eliminar el recibo #${r.numero}?`)) return;
+  const anular = async () => {
+    if (!sel) return;
+    if (!confirm(`¿Anular el recibo #${sel.numero}? Quedará marcado como anulado.`)) return;
     const todos = await db.getRecibos();
-    await db.setRecibos(todos.filter((x) => x.id !== r.id));
+    await db.setRecibos(todos.map(x => x.id === sel.id ? { ...x, estado: "anulado" } : x));
     cargar();
   };
 
-  useEffect(() => { cargar(); }, [cargar]);
+  const eliminar = async () => {
+    if (!sel) return;
+    if (!confirm(`¿Eliminar definitivamente el recibo #${sel.numero}? Esta acción no se puede deshacer.`)) return;
+    const todos = await db.getRecibos();
+    await db.setRecibos(todos.filter(x => x.id !== sel.id));
+    setSelected(null);
+    cargar();
+  };
 
   const mesesDisp = [...new Set(recibos.map((r) => (r.fecha || "").slice(0, 7)).filter(Boolean))].sort().reverse();
   const navMes = (dir) => {
@@ -143,54 +154,90 @@ export default function RecibosScreen() {
     return enMes && match;
   });
 
-  const totCRC = visibles.filter((r) => (settings.moneda || "CRC") === "CRC").reduce((s, r) => s + (r.monto || 0), 0);
+  const totCRC = visibles.filter(r => r.estado !== "anulado").reduce((s, r) => s + (r.monto || 0), 0);
+  const sel = visibles.find(r => r.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <button onClick={() => navMes(1)} className="px-2 py-1.5 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50">‹</button>
-        <span className="text-sm font-semibold w-28 text-center">{mesLabel(mes)}</span>
-        <button onClick={() => navMes(-1)} className="px-2 py-1.5 rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50">›</button>
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)} placeholder="Buscar…" className="bg-transparent text-sm flex-1 outline-none" />
-        </div>
+      {/* Toolbar oscuro estilo TecApro */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
-          <Plus size={15} /> Nuevo recibo
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13}/> Nuevo recibo
         </button>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        {/* Anular — outline ámbar: reversible */}
+        <button
+          disabled={!sel || sel.estado === "anulado"}
+          onClick={anular}
+          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Ban size={13}/> Anular
+        </button>
+        {/* Eliminar — sólido rojo: permanente */}
+        <button
+          disabled={!sel}
+          onClick={eliminar}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        <button onClick={() => navMes(1)} className="text-slate-300 hover:text-white px-2 py-1.5 text-xs">‹</button>
+        <span className="text-slate-200 text-xs font-semibold w-24 text-center">{mesLabel(mes)}</span>
+        <button onClick={() => navMes(-1)} className="text-slate-300 hover:text-white px-2 py-1.5 text-xs">›</button>
+        <div className="flex-1"/>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300"/>
+          <input value={busq} onChange={(e) => setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
+        </div>
       </div>
 
-      {visibles.length > 0 && (
-        <div className="flex gap-4 px-6 py-2 bg-green-50 border-b border-green-100 text-sm">
-          <span className="text-green-800 font-semibold">{visibles.length} recibos</span>
+      {/* Barra de registro seleccionado / totales */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">#{sel.numero}</span>
+          <span className="text-slate-500">{sel.clienteNombre || "Consumidor Final"}</span>
+          <span className="text-slate-400">{sel.metodoPago}</span>
+          <span className="font-bold text-green-700">{fmtMoney(sel.monto, sel.moneda || settings.moneda || "CRC")}</span>
+          {sel.estado === "anulado" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulado</span>}
+          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-green-100 text-xs text-slate-500">
+          <span className="text-green-800 font-semibold">{visibles.length} recibo{visibles.length !== 1 ? "s" : ""}</span>
           <span className="font-black text-green-900">{fmtMoney(totCRC, settings.moneda || "CRC")}</span>
+          <span className="ml-auto">clic en fila para seleccionar</span>
         </div>
       )}
 
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Moneda</th><th>Monto</th><th>Concepto</th><th></th></tr></thead>
+          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Monto</th><th>Concepto</th><th>Estado</th></tr></thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
-            ) : visibles.map((r) => (
-              <tr key={r.id}>
-                <td className="font-mono text-green-700 font-bold">#{r.numero}</td>
-                <td>{fmtDate(r.fecha)}</td>
-                <td className="font-medium">{r.clienteNombre || "Consumidor Final"}</td>
-                <td>{r.metodoPago}</td>
-                <td>{settings.moneda || "CRC"}</td>
-                <td className="font-bold">{fmtMoney(r.monto, settings.moneda || "CRC")}</td>
-                <td className="text-slate-500">{r.concepto || "—"}</td>
-                <td>
-                  <button onClick={() => eliminar(r)} className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
-                    <Trash2 size={13} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
+            ) : visibles.map((r) => {
+              const isSel     = selected === r.id;
+              const esAnulado = r.estado === "anulado";
+              return (
+                <tr key={r.id}
+                  className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulado ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
+                  onClick={() => setSelected(isSel ? null : r.id)}>
+                  <td className={`font-mono font-bold ${esAnulado ? "line-through text-slate-400" : "text-green-700"}`}>#{r.numero}</td>
+                  <td>{fmtDate(r.fecha)}</td>
+                  <td className={`font-medium ${esAnulado ? "line-through text-slate-400" : ""}`}>{r.clienteNombre || "Consumidor Final"}</td>
+                  <td className="text-slate-500">{r.metodoPago}</td>
+                  <td className={`font-bold ${esAnulado ? "line-through text-slate-400" : "text-green-700"}`}>{fmtMoney(r.monto, r.moneda || settings.moneda || "CRC")}</td>
+                  <td className="text-slate-500 text-xs">{r.concepto || "—"}</td>
+                  <td>
+                    {esAnulado
+                      ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">Anulado</span>
+                      : <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Activo</span>}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
