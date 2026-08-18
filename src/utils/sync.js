@@ -28,12 +28,23 @@ async function authHeaders() {
 // ── Push ──────────────────────────────────────────────────────────────────────
 
 export async function pushSync() {
-  const headers   = await authHeaders();
-  const data      = await db.getAll();
+  const headers  = await authHeaders();
+  const rawData  = await db.getAll();
   const updatedAt = new Date().toISOString();
 
+  // Solo subir claves que tengan contenido real — nunca sobrescribir con vacíos
+  const data = Object.fromEntries(
+    Object.entries(rawData).filter(([, v]) => {
+      if (v === null || v === undefined) return false;
+      if (Array.isArray(v) && v.length === 0) return false;
+      return true;
+    })
+  );
+
+  if (Object.keys(data).length === 0) return updatedAt;
+
   await axios.post(
-    `${BACKEND}/api/clouddata/push`,      // endpoint correcto del VPS
+    `${BACKEND}/api/clouddata/push`,
     { data },
     { headers, timeout: 15000 }
   );
@@ -71,26 +82,26 @@ export async function syncAll() {
     const headers = await authHeaders();
     if (!headers.Authorization) return { ok: true, skipped: true };
 
-    const lastSync = await db.getLastSync();
+    // 1. Subir datos locales primero (contribuye lo que tiene este browser)
+    //    pushSync ya filtra arrays vacíos → no sobrescribe datos de otros
+    await pushSync().catch(() => {});
 
+    // 2. Jalar del servidor (recibe datos de todos los demás dispositivos)
     const res = await axios.get(
-      `${BACKEND}/api/clouddata/pull`,    // endpoint correcto del VPS
+      `${BACKEND}/api/clouddata/pull`,
       { headers, timeout: 15000 }
     );
 
     const serverData = res.data?.data;
-
     if (serverData && Object.keys(serverData).length > 0) {
       const now = new Date().toISOString();
       await db.setAll(serverData);
       await db.setLastSync(now);
       _notifyUI(now);
-      return { ok: true, serverUpdatedAt: now };
-    } else {
-      // No hay datos en la nube aún → subir los locales
-      await pushSync();
-      return { ok: true, pushed: true };
+      return { ok: true, synced: true };
     }
+
+    return { ok: true };
   } catch (err) {
     console.warn("[Sync] Error:", err.message);
     return { ok: false, error: err.message };
