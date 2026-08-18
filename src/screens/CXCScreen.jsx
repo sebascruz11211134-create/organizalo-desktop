@@ -8,7 +8,7 @@ import { Plus, Search, ChevronDown, ChevronUp, Printer, FileSpreadsheet } from "
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
-import { cancelarEventoCalendario } from "../utils/clienteUtils";
+import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
@@ -134,6 +134,22 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
       notas: notas.trim(), creadoEn: new Date().toISOString(),
     };
     await db.setDebts([nueva, ...todos]);
+
+    // Crear evento en el calendario
+    if (vence) {
+      const { getToken } = await import("../utils/auth");
+      const token = await getToken();
+      const montoFmt = parseFloat(total).toLocaleString("es-CR", { style: "currency", currency: "CRC", minimumFractionDigits: 0 });
+      await crearEvento({ token, titulo: `💰 Cobro: ${nombre.trim()}`, descripcion: `Vence por ${montoFmt}.`, fecha: vence, tipo: "recordatorio", color: "#10b981" });
+      // Recordatorio 3 días antes
+      const venceD = new Date(vence);
+      const antes = new Date(venceD);
+      antes.setDate(antes.getDate() - 3);
+      if (antes.toISOString().slice(0, 10) > new Date().toISOString().slice(0, 10)) {
+        await crearEvento({ token, titulo: `⏰ Cobro próximo: ${nombre.trim()}`, descripcion: `Vence en 3 días (${vence}). ${montoFmt}`, fecha: antes.toISOString().slice(0, 10), tipo: "recordatorio", color: "#f59e0b" });
+      }
+    }
+
     onSave(); onClose();
   };
 
