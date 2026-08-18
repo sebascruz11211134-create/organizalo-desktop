@@ -3,7 +3,7 @@
  * Apertura → movimientos del día → cierre con arqueo físico
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
@@ -214,6 +214,13 @@ export default function CajaScreen() {
     await db.setCaja(upd); cargar();
   };
 
+  const eliminarMovimiento = async (movId) => {
+    if (!confirm("¿Eliminar este movimiento de caja?")) return;
+    const todas = await db.getCaja();
+    const upd   = todas.map(c=>c.fecha===fecha?{...c,movimientos:c.movimientos.filter(m=>m.id!==movId)}:c);
+    await db.setCaja(upd); cargar();
+  };
+
   const cerrarCaja = async (arqueo) => {
     const todas = await db.getCaja();
     const upd   = todas.map(c=>c.fecha===fecha?{...c,cerrada:true,arqueo,cierreEn:new Date().toISOString()}:c);
@@ -301,7 +308,7 @@ export default function CajaScreen() {
             ) : (
               <table className="table-base">
                 <thead>
-                  <tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th className="text-right">Ingreso</th><th className="text-right">Egreso</th></tr>
+                  <tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th className="text-right">Ingreso</th><th className="text-right">Egreso</th><th></th></tr>
                 </thead>
                 <tbody>
                   {cajaDia.movimientos.map(m=>(
@@ -311,6 +318,7 @@ export default function CajaScreen() {
                       <td className="text-slate-500 text-xs">{m.descripcion||"—"}</td>
                       <td className="text-right font-semibold text-green-700">{m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
                       <td className="text-right font-semibold text-red-600">{!m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
+                      <td>{abierta && <button onClick={()=>eliminarMovimiento(m.id)} className="p-1 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={13}/></button>}</td>
                     </tr>
                   ))}
                 </tbody>
