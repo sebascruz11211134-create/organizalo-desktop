@@ -3,6 +3,7 @@
  * Carga eventos desde /api/eventos (backend).
  */
 import React, { useState, useEffect, useCallback } from "react";
+import ClienteAutocomplete from "../components/ClienteAutocomplete";
 import {
   ChevronLeft, ChevronRight, Plus, X, Clock, Tag,
   User, Calendar, CheckCircle2, Circle, Trash2, Edit3,
@@ -122,11 +123,13 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
           </label>
 
           {/* Cliente */}
-          <input
+          <ClienteAutocomplete
             value={form.cliente_nombre}
-            onChange={e => set("cliente_nombre", e.target.value)}
+            onChange={(c, str) => set("cliente_nombre", str)}
+            tipo="todos"
             placeholder="Cliente (opcional)"
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+            ringColor="focus:ring-emerald-400"
+            className="py-2"
           />
 
           {/* Descripción */}

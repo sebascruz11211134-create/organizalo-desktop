@@ -3,6 +3,7 @@
  * Idéntico a CXCScreen pero filtra tipo === "pagar"
  */
 import React, { useState, useEffect, useCallback } from "react";
+import ClienteAutocomplete from "../components/ClienteAutocomplete";
 import { Plus, Search, ChevronDown, ChevronUp } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -42,8 +43,19 @@ function NuevaCXPModal({ onClose, onSave, settings }) {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Proveedor *</label>
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre del proveedor"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+            <ClienteAutocomplete
+              value={nombre}
+              onChange={(c, str) => {
+                setNombre(str);
+                if (c && c.dias_credito > 0) {
+                  const d = new Date();
+                  d.setDate(d.getDate() + c.dias_credito);
+                  setVence(d.toISOString().slice(0, 10));
+                }
+              }}
+              tipo="proveedor"
+              ringColor="focus:ring-red-500"
+            />
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
