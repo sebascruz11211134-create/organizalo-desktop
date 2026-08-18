@@ -2,7 +2,7 @@
  * NotasCreditoScreen — Gestión de Notas de Crédito (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Printer, FileSpreadsheet, X, Trash2 } from "lucide-react";
+import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -153,6 +153,14 @@ export default function NotasCreditoScreen() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const anular = async () => {
+    if (!sel) return;
+    if (!confirm(`¿Anular la nota de crédito ${sel.numero}? Quedará marcada como anulada.`)) return;
+    const todas = await db.getNotasCredito();
+    await db.setNotasCredito(todas.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
+    cargar();
+  };
+
   const eliminar = async (n) => {
     if (!confirm(`¿Eliminar la nota de crédito ${n.numero}? Esta acción no se puede deshacer.`)) return;
     const todas = await db.getNotasCredito();
@@ -166,7 +174,7 @@ export default function NotasCreditoScreen() {
           : f
       ));
     }
-    if (selected === n.id) setSelected(null);
+    setSelected(null);
     cargar();
   };
 
@@ -188,6 +196,12 @@ export default function NotasCreditoScreen() {
           <Plus size={13} /> Nueva NC
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
+        <button
+          disabled={!sel || sel.estado === "anulada"}
+          onClick={anular}
+          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Ban size={13} /> Anular
+        </button>
         <button
           disabled={!sel}
           onClick={() => sel && eliminar(sel)}

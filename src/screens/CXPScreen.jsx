@@ -4,13 +4,14 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
+  if (d.estado === "anulada") return { label: "Anulada", cls: "bg-slate-100 text-slate-500" };
   const s = Math.max(0, d.total - (d.pagado || 0));
   if (s <= 0) return { label: "Pagada", cls: "bg-green-100 text-green-800" };
   if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
@@ -192,6 +193,14 @@ export default function CXPScreen() {
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
+  const anular = async () => {
+    if (!sel) return;
+    if (!confirm(`¿Anular la CXP de ${sel.nombre}? Quedará marcada como anulada.`)) return;
+    const todos = await db.getDebts();
+    await db.setDebts(todos.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
+    cargar();
+  };
+
   const eliminar = async (d) => {
     if (!confirm(`¿Eliminar la CXP de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
     const todos = await db.getDebts();
@@ -200,7 +209,7 @@ export default function CXPScreen() {
       await cancelarEventoCalendario({ token, tituloMatch: `Pago: ${d.nombre}`, fecha: d.fechaVencimiento });
       await cancelarEventoCalendario({ token, tituloMatch: `Pago próximo: ${d.nombre}` });
     }
-    if (selected === d.id) setSelected(null);
+    setSelected(null);
     cargar();
   };
 
@@ -235,6 +244,12 @@ export default function CXPScreen() {
           onClick={() => setModal({ deuda: sel })}
           className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Plus size={13} /> Pagar
+        </button>
+        <button
+          disabled={!sel || sel.estado === "anulada"}
+          onClick={anular}
+          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Ban size={13} /> Anular
         </button>
         <button
           disabled={!sel}
@@ -292,17 +307,18 @@ export default function CXPScreen() {
             {visibles.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin cuentas por pagar</td></tr>
             ) : visibles.map((d) => {
-              const mon   = d.moneda || settings.moneda || "CRC";
-              const saldo = Math.max(0, d.total - (d.pagado || 0));
-              const est   = ESTADO(d);
-              const isSel = selected === d.id;
+              const mon      = d.moneda || settings.moneda || "CRC";
+              const saldo    = Math.max(0, d.total - (d.pagado || 0));
+              const est      = ESTADO(d);
+              const isSel    = selected === d.id;
+              const esAnulada = d.estado === "anulada";
               return (
                 <React.Fragment key={d.id}>
                   <tr
-                    className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : "hover:bg-slate-50"}`}
+                    className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                     onClick={() => setSelected(isSel ? null : d.id)}
                   >
-                    <td className="font-semibold text-slate-900">{d.nombre}</td>
+                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{d.nombre}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
                     <td className="text-green-700">{fmtMoney(d.pagado || 0, mon)}</td>
