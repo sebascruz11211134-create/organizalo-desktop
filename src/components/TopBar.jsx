@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { RefreshCw, LogOut, ChevronDown, User } from "lucide-react";
+import { RefreshCw, LogOut, ChevronDown, Menu } from "lucide-react";
 
-export default function TopBar({ title, syncStatus, onSync, user, onLogout }) {
+export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMobileMenu }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isSyncing = syncStatus === "syncing";
@@ -24,9 +24,18 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout }) {
   }[syncStatus] ?? "";
 
   return (
-    <header className="drag-region flex items-center justify-between h-11 px-5 bg-white border-b border-slate-200 shrink-0">
-      {/* Espacio semáforos macOS */}
-      <div className="w-[70px]" />
+    <header className="drag-region flex items-center justify-between h-11 px-4 bg-white border-b border-slate-200 shrink-0">
+      {/* Hamburger en móvil | Espacio semáforos macOS en desktop */}
+      <div className="flex items-center">
+        <button
+          onClick={onMobileMenu}
+          className="lg:hidden no-drag p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 mr-2"
+          aria-label="Abrir menú"
+        >
+          <Menu size={18} />
+        </button>
+        <div className="hidden lg:block w-[70px]" />
+      </div>
 
       <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight">{title}</h1>
 

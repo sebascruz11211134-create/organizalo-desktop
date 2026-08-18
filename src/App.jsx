@@ -144,6 +144,7 @@ function TrialBanner({ plan }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [collapsed,          setCollapsed]          = useState(false);
+  const [mobileMenuOpen,     setMobileMenuOpen]     = useState(false);
   const [syncStatus,         setSyncStatus]         = useState("idle");
   const [authState,          setAuthState]          = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
   const [user,               setUser]               = useState(null);
@@ -284,7 +285,14 @@ export default function App() {
       <TrialBanner plan={plan} />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} userEmail={user?.email} modulosHabilitados={modulosHabilitados} />
+        <Sidebar
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((c) => !c)}
+          userEmail={user?.email}
+          modulosHabilitados={modulosHabilitados}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
 
         <div className="flex flex-col flex-1 overflow-hidden">
           <TopBar
@@ -293,6 +301,7 @@ export default function App() {
             onSync={handleSync}
             user={user}
             onLogout={handleLogout}
+            onMobileMenu={() => setMobileMenuOpen((o) => !o)}
           />
 
           <main className="flex-1 overflow-auto">

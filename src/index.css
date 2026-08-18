@@ -93,6 +93,56 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .badge-yellow     { @apply badge bg-amber-100 text-amber-700; }
 .badge-slate      { @apply badge bg-slate-100 text-slate-600; }
 
+/* ── Responsive: tablas con scroll horizontal en móvil ──────────────────────  */
+.table-scroll-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Envolver tablas automáticamente en pantallas chicas */
+@media (max-width: 768px) {
+  .table-base {
+    min-width: 640px;
+  }
+  /* Cualquier contenedor de tabla hereda scroll */
+  .overflow-auto > table,
+  .flex-1.overflow-auto table {
+    min-width: 580px;
+  }
+}
+
+/* ── Responsive: modales full-screen en móvil ───────────────────────────────  */
+/* Clase helper: agregar .modal-responsive al div interno del modal */
+@media (max-width: 640px) {
+  .modal-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    border-radius: 0 !important;
+    overflow-y: auto;
+    margin: 0 !important;
+  }
+}
+
+/* ── Responsive: grids colapsan a 1 col en móvil ────────────────────────────  */
+@media (max-width: 640px) {
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Padding reducido en pantallas chicas */
+  .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  /* TopBar: título más compacto */
+  header h1 { font-size: 12px !important; }
+}
+
+/* ── Responsive: touch targets más grandes en móvil ─────────────────────────  */
+@media (max-width: 768px) {
+  button, a[role="button"] {
+    min-height: 36px;
+  }
+}
+
 /* ── Cards ──────────────────────────────────────────────────────────────────  */
 .card {
   @apply bg-white border border-slate-200 rounded-xl p-5 shadow-card;

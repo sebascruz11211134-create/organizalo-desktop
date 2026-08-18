@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useCurrency } from "../contexts/CurrencyContext";
 import {
@@ -250,18 +250,34 @@ function GroupItem({ item, collapsed }) {
 }
 
 // ── Sidebar principal ──────────────────────────────────────────────────────────
-export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados }) {
+export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados, mobileOpen, onMobileClose }) {
   const esSuperAdmin = userEmail === SUPERADMIN_EMAIL;
   const { moneda, setMoneda, tipoCambio, cargando } = useCurrency();
+  const location = useLocation();
+
+  // Cerrar sidebar móvil al navegar
+  useEffect(() => { onMobileClose && onMobileClose(); }, [location.pathname]);
 
   const navVisible = modulosHabilitados === null
     ? NAV
     : NAV.filter(item => SIEMPRE_VISIBLES.has(item.id) || modulosHabilitados.includes(item.id));
 
   return (
+    <>
+      {/* Overlay móvil */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
     <aside
-      className={`relative flex flex-col shrink-0 transition-all duration-200 overflow-hidden
-        ${collapsed ? "w-14" : "w-56"}`}
+      className={`
+        fixed lg:relative inset-y-0 left-0 z-50
+        flex flex-col shrink-0 transition-all duration-200 overflow-hidden
+        ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
+        ${collapsed ? "w-14" : "w-56"}
+      `}
       style={{
         background: "linear-gradient(180deg, #0d1829 0%, #0f1f2e 50%, #0b1620 100%)",
         borderRight: "1px solid rgba(255,255,255,0.06)",
@@ -396,5 +412,6 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
           : <PanelLeftClose size={14} />}
       </button>
     </aside>
+    </>
   );
 }
