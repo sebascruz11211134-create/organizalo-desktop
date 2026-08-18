@@ -267,8 +267,8 @@ export default function CXPScreen() {
                           </button>
                         )}
                         <button onClick={(e) => { e.stopPropagation(); eliminar(d); }}
-                          className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar CXP">
-                          <Trash2 size={13} />
+                          className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-xs rounded-lg font-semibold hover:bg-red-100">
+                          Eliminar
                         </button>
                         {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                       </div>
