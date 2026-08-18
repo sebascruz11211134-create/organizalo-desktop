@@ -26,10 +26,13 @@ async function getJSON(key, fallback = null) {
 async function setJSON(key, value) {
   if (isElectron) {
     await window.electronAPI.store.set(key, value);
-    return;
+  } else {
+    if (value === null || value === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
   }
-  if (value === null || value === undefined) localStorage.removeItem(key);
-  else localStorage.setItem(key, JSON.stringify(value));
+  // Auto-push al servidor después de cada write (debounced via sync.js)
+  // window.__orgPush es inyectado por sync.js para evitar imports circulares
+  if (typeof window.__orgPush === "function") window.__orgPush();
 }
 
 // getAll / setAll para web (electron-store los tiene nativos)

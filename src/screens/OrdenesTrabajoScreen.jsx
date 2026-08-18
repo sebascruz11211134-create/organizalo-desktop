@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, Wrench, Receipt } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { reducirInventario } from "../utils/clienteUtils";
 

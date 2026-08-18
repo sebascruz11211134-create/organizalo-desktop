@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Edit2, X, Trash2, Package, AlertCircle } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
 
 const TIPOS  = ["Equipo de cómputo","Vehículo","Mobiliario y equipo","Edificio","Terreno","Intangible","Otro"];
@@ -123,6 +124,7 @@ export default function ActivosFijosScreen() {
 
   const cargar = useCallback(async ()=>{ setActivos(await db.getActivosFijos()); },[]);
   useEffect(()=>{ cargar(); },[cargar]);
+  useSyncRefresh(cargar);
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este activo?")) return;

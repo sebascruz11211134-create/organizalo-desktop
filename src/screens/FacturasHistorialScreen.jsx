@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, FileText, CheckCircle, Clock, XCircle, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 
 const ESTADOS = {

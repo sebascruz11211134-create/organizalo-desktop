@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
 
 // Crea un asiento contable automático al cerrar la caja
@@ -184,6 +185,7 @@ export default function CajaScreen() {
     setCajas(await db.getCaja());
   }, []);
   useEffect(()=>{ cargar(); },[cargar]);
+  useSyncRefresh(cargar);
 
   const cajaDia   = cajas.find(c=>c.fecha===fecha);
   const abierta   = cajaDia && !cajaDia.cerrada;

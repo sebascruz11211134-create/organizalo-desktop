@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, Users } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, genId } from "../utils/fmt";
 
 const PUESTOS = ["Gerente","Administrador","Vendedor","Técnico","Operario","Contador","Recepcionista","Repartidor","Otro"];

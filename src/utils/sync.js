@@ -106,6 +106,11 @@ let _listeners = [];   // callbacks registrados por la UI
  * Conecta el socket con el token de sesión.
  * Llamar después de login exitoso.
  */
+// Inyectar en window para que db.js pueda llamarlo sin import circular
+if (typeof window !== "undefined") {
+  window.__orgPush = schedulePush;
+}
+
 export async function connectSocket() {
   const token = await getToken();
   if (!token) return;
@@ -176,6 +181,29 @@ function _notifyUI(updatedAt) {
   _listeners.forEach(fn => {
     try { fn({ updatedAt }); } catch {}
   });
+  // También notificar via evento de window para que los hooks puedan escuchar
+  try { window.dispatchEvent(new CustomEvent("organizalo:sync", { detail: { updatedAt } })); } catch {}
+}
+
+// ── Auto-push debounced (llamado por db.js tras cada write) ──────────────────
+
+let _pushTimer = null;
+
+export function schedulePush() {
+  if (_pushTimer) clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(async () => {
+    try {
+      const headers = await authHeaders();
+      if (!headers.Authorization) return; // no logueado, no push
+      await pushSync();
+      // Notificar al servidor para que avise a los demás clientes
+      if (_socket?.connected) {
+        _socket.emit("data:push", {});
+      }
+    } catch (err) {
+      console.warn("[Sync] Auto-push error:", err.message);
+    }
+  }, 1200); // esperar 1.2s para agrupar múltiples writes seguidos
 }
 
 // ── Auto-sync polling (fallback si WebSocket no disponible) ───────────────────

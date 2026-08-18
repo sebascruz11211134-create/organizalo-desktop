@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Users, Briefcase, Trash2, Loader2 } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { genId } from "../utils/fmt";
 import { generarCodigoCliente } from "../utils/clienteUtils";
 

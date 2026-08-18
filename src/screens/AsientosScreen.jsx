@@ -4,8 +4,9 @@
  * Validación: suma(debe) === suma(haber)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, X, ChevronDown, ChevronRight, Printer } from "lucide-react";
+import { Plus, Search, X, ChevronDown, ChevronRight, Printer, Trash2 } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { PLAN_DEFAULT } from "../utils/planCuentas";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
 
@@ -149,11 +150,12 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
 }
 
 // ── Fila expandible ──────────────────────────────────────────────────────────
-function AsientoRow({ a, onEdit }) {
+function AsientoRow({ a, onEdit, isSel, onSelect }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <tr className="cursor-pointer" onClick={()=>setOpen(o=>!o)}>
+      <tr className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : "hover:bg-slate-50"}`}
+        onClick={onSelect}>
         <td className="font-mono text-xs text-slate-500">{a.numero}</td>
         <td className="text-slate-500">{fmtDate(a.fecha)}</td>
         <td className="font-semibold text-slate-900">{a.descripcion}</td>
@@ -161,8 +163,8 @@ function AsientoRow({ a, onEdit }) {
         <td className="text-right font-semibold">{fmtMoney(a.totalDebe,"CRC")}</td>
         <td className="text-right text-slate-400">{fmtMoney(a.totalHaber,"CRC")}</td>
         <td>
-          <button onClick={e=>{e.stopPropagation();onEdit(a)}} className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
-            <ChevronRight size={13}/>
+          <button onClick={e=>{e.stopPropagation();setOpen(o=>!o);}} className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
+            {open ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
           </button>
         </td>
       </tr>
@@ -187,6 +189,7 @@ export default function AsientosScreen() {
   const [cuentas,  setCuentas]  = useState([]);
   const [busq,     setBusq]     = useState("");
   const [modal,    setModal]    = useState(null);
+  const [selected, setSelected] = useState(null);
 
   const cargar = useCallback(async () => {
     const [a, c] = await Promise.all([db.getAsientos(), db.getCuentasContables()]);
@@ -195,6 +198,16 @@ export default function AsientosScreen() {
   }, []);
 
   useEffect(()=>{ cargar(); },[cargar]);
+  useSyncRefresh(cargar);
+
+  const eliminar = async () => {
+    if (!sel) return;
+    if (!confirm(`¿Eliminar el asiento ${sel.numero}? Esta acción no se puede deshacer.`)) return;
+    const todos = await db.getAsientos();
+    await db.setAsientos(todos.filter(x => x.id !== sel.id));
+    setSelected(null);
+    cargar();
+  };
 
   const busqL    = busq.trim().toLowerCase();
   const visibles = asientos.filter(a =>
@@ -204,30 +217,51 @@ export default function AsientosScreen() {
 
   const totDebe  = visibles.reduce((s,a)=>s+a.totalDebe,0);
   const totHaber = visibles.reduce((s,a)=>s+a.totalHaber,0);
+  const sel      = visibles.find(a => a.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)}
-            placeholder="Buscar asiento…" className="bg-transparent text-sm flex-1 outline-none"/>
-        </div>
+      {/* Toolbar oscuro estilo TecApro */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={()=>setModal({})}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
-          <Plus size={14}/> Nuevo asiento
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13}/> Nuevo asiento
         </button>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        <button
+          disabled={!sel}
+          onClick={eliminar}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        <div className="flex-1"/>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300"/>
+          <input value={busq} onChange={e=>setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
+        </div>
       </div>
 
-      {/* Totales */}
-      <div className="flex gap-6 px-6 py-2 bg-slate-50 border-b border-slate-200 text-sm">
-        <span className="text-slate-500">{visibles.length} asientos</span>
-        <span className="text-slate-700">Total debe: <strong>{fmtMoney(totDebe,"CRC")}</strong></span>
-        <span className="text-slate-700">Total haber: <strong>{fmtMoney(totHaber,"CRC")}</strong></span>
-        {Math.abs(totDebe-totHaber)<0.01 && visibles.length>0 &&
-          <span className="text-green-600 font-semibold">✓ Balanceado</span>}
-      </div>
+      {/* Barra de registro seleccionado / totales */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-red-50 border-b border-red-200 text-xs">
+          <span className="text-red-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.numero}</span>
+          <span className="text-slate-500">{sel.descripcion}</span>
+          {sel.referencia && <span className="text-slate-400">Ref: {sel.referencia}</span>}
+          <span className="font-bold text-slate-700">{fmtMoney(sel.totalDebe,"CRC")}</span>
+          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="flex gap-6 px-4 py-1.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+          <span>{visibles.length} asientos</span>
+          <span>Total debe: <strong className="text-slate-700">{fmtMoney(totDebe,"CRC")}</strong></span>
+          <span>Total haber: <strong className="text-slate-700">{fmtMoney(totHaber,"CRC")}</strong></span>
+          {Math.abs(totDebe-totHaber)<0.01 && visibles.length>0 &&
+            <span className="text-green-600 font-semibold">✓ Balanceado</span>}
+          <span className="ml-auto">clic en fila para seleccionar</span>
+        </div>
+      )}
 
       {/* Tabla */}
       <div className="flex-1 overflow-auto">
@@ -241,9 +275,12 @@ export default function AsientosScreen() {
           <tbody>
             {visibles.length===0 ? (
               <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin asientos contables</td></tr>
-            ) : visibles.map(a=>(
-              <AsientoRow key={a.id} a={a} onEdit={setModal}/>
-            ))}
+            ) : visibles.map(a=>{
+              const isSel = selected === a.id;
+              return (
+                <AsientoRow key={a.id} a={a} onEdit={setModal} isSel={isSel} onSelect={()=>setSelected(isSel?null:a.id)}/>
+              );
+            })}
           </tbody>
         </table>
       </div>

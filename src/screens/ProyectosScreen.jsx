@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Edit2, X, Trash2, Layers, ChevronDown, ChevronRight } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
 
 const ESTADOS = ["Activo","Completado","Pausado","Cancelado"];
@@ -159,6 +160,7 @@ export default function ProyectosScreen() {
     setProyectos(p||[]); setFacturas(f||[]); setGastos([...(g||[]), ...(c||[])]);
   },[]);
   useEffect(()=>{ cargar(); },[cargar]);
+  useSyncRefresh(cargar);
 
   const eliminar = async (id) => {
     if (!confirm("¿Eliminar este proyecto?")) return;

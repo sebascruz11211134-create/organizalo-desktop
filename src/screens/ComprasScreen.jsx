@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, ShoppingCart } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { crearCXP, aumentarInventario } from "../utils/clienteUtils";
 

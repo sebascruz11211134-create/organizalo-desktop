@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Trash2, X, Check, Package } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, genId } from "../utils/fmt";
 
 const CATEGORIAS = ["General","Alimentos","Bebidas","Ropa","Electrónica","Herramientas","Servicios","Otro"];

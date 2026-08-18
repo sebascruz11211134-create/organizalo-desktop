@@ -13,6 +13,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Send, Save, FileText, ChevronDown, Printer, Search, Loader2 } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
 import { reducirInventario, crearCXC } from "../utils/clienteUtils";

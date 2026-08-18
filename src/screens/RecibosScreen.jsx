@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Printer, Trash2 } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
 
 function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {

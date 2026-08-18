@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
 import { Plus, Search, Trash2 } from "lucide-react";
 import db from "../utils/db";
+import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
