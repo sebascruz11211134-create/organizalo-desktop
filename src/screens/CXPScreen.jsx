@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
@@ -179,9 +179,9 @@ export default function CXPScreen() {
   const [debts,    setDebts]    = useState([]);
   const [settings, setSettings] = useState({});
   const [busq,     setBusq]     = useState("");
-  const [expanded, setExpanded] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [pagoModal, setPagoModal] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [modal,    setModal]    = useState(null); // "nueva" | { deuda }
+  const [filtro,   setFiltro]   = useState("todos");
   const [token,    setToken]    = useState(null);
 
   const cargar = useCallback(async () => {
@@ -199,6 +199,7 @@ export default function CXPScreen() {
       await cancelarEventoCalendario({ token, tituloMatch: `Pago: ${d.nombre}`, fecha: d.fechaVencimiento });
       await cancelarEventoCalendario({ token, tituloMatch: `Pago próximo: ${d.nombre}` });
     }
+    if (selected === d.id) setSelected(null);
     cargar();
   };
 
@@ -206,78 +207,138 @@ export default function CXPScreen() {
 
   const busqL = busq.trim().toLowerCase();
   const visibles = debts
-    .filter((d) => !busqL || d.nombre?.toLowerCase().includes(busqL))
+    .filter((d) => {
+      if (busqL && !d.nombre?.toLowerCase().includes(busqL) && !d.notas?.toLowerCase().includes(busqL)) return false;
+      if (filtro === "pendientes") return Math.max(0, d.total - (d.pagado || 0)) > 0;
+      if (filtro === "vencidas")  return d.fechaVencimiento && d.fechaVencimiento < hoy() && Math.max(0, d.total - (d.pagado || 0)) > 0;
+      if (filtro === "pagadas")   return Math.max(0, d.total - (d.pagado || 0)) <= 0;
+      return true;
+    })
     .sort((a, b) => (b.creadoEn || "").localeCompare(a.creadoEn || ""));
 
   const totCRC = visibles.filter((d) => (d.moneda || "CRC") === "CRC").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
   const totUSD = visibles.filter((d) => d.moneda === "USD").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
+  const sel = visibles.find((d) => d.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar proveedor…" className="bg-transparent text-sm flex-1 outline-none" />
-        </div>
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700">
-          <Plus size={15} /> Nueva CXP
+      {/* Toolbar principal */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={() => setModal("nueva")}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13} /> Nueva
         </button>
+        <div className="w-px h-5 bg-slate-500 mx-1" />
+        <button
+          disabled={!sel || Math.max(0, sel.total - (sel.pagado||0)) <= 0}
+          onClick={() => setModal({ deuda: sel })}
+          className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13} /> Pagar
+        </button>
+        <button
+          disabled={!sel}
+          onClick={() => sel && eliminar(sel)}
+          className="flex items-center gap-1.5 bg-red-800 hover:bg-red-900 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Trash2 size={13} /> Eliminar
+        </button>
+        <div className="flex-1" />
+        <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
+          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
+          <option value="todos">Todos</option>
+          <option value="pendientes">Pendientes</option>
+          <option value="vencidas">Vencidas</option>
+          <option value="pagadas">Pagadas</option>
+        </select>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300" />
+          <input value={busq} onChange={(e) => setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-32 placeholder-slate-400" />
+        </div>
       </div>
 
-      {(totCRC > 0 || totUSD > 0) && (
-        <div className="flex gap-4 px-6 py-2 bg-red-50 border-b border-red-100 text-sm">
-          <span className="text-red-800 font-semibold">Por pagar:</span>
-          {totCRC > 0 && <span className="font-black text-red-900">{fmtMoney(totCRC, "CRC")}</span>}
-          {totUSD > 0 && <span className="font-black text-red-900">{fmtMoney(totUSD, "USD")}</span>}
+      {/* Barra de registro seleccionado */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-red-50 border-b border-red-200 text-xs">
+          <span className="text-red-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.nombre}</span>
+          <span className="text-slate-500">Saldo: <strong className="text-red-600">{fmtMoney(Math.max(0,sel.total-(sel.pagado||0)), sel.moneda||"CRC")}</strong></span>
+          <span className="text-slate-500">Vence: {fmtDate(sel.fechaVencimiento)}</span>
+          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="flex gap-4 px-4 py-1.5 bg-red-50 border-b border-red-100 text-xs text-slate-500">
+          {totCRC > 0 && <span>Por pagar: <strong className="text-red-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
+          {totUSD > 0 && <span><strong className="text-red-800">{fmtMoney(totUSD,"USD")}</strong></span>}
+          <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
         </div>
       )}
 
+      {/* Tabla */}
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr>
-            <th>Proveedor</th><th>Referencia</th><th>Total</th>
-            <th>Pagado</th><th>Saldo</th><th>Vencimiento</th><th>Estado</th><th></th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th>Proveedor</th>
+              <th>Referencia</th>
+              <th>Total</th>
+              <th>Pagado</th>
+              <th>Saldo</th>
+              <th>Vencimiento</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin cuentas por pagar</td></tr>
+              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin cuentas por pagar</td></tr>
             ) : visibles.map((d) => {
               const mon   = d.moneda || settings.moneda || "CRC";
               const saldo = Math.max(0, d.total - (d.pagado || 0));
               const est   = ESTADO(d);
-              const isExp = expanded === d.id;
+              const isSel = selected === d.id;
               return (
                 <React.Fragment key={d.id}>
-                  <tr className="cursor-pointer" onClick={() => setExpanded(isExp ? null : d.id)}>
-                    <td className="font-semibold">{d.nombre}</td>
+                  <tr
+                    className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : "hover:bg-slate-50"}`}
+                    onClick={() => setSelected(isSel ? null : d.id)}
+                  >
+                    <td className="font-semibold text-slate-900">{d.nombre}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
                     <td className="text-green-700">{fmtMoney(d.pagado || 0, mon)}</td>
                     <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-700"}`}>{fmtMoney(saldo, mon)}</td>
-                    <td>{fmtDate(d.fechaVencimiento)}</td>
-                    <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        {saldo > 0 && (
-                          <button onClick={e => { e.stopPropagation(); setPagoModal(d); }}
-                            className="px-3 py-1 bg-red-600 text-white text-xs rounded-lg font-semibold hover:bg-red-700">
-                            Pagar
-                          </button>
-                        )}
-                        <button onClick={(e) => { e.stopPropagation(); eliminar(d); }}
-                          className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-xs rounded-lg font-semibold hover:bg-red-100">
-                          Eliminar
-                        </button>
-                        {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                      </div>
+                    <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
+                      {fmtDate(d.fechaVencimiento)}
                     </td>
+                    <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
                   </tr>
-                  {isExp && (
-                    <tr><td colSpan={8} className="bg-gray-50 px-8 py-3 text-xs text-slate-500">
-                      Pagos: {(d.pagos || []).map((p) => `${p.numero} ${p.fecha} ${fmtMoney(p.monto, mon)}`).join(" · ") || "Sin pagos"}
-                    </td></tr>
+                  {isSel && (
+                    <tr>
+                      <td colSpan={7} className="bg-red-50 px-8 py-3">
+                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Pagos registrados</p>
+                        {(d.pagos || []).length === 0 ? (
+                          <p className="text-xs text-slate-400">Sin pagos registrados.</p>
+                        ) : (
+                          <table className="w-full text-xs">
+                            <thead><tr className="text-slate-500">
+                              <th className="text-left pb-1">Fecha</th>
+                              <th className="text-left pb-1">Método</th>
+                              <th className="text-left pb-1">Monto</th>
+                              <th className="text-left pb-1">Notas</th>
+                            </tr></thead>
+                            <tbody>
+                              {(d.pagos || []).map((p, i) => (
+                                <tr key={p.id || i}>
+                                  <td className="py-0.5">{p.fecha}</td>
+                                  <td className="py-0.5">{p.metodo}</td>
+                                  <td className="py-0.5 font-bold">{fmtMoney(p.monto, mon)}</td>
+                                  <td className="py-0.5 text-slate-400">{p.notas || "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </td>
+                    </tr>
                   )}
                 </React.Fragment>
               );
@@ -286,8 +347,9 @@ export default function CXPScreen() {
         </table>
       </div>
 
-      {showModal && <NuevaCXPModal settings={settings} onClose={() => setShowModal(false)} onSave={cargar} />}
-      {pagoModal && <PagoCXPModal deuda={pagoModal} settings={settings} token={token} onClose={() => setPagoModal(null)} onSave={cargar} />}
+      {/* Modales */}
+      {modal === "nueva" && <NuevaCXPModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
+      {modal?.deuda && <PagoCXPModal deuda={modal.deuda} settings={settings} token={token} onClose={() => setModal(null)} onSave={cargar} />}
     </div>
   );
 }

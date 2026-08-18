@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, ChevronDown, ChevronUp, Printer, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Plus, Search, Printer, FileSpreadsheet, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
@@ -213,9 +213,9 @@ export default function CXCScreen() {
   const [debts,    setDebts]    = useState([]);
   const [settings, setSettings] = useState({});
   const [busq,     setBusq]     = useState("");
-  const [expanded, setExpanded] = useState(null);
+  const [selected, setSelected] = useState(null); // fila seleccionada
   const [modal,    setModal]    = useState(null);  // "nueva" | { deuda }
-  const [filtro,   setFiltro]   = useState("todos"); // todos | pendientes | vencidas | saldadas
+  const [filtro,   setFiltro]   = useState("todos");
   const [token,    setToken]    = useState(null);
 
   const cargar = useCallback(async () => {
@@ -252,52 +252,67 @@ export default function CXCScreen() {
 
   const totCRC = visibles.filter((d) => (d.moneda || "CRC") === "CRC").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
   const totUSD = visibles.filter((d) => d.moneda === "USD").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
+  const sel = visibles.find((d) => d.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar cliente…" className="bg-transparent text-sm flex-1 outline-none" />
-        </div>
+      {/* Toolbar principal */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={() => setModal("nueva")}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13} /> Nueva
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1" />
+        <button
+          disabled={!sel || Math.max(0, sel.total - (sel.pagado||0)) <= 0}
+          onClick={() => setModal({ deuda: sel })}
+          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13} /> Pagar
+        </button>
+        <button
+          disabled={!sel}
+          onClick={() => sel && eliminar(sel)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Trash2 size={13} /> Eliminar
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1" />
+        <button onClick={() => { const crc=debts.filter(d=>(d.moneda||"CRC")==="CRC"); const usd=debts.filter(d=>d.moneda==="USD"); printHTML(htmlReporteCXC(crc,usd,settings)); }}
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Printer size={13} /> Imprimir
+        </button>
+        <button onClick={() => { const crc=debts.filter(d=>(d.moneda||"CRC")==="CRC"); const usd=debts.filter(d=>d.moneda==="USD"); exportExcel(sheetsReporteCXC(crc,usd),"reporte-cxc"); }}
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <FileSpreadsheet size={13} /> Excel
+        </button>
+        <div className="flex-1" />
         <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
           <option value="todos">Todos</option>
           <option value="pendientes">Pendientes</option>
           <option value="vencidas">Vencidas</option>
           <option value="saldadas">Saldadas</option>
         </select>
-        <button onClick={() => {
-            const crc = debts.filter(d=>(d.tipo||"pagar")==="cobrar"&&(d.moneda||"CRC")==="CRC");
-            const usd = debts.filter(d=>(d.tipo||"pagar")==="cobrar"&&d.moneda==="USD");
-            printHTML(htmlReporteCXC(crc, usd, settings));
-          }}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors" title="Imprimir">
-          <Printer size={15} /> Imprimir
-        </button>
-        <button onClick={() => {
-            const crc = debts.filter(d=>(d.tipo||"pagar")==="cobrar"&&(d.moneda||"CRC")==="CRC");
-            const usd = debts.filter(d=>(d.tipo||"pagar")==="cobrar"&&d.moneda==="USD");
-            exportExcel(sheetsReporteCXC(crc, usd), "reporte-cxc");
-          }}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors" title="Exportar Excel">
-          <FileSpreadsheet size={15} /> Excel
-        </button>
-        <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors">
-          <Plus size={15} /> Nueva CXC
-        </button>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300" />
+          <input value={busq} onChange={(e) => setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-32 placeholder-slate-400" />
+        </div>
       </div>
 
-      {/* Totales */}
-      {(totCRC > 0 || totUSD > 0) && (
-        <div className="flex gap-4 px-6 py-2 bg-green-50 border-b border-green-100 text-sm">
-          <span className="text-green-800 font-semibold">Pendiente total:</span>
-          {totCRC > 0 && <span className="font-black text-green-900">{fmtMoney(totCRC, "CRC")}</span>}
-          {totUSD > 0 && <span className="font-black text-green-900">{fmtMoney(totUSD, "USD")}</span>}
-          <span className="text-green-600 ml-auto">{visibles.length} cuenta{visibles.length !== 1 ? "s" : ""}</span>
+      {/* Barra de registro seleccionado */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.nombre}</span>
+          <span className="text-slate-500">Saldo: <strong className="text-red-600">{fmtMoney(Math.max(0,sel.total-(sel.pagado||0)), sel.moneda||"CRC")}</strong></span>
+          <span className="text-slate-500">Vence: {fmtDate(sel.fechaVencimiento)}</span>
+          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-green-100 text-xs text-slate-500">
+          {totCRC > 0 && <span>Por cobrar: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
+          {totUSD > 0 && <span><strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
+          <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
         </div>
       )}
 
@@ -313,21 +328,23 @@ export default function CXCScreen() {
               <th>Saldo</th>
               <th>Vencimiento</th>
               <th>Estado</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin cuentas por cobrar</td></tr>
+              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin cuentas por cobrar</td></tr>
             ) : visibles.map((d) => {
               const mon    = d.moneda || settings.moneda || "CRC";
               const saldo  = Math.max(0, d.total - (d.pagado || 0));
               const estado = ESTADO(d);
-              const isExp  = expanded === d.id;
+              const isSel  = selected === d.id;
 
               return (
                 <React.Fragment key={d.id}>
-                  <tr className="cursor-pointer" onClick={() => setExpanded(isExp ? null : d.id)}>
+                  <tr
+                    className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : "hover:bg-slate-50"}`}
+                    onClick={() => setSelected(isSel ? null : d.id)}
+                  >
                     <td className="font-semibold text-slate-900">{d.nombre}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
@@ -337,25 +354,10 @@ export default function CXCScreen() {
                       {fmtDate(d.fechaVencimiento)}
                     </td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${estado.cls}`}>{estado.label}</span></td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        {saldo > 0 && (
-                          <button onClick={(e) => { e.stopPropagation(); setModal({ deuda: d }); }}
-                            className="px-3 py-1 bg-green-700 text-white text-xs rounded-lg font-semibold hover:bg-green-800">
-                            Pagar
-                          </button>
-                        )}
-                        <button onClick={(e) => { e.stopPropagation(); eliminar(d); }}
-                          className="px-3 py-1 bg-red-50 text-red-600 border border-red-200 text-xs rounded-lg font-semibold hover:bg-red-100">
-                          Eliminar
-                        </button>
-                        {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                      </div>
-                    </td>
                   </tr>
-                  {isExp && (
+                  {isSel && (
                     <tr>
-                      <td colSpan={8} className="bg-gray-50 px-8 py-4">
+                      <td colSpan={7} className="bg-blue-50 px-8 py-3">
                         <p className="text-xs font-bold text-slate-500 uppercase mb-2">Recibos aplicados</p>
                         {(d.pagos || []).length === 0 ? (
                           <p className="text-xs text-slate-400">Sin pagos registrados.</p>

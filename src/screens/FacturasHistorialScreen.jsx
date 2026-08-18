@@ -2,7 +2,7 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronDown, FileText, CheckCircle, Clock, XCircle, AlertCircle, Trash2, Ban } from "lucide-react";
+import { Search, FileText, CheckCircle, Clock, XCircle, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 
@@ -62,7 +62,7 @@ export default function FacturasHistorialScreen() {
   const [settings,  setSettings]  = useState({});
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
-  const [expanded,  setExpanded]  = useState(null);
+  const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {
     const [f, s] = await Promise.all([db.getFacturas(), db.getSettings()]);
@@ -81,6 +81,7 @@ export default function FacturasHistorialScreen() {
     if (!confirm(`¿Eliminar definitivamente la factura ${f.numero}? Esta acción no se puede deshacer.`)) return;
     const todas = await db.getFacturas();
     await db.setFacturas(todas.filter((x) => x.id !== f.id));
+    if (selected === f.id) setSelected(null);
     cargar();
   };
 
@@ -95,32 +96,57 @@ export default function FacturasHistorialScreen() {
 
   const totCRC = visibles.filter(f=>f.moneda==="CRC").reduce((s,f)=>s+(f.total||0),0);
   const totUSD = visibles.filter(f=>f.moneda==="USD").reduce((s,f)=>s+(f.total||0),0);
+  const sel = visibles.find((f) => f.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar por número o cliente…" className="bg-transparent text-sm flex-1 outline-none" />
-        </div>
+      {/* Toolbar principal */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button
+          disabled={!sel || sel.estado === "anulada"}
+          onClick={() => sel && anular(sel)}
+          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Ban size={13} /> Anular
+        </button>
+        <button
+          disabled={!sel}
+          onClick={() => sel && eliminar(sel)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Trash2 size={13} /> Eliminar
+        </button>
+        <div className="flex-1" />
         <select value={filtroEst} onChange={(e) => setFiltroEst(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
           <option value="todos">Todos los estados</option>
           <option value="aceptada">Aceptadas</option>
           <option value="pendiente">Pendientes</option>
           <option value="guardada">Borradores</option>
           <option value="rechazada">Rechazadas</option>
         </select>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300" />
+          <input value={busq} onChange={(e) => setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400" />
+        </div>
       </div>
 
-      {/* Totales */}
-      <div className="flex gap-4 px-6 py-2 bg-green-50 border-b border-green-100 text-sm">
-        {totCRC > 0 && <span className="text-green-800">CRC: <strong>{fmtMoney(totCRC, "CRC")}</strong></span>}
-        {totUSD > 0 && <span className="text-green-800">USD: <strong>{fmtMoney(totUSD, "USD")}</strong></span>}
-        <span className="ml-auto text-slate-400">{visibles.length} factura{visibles.length !== 1 ? "s" : ""}</span>
-      </div>
+      {/* Barra de registro seleccionado */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionada:</span>
+          <span className="font-bold text-slate-800">{sel.numero}</span>
+          <span className="text-slate-500">{sel.cliente?.nombre || "Consumidor Final"}</span>
+          <span className="font-bold text-green-700">{fmtMoney(sel.total, sel.moneda)}</span>
+          {sel.estado === "anulada" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulada</span>}
+          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-green-100 text-xs text-slate-500">
+          {totCRC > 0 && <span>CRC: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
+          {totUSD > 0 && <span>USD: <strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
+          <span className="ml-auto">{visibles.length} factura{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
+        </div>
+      )}
 
       {/* Tabla */}
       <div className="flex-1 overflow-auto">
@@ -135,50 +161,37 @@ export default function FacturasHistorialScreen() {
               <th>Moneda</th>
               <th>Total</th>
               <th>Estado</th>
-              <th></th>
             </tr>
           </thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin facturas emitidas</td></tr>
+              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin facturas emitidas</td></tr>
             ) : visibles.map((f) => {
-              const est   = ESTADOS[f.estado] || ESTADOS.pendiente;
-              const isExp = expanded === f.id;
-              const Icon  = est.icon;
+              const est       = ESTADOS[f.estado] || ESTADOS.pendiente;
+              const isSel     = selected === f.id;
+              const Icon      = est.icon;
               const esAnulada = f.estado === "anulada";
               return (
                 <React.Fragment key={f.id}>
-                  <tr className={`cursor-pointer ${esAnulada ? "opacity-50 line-through" : ""}`} onClick={() => setExpanded(isExp ? null : f.id)}>
-                    <td className="font-mono text-xs text-green-700 font-bold">{f.numero}</td>
+                  <tr
+                    className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
+                    onClick={() => setSelected(isSel ? null : f.id)}
+                  >
+                    <td className={`font-mono text-xs font-bold ${esAnulada ? "line-through text-slate-400" : "text-green-700"}`}>{f.numero}</td>
                     <td className="text-slate-400 text-xs">{f.tipoDoc || "01"}</td>
                     <td className="text-slate-500">{fmtDate(f.fecha)}</td>
-                    <td className="font-semibold text-slate-900">{f.cliente?.nombre || "—"}</td>
+                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{f.cliente?.nombre || "—"}</td>
                     <td className="text-slate-400 text-xs font-mono">{f.cliente?.cedula || "—"}</td>
                     <td className="text-slate-500">{f.moneda}</td>
-                    <td className="font-bold text-green-700">{fmtMoney(f.total, f.moneda)}</td>
+                    <td className={`font-bold ${esAnulada ? "line-through text-slate-400" : "text-green-700"}`}>{fmtMoney(f.total, f.moneda)}</td>
                     <td>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>
                         <Icon size={10} /> {est.label}
                       </span>
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1">
-                        {!esAnulada && (
-                          <button onClick={() => anular(f)}
-                            className="px-2 py-1 text-xs text-amber-600 border border-amber-200 rounded hover:bg-amber-50" title="Anular factura">
-                            Anular
-                          </button>
-                        )}
-                        <button onClick={() => eliminar(f)}
-                          className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
-                          <Trash2 size={13} />
-                        </button>
-                        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isExp ? "rotate-180" : ""}`} onClick={(e) => { e.stopPropagation(); setExpanded(isExp ? null : f.id); }} />
-                      </div>
-                    </td>
                   </tr>
-                  {isExp && (
-                    <tr><td colSpan={9} className="p-0"><DetalleFact f={f} moneda={f.moneda} /></td></tr>
+                  {isSel && (
+                    <tr><td colSpan={8} className="p-0"><DetalleFact f={f} moneda={f.moneda} /></td></tr>
                   )}
                 </React.Fragment>
               );

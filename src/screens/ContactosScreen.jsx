@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Users, Briefcase, Trash2 } from "lucide-react";
+import { Plus, Search, Users, Briefcase, Trash2, Loader2 } from "lucide-react";
 import db from "../utils/db";
 import { genId } from "../utils/fmt";
 import { generarCodigoCliente } from "../utils/clienteUtils";
@@ -7,12 +7,45 @@ import { generarCodigoCliente } from "../utils/clienteUtils";
 function ContactoModal({ contacto, onClose, onSave }) {
   const [nombre,        setNombre]        = useState(contacto?.nombre        || "");
   const [cedula,        setCedula]        = useState(contacto?.cedula        || "");
+  const [tipoCedula,    setTipoCedula]    = useState(contacto?.tipoCedula    || "01");
   const [tipo,          setTipo]          = useState(contacto?.tipo          || "cliente");
   const [email,         setEmail]         = useState(contacto?.email         || "");
   const [tel,           setTel]           = useState(contacto?.tel           || "");
   const [notas,         setNotas]         = useState(contacto?.notas         || "");
   const [codigoCli,     setCodigoCli]     = useState(contacto?.codigoCliente || "");
   const [diasCredito,   setDiasCredito]   = useState(contacto?.dias_credito  ?? "");
+  const [buscando,      setBuscando]      = useState(false);
+  const [cedulaError,   setCedulaError]   = useState("");
+  const [situacion,     setSituacion]     = useState(null); // { moroso, omiso, estado }
+
+  // Buscar en API pública de Hacienda CR
+  const buscarEnHacienda = async () => {
+    const num = cedula.trim().replace(/\D/g, "");
+    if (!num) return;
+    setCedulaError("");
+    setSituacion(null);
+    setBuscando(true);
+    try {
+      const res  = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${num}`, { signal: AbortSignal.timeout(8000) });
+      const data = await res.json();
+      if (data?.nombre) {
+        const tCed = data.tipoIdentificacion || (num.length === 9 ? "01" : num.length === 10 ? "02" : "03");
+        setNombre(data.nombre);
+        setTipoCedula(tCed);
+        const sit = data.situacion || {};
+        setSituacion({
+          moroso: sit.moroso ?? false,
+          omiso:  sit.omiso  ?? false,
+        });
+      } else {
+        setCedulaError("No encontrado en Hacienda");
+      }
+    } catch {
+      setCedulaError("Sin conexión a Hacienda");
+    } finally {
+      setBuscando(false);
+    }
+  };
 
   const guardar = async () => {
     if (!nombre.trim()) return;
@@ -22,8 +55,8 @@ function ContactoModal({ contacto, onClose, onSave }) {
     const esNuevo = !contacto;
     const newId = genId();
     const upd = contacto
-      ? todos.map((c) => c.id === contacto.id ? { ...c, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias } : c)
-      : [{ id: newId, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias, creadoEn: new Date().toISOString() }, ...todos];
+      ? todos.map((c) => c.id === contacto.id ? { ...c, nombre, cedula, tipoCedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias } : c)
+      : [{ id: newId, nombre, cedula, tipoCedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias, creadoEn: new Date().toISOString() }, ...todos];
     await db.setContactos(upd);
 
     // Si es nuevo contacto de tipo cliente/ambos → agregar al CRM como prospecto
@@ -40,11 +73,70 @@ function ContactoModal({ contacto, onClose, onSave }) {
     onSave(); onClose();
   };
 
+  const TIPO_CED_LABEL = { "01": "Física", "02": "Jurídica", "03": "DIMEX", "04": "NITE" };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold mb-5">{contacto ? "Editar contacto" : "Nuevo contacto"}</h3>
         <div className="space-y-4">
+
+          {/* Cédula + lookup Hacienda */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula / RUC</label>
+            <div className="flex gap-2">
+              <div className="flex flex-1">
+                <input
+                  value={cedula}
+                  onChange={(e) => { setCedula(e.target.value); setCedulaError(""); setSituacion(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && buscarEnHacienda()}
+                  placeholder="Número de cédula"
+                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 border-r-0"
+                />
+                <button
+                  type="button"
+                  onClick={buscarEnHacienda}
+                  disabled={buscando || !cedula.trim()}
+                  title="Consultar Hacienda CR"
+                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-green-50 hover:border-green-400 hover:text-green-700 text-slate-500 transition-colors disabled:opacity-40"
+                >
+                  {buscando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                </button>
+              </div>
+              <select
+                value={tipoCedula}
+                onChange={(e) => setTipoCedula(e.target.value)}
+                className="border border-gray-300 rounded-lg px-2 py-2.5 text-xs text-slate-600 focus:outline-none"
+              >
+                <option value="01">01 – Física</option>
+                <option value="02">02 – Jurídica</option>
+                <option value="03">03 – DIMEX</option>
+                <option value="04">04 – NITE</option>
+              </select>
+            </div>
+            {cedulaError && <p className="mt-1 text-xs text-red-500">{cedulaError}</p>}
+            {situacion && (
+              <div className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border
+                ${situacion.moroso === "SI" || situacion.omiso === "SI"
+                  ? "bg-red-50 text-red-700 border-red-200"
+                  : "bg-green-50 text-green-700 border-green-200"}`}>
+                <span>{situacion.moroso === "SI" || situacion.omiso === "SI" ? "⚠️" : "✓"}</span>
+                <span>
+                  {situacion.moroso === "SI" && situacion.omiso === "SI" ? "Moroso + Omiso" :
+                   situacion.moroso === "SI" ? "Moroso" :
+                   situacion.omiso  === "SI" ? "Omiso" :
+                   "Al día · Hacienda"}
+                </span>
+              </div>
+            )}
+            {buscando && (
+              <p className="mt-1 text-xs text-slate-400 flex items-center gap-1">
+                <Loader2 size={11} className="animate-spin" /> Consultando Hacienda…
+              </p>
+            )}
+          </div>
+
+          {/* Nombre + Código */}
           <div className="flex gap-3 items-end">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre *</label>
@@ -58,22 +150,18 @@ function ContactoModal({ contacto, onClose, onSave }) {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula / RUC</label>
-              <input value={cedula} onChange={(e) => setCedula(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo</label>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
-                <option value="cliente">Cliente</option>
-                <option value="proveedor">Proveedor</option>
-                <option value="ambos">Ambos</option>
-              </select>
-            </div>
+
+          {/* Tipo contacto */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo</label>
+            <select value={tipo} onChange={(e) => setTipo(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+              <option value="cliente">Cliente</option>
+              <option value="proveedor">Proveedor</option>
+              <option value="ambos">Ambos</option>
+            </select>
           </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
