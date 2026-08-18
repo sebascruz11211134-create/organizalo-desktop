@@ -533,10 +533,10 @@ export default function FacturacionScreen() {
   return (
     <div className="flex flex-col h-full">
       {/* Encabezado */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
           {/* Fila 1: Tipo doc / Fecha / Moneda */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <label className="flex-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Tipo de documento</span>
               <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
@@ -559,7 +559,7 @@ export default function FacturacionScreen() {
             </label>
           </div>
           {/* Fila 1 col 2: Condición pago / Medio / Plazo */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <label className="flex-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Condición de pago</span>
               <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
@@ -584,9 +584,9 @@ export default function FacturacionScreen() {
             )}
           </div>
           {/* Fila 2: Receptor */}
-          <div className="col-span-2">
+          <div className="md:col-span-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">Receptor</span>
-            <div className="flex gap-3 mt-1">
+            <div className="flex flex-wrap gap-3 mt-1">
               {/* Nombre con autocomplete */}
               <div className="relative flex-1">
                 <input value={busqCliente}
@@ -617,7 +617,7 @@ export default function FacturacionScreen() {
               </div>
               {/* Tipo cédula */}
               <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
-                className="w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                className="w-full sm:w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <option value="01">01 - Física</option>
                 <option value="02">02 - Jurídica</option>
                 <option value="03">03 - DIMEX</option>
@@ -665,7 +665,7 @@ export default function FacturacionScreen() {
               {/* Email */}
               <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
                 placeholder="correo@empresa.com"
-                className="w-52 border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="flex-1 min-w-[10rem] border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
             </div>
           </div>
         </div>
@@ -705,7 +705,7 @@ export default function FacturacionScreen() {
       </div>
 
       {/* Notas + Totales + Botones */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4 flex gap-8">
+      <div className="bg-white border-t border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 md:gap-8">
         {/* Notas + Proyecto */}
         <div className="flex-1 space-y-2">
           <label className="text-xs font-semibold text-slate-500 uppercase">Observaciones</label>
@@ -726,7 +726,7 @@ export default function FacturacionScreen() {
           )}
         </div>
         {/* Totales */}
-        <div className="w-72 space-y-1">
+        <div className="w-full md:w-72 space-y-1">
           <div className="flex justify-between text-sm text-slate-600">
             <span>Subtotal</span><span>{fmtMoney(subtotal, moneda)}</span>
           </div>

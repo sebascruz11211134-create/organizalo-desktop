@@ -93,53 +93,107 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .badge-yellow     { @apply badge bg-amber-100 text-amber-700; }
 .badge-slate      { @apply badge bg-slate-100 text-slate-600; }
 
-/* ── Responsive: tablas con scroll horizontal en móvil ──────────────────────  */
+/* ════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE GLOBAL — aplica a TODAS las pantallas automáticamente
+   Breakpoints alineados con Tailwind: sm=640 md=768 lg=1024
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 0. Touch helper ─────────────────────────────────────────────────────── */
 .table-scroll-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-/* Envolver tablas automáticamente en pantallas chicas */
-@media (max-width: 768px) {
-  .table-base {
-    min-width: 640px;
-  }
-  /* Cualquier contenedor de tabla hereda scroll */
-  .overflow-auto > table,
-  .flex-1.overflow-auto table {
-    min-width: 580px;
-  }
+
+/* ── 1. Tablas — scroll horizontal universal ─────────────────────────────── */
+/* Todas las tablas tienen un ancho mínimo; el contenedor overflow-auto
+   ya existe en la mayoría de las pantallas y permite el scroll. */
+@media (max-width: 1023px) {
+  .table-base    { min-width: 620px; }
+  table.w-full   { min-width: 580px; }
 }
 
-/* ── Responsive: modales full-screen en móvil ───────────────────────────────  */
-/* Clase helper: agregar .modal-responsive al div interno del modal */
-@media (max-width: 640px) {
-  .modal-responsive {
+/* ── 2. Pantallas ≤ 767px (móvil) ───────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* 2a. Padding de headers / footers reducido */
+  .px-6 { padding-left: 1rem   !important; padding-right: 1rem   !important; }
+  .px-5 { padding-left: 0.75rem!important; padding-right: 0.75rem!important; }
+  .py-4 { padding-top:  0.75rem!important; padding-bottom:0.75rem!important; }
+
+  /* 2b. Grids colapsan a 1 columna */
+  .grid-cols-2 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-3 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-4 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* col-span-2/3 en grid de 1 col → span 1 */
+  .col-span-2 { grid-column: span 1 / span 1 !important; }
+  .col-span-3 { grid-column: span 1 / span 1 !important; }
+
+  /* 2c. Labels dentro de flex-rows → apilarse (stack de formularios) */
+  .flex > label,
+  .flex > .flex-label {
+    flex: 1 1 100% !important;
+    width: 100%   !important;
+    min-width: 0  !important;
+  }
+
+  /* 2d. Flex rows de campos → permitir wrap */
+  .flex.gap-3,
+  .flex.gap-4,
+  .flex.gap-6,
+  .flex.gap-8 {
+    flex-wrap: wrap !important;
+  }
+
+  /* 2e. Paneles laterales (totales, resúmenes) → ancho completo */
+  .flex.gap-8 > .w-72,
+  .flex.gap-6 > .w-72,
+  .flex.gap-4 > .w-72,
+  .flex.gap-8 > .w-64,
+  .flex.gap-6 > .w-64 {
     width: 100% !important;
-    max-width: 100% !important;
+  }
+
+  /* 2f. Modales — helper class */
+  .modal-responsive {
+    width: 100%    !important;
+    max-width: 100%!important;
     min-height: 100dvh !important;
     border-radius: 0 !important;
     overflow-y: auto;
     margin: 0 !important;
   }
-}
 
-/* ── Responsive: grids colapsan a 1 col en móvil ────────────────────────────  */
-@media (max-width: 640px) {
-  .grid-cols-2,
-  .grid-cols-3,
-  .grid-cols-4 {
-    grid-template-columns: 1fr !important;
-  }
-  /* Padding reducido en pantallas chicas */
-  .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
-  /* TopBar: título más compacto */
+  /* 2g. TopBar — título más compacto */
   header h1 { font-size: 12px !important; }
+
+  /* 2h. Botones full-width en flex stacked */
+  .flex.flex-col > .btn-primary,
+  .flex.flex-col > .btn-secondary { width: 100%; }
+
+  /* 2i. Max-w restrictivos → full en móvil */
+  .max-w-md  { max-width: 100% !important; }
+  .max-w-lg  { max-width: 100% !important; }
+  .max-w-xl  { max-width: 100% !important; }
+  .max-w-2xl { max-width: 100% !important; }
 }
 
-/* ── Responsive: touch targets más grandes en móvil ─────────────────────────  */
-@media (max-width: 768px) {
-  button, a[role="button"] {
-    min-height: 36px;
+/* ── 3. Pantallas ≤ 480px (teléfonos pequeños) ──────────────────────────── */
+@media (max-width: 480px) {
+  /* KPI cards en 1 col */
+  .grid-cols-4 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+
+  /* Ocultar columnas secundarias en tablas */
+  .col-md-hide { display: none !important; }
+}
+
+/* ── 4. Touch targets mínimos ───────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  button, a[role="button"] { min-height: 36px; }
+  select, input[type="text"],
+  input[type="email"], input[type="number"],
+  input[type="date"], input[type="password"] {
+    min-height: 38px;
   }
 }
 
