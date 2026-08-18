@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Search, X, Check, Wrench } from "lucide-react";
+import { Plus, Trash2, Search, X, Check, Wrench, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import db from "../utils/db";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
+import { reducirInventario } from "../utils/clienteUtils";
 
 const ESTADOS = {
   recibido:   { label:"Recibido",    cls:"bg-slate-100 text-slate-600" },
@@ -16,7 +18,7 @@ function Badge({ estado }) {
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.cls}`}>{e.label}</span>;
 }
 
-function FormOrden({ orden, contactos, onGuardar, onCancelar }) {
+function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
   const [f, setF] = useState({
     cliente:      orden?.cliente || "",
     telefono:     orden?.telefono || "",
@@ -35,11 +37,26 @@ function FormOrden({ orden, contactos, onGuardar, onCancelar }) {
   });
   const u = k => e => setF(p=>({...p,[k]:e.target.value}));
   const [showC, setShowC] = useState(false);
+  const [materiales, setMateriales] = useState(orden?.materiales || []);
+  const [busqMat, setBusqMat] = useState("");
+  const [showMat, setShowMat] = useState(false);
+
   const filtrados = contactos.filter(c=>
     c.nombre?.toLowerCase().includes(f.busq.toLowerCase()) ||
     c.cedula?.includes(f.busq) ||
     c.codigoCliente?.toUpperCase().includes(f.busq.toUpperCase())
   ).slice(0,5);
+
+  const prodsFilt = (productos||[]).filter(p =>
+    p.nombre?.toLowerCase().includes(busqMat.toLowerCase())
+  ).slice(0, 6);
+
+  const agregarMaterial = (p) => {
+    const ya = materiales.find(m => m.productoId === p.id);
+    if (ya) setMateriales(materiales.map(m => m.productoId === p.id ? { ...m, cantidad: (parseFloat(m.cantidad)||0)+1 } : m));
+    else setMateriales([...materiales, { productoId: p.id, descripcion: p.nombre, cantidad: 1 }]);
+    setBusqMat(""); setShowMat(false);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -127,10 +144,47 @@ function FormOrden({ orden, contactos, onGuardar, onCancelar }) {
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right font-bold"/>
             </div>
           </div>
+
+          {/* Materiales usados → reduce inventario */}
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">🔧 Materiales / repuestos del inventario</label>
+            <div className="relative">
+              <input value={busqMat}
+                onChange={e=>{setBusqMat(e.target.value);setShowMat(true);}}
+                onFocus={()=>setShowMat(true)} onBlur={()=>setTimeout(()=>setShowMat(false),150)}
+                placeholder="Buscar en catálogo de productos…"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+              {showMat && prodsFilt.length > 0 && (
+                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
+                  {prodsFilt.map(p=>(
+                    <button key={p.id} onMouseDown={()=>agregarMaterial(p)}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0 flex justify-between">
+                      <span className="font-semibold">{p.nombre}</span>
+                      <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {materiales.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {materiales.map((m,i)=>(
+                  <div key={i} className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-1.5">
+                    <span className="flex-1 text-sm text-slate-700">{m.descripcion}</span>
+                    <input type="number" min="0.01" step="any" value={m.cantidad}
+                      onChange={e=>setMateriales(materiales.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
+                      className="w-16 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none"/>
+                    <button onClick={()=>setMateriales(materiales.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                  </div>
+                ))}
+                <p className="text-[10px] text-amber-600">⚠ Al marcar como Entregada se descontará el stock</p>
+              </div>
+            )}
+          </div>
         </div>
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
-          <button onClick={()=>onGuardar({ id:orden?.id||genId(), numero:orden?.numero||Date.now().toString().slice(-5), ...f, manoObra:parseFloat(f.manoObra)||0, repuestos:parseFloat(f.repuestos)||0, total:parseFloat(f.total)||(parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0), creadoEn:orden?.creadoEn||new Date().toISOString() })}
+          <button onClick={()=>onGuardar({ id:orden?.id||genId(), numero:orden?.numero||Date.now().toString().slice(-5), ...f, manoObra:parseFloat(f.manoObra)||0, repuestos:parseFloat(f.repuestos)||0, total:parseFloat(f.total)||(parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0), materiales, creadoEn:orden?.creadoEn||new Date().toISOString() })}
             className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600">
             <Check size={14}/> Guardar
           </button>
@@ -141,24 +195,46 @@ function FormOrden({ orden, contactos, onGuardar, onCancelar }) {
 }
 
 export default function OrdenesTrabajoScreen() {
+  const navigate    = useNavigate();
   const [ordenes,   setOrdenes]   = useState([]);
   const [contactos, setContactos] = useState([]);
+  const [productos, setProductos] = useState([]);
   const [form,      setForm]      = useState(false);
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
 
   const cargar = useCallback(async () => {
-    const [o,c] = await Promise.all([db.getOrdenes(), db.getContactos()]);
-    setOrdenes(o||[]); setContactos(c||[]);
+    const [o,c,p] = await Promise.all([db.getOrdenes(), db.getContactos(), db.getProductos()]);
+    setOrdenes(o||[]); setContactos(c||[]); setProductos(p||[]);
   },[]);
   useEffect(()=>{cargar();},[cargar]);
 
   const guardar = async (o) => {
     const all = await db.getOrdenes();
     const idx = all.findIndex(x=>x.id===o.id);
+    const anterior = idx >= 0 ? all[idx] : null;
     await db.setOrdenes(idx>=0?all.map((x,i)=>i===idx?o:x):[...all,o]);
+
+    // Si cambia a "entregado" → reducir inventario de materiales
+    if (o.estado === "entregado" && anterior?.estado !== "entregado" && o.materiales?.length) {
+      await reducirInventario(o.materiales);
+    }
+
     cargar(); setForm(false); setEditando(null);
+  };
+
+  const facturarOT = (o) => {
+    // Guarda la OT en sessionStorage para pre-llenar FacturacionScreen
+    sessionStorage.setItem("ot_prefill", JSON.stringify({
+      cliente: o.cliente,
+      notas: `OT-${o.numero} — ${o.equipo || ""} — ${o.diagnostico || ""}`,
+      lineas: [
+        o.manoObra > 0 && { descripcion: "Mano de obra", cantidad: "1", precioUnit: String(o.manoObra), codigoIVA: "08", pctDesc: "0" },
+        o.repuestos > 0 && { descripcion: "Repuestos y materiales", cantidad: "1", precioUnit: String(o.repuestos), codigoIVA: "08", pctDesc: "0" },
+      ].filter(Boolean),
+    }));
+    navigate("/facturacion");
   };
 
   const eliminar = async (id) => {
@@ -175,7 +251,7 @@ export default function OrdenesTrabajoScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      {form && <FormOrden orden={editando} contactos={contactos} onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}}/>}
+      {form && <FormOrden orden={editando} contactos={contactos} productos={productos} onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}}/>}
       <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
@@ -221,6 +297,10 @@ export default function OrdenesTrabajoScreen() {
                   <p className="text-[10px] text-slate-400">{fmtDate(o.fecha)}</p>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                  <button onClick={()=>facturarOT(o)}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-emerald-50 text-emerald-600 font-semibold">
+                    <Receipt size={12}/> Facturar
+                  </button>
                   <button onClick={()=>{setEditando(o);setForm(true);}} className="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-500">Editar</button>
                   <button onClick={()=>eliminar(o.id)} className="p-1.5 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
                 </div>

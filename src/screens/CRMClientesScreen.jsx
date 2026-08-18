@@ -318,8 +318,44 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
   );
 }
 
+// ── Score de cliente ──────────────────────────────────────────────────────────
+function calcScore(cliente, facturas, debts) {
+  const nombre = (cliente.nombre || "").toLowerCase();
+  const match  = x => (x.cliente?.nombre || x.clienteNombre || x.nombre || "").toLowerCase().includes(nombre);
+  const fCli   = facturas.filter(match);
+  const dCli   = debts.filter(d => d.tipo === "cobrar" && match(d));
+
+  // Volumen: total acumulado (normalizado más adelante en el padre)
+  const volumen = fCli.reduce((s, f) => s + (f.total || 0), 0);
+
+  // Frecuencia: facturas en últimos 6 meses
+  const hace6m = new Date(); hace6m.setMonth(hace6m.getMonth() - 6);
+  const freq = fCli.filter(f => new Date(f.fecha || f.creadoEn || 0) >= hace6m).length;
+
+  // Puntualidad: CXC saldadas a tiempo (pagado >= total antes de vencimiento, approx)
+  const saldadas = dCli.filter(d => (d.pagado || 0) >= (d.total || 1));
+  const vencidas  = dCli.filter(d => d.fechaVencimiento < new Date().toISOString().slice(0,10) && (d.pagado||0) < (d.total||1));
+  const puntPct = dCli.length === 0 ? 100 : Math.max(0, 100 - (vencidas.length / Math.max(dCli.length, 1)) * 100);
+
+  return { volumen, freq, puntPct };
+}
+
+function ScoreBadge({ score }) {
+  if (score === null || score === undefined) return null;
+  const s = Math.round(score);
+  const color = s >= 80 ? "#10b981" : s >= 50 ? "#f59e0b" : "#ef4444";
+  const label = s >= 80 ? "A" : s >= 50 ? "B" : "C";
+  return (
+    <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0"
+      style={{ color, background: color + "22", border: `1px solid ${color}44` }}
+      title={`Score: ${s}/100`}>
+      {label} {s}
+    </span>
+  );
+}
+
 // ── Tarjeta de cliente en la lista ────────────────────────────────────────────
-function ClienteCard({ cliente, onClick }) {
+function ClienteCard({ cliente, onClick, score }) {
   const ei = etapaInfo(cliente.etapaCRM || ETAPA_DEFAULT);
   return (
     <div
@@ -333,6 +369,7 @@ function ClienteCard({ cliente, onClick }) {
         <p className="text-sm font-medium text-slate-800 truncate">{cliente.nombre}</p>
         <p className="text-xs text-slate-400 truncate">{cliente.email || cliente.telefono || "Sin contacto"}</p>
       </div>
+      <ScoreBadge score={score} />
       <span className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
         style={{ color: ei.color, background: ei.color + "18" }}>
         {ei.label}
@@ -345,15 +382,40 @@ function ClienteCard({ cliente, onClick }) {
 // ── Pantalla principal ─────────────────────────────────────────────────────────
 export default function CRMClientesScreen() {
   const [clientes,  setClientes]  = useState([]);
+  const [facturas,  setFacturas]  = useState([]);
+  const [debts,     setDebts]     = useState([]);
   const [busqueda,  setBusqueda]  = useState("");
   const [etapaFiltro, setEtapaFiltro] = useState("todos");
   const [seleccionado, setSeleccionado] = useState(null);
   const [loading,   setLoading]   = useState(false);
+  const [scores,    setScores]    = useState({});
 
   useEffect(() => {
     setLoading(true);
-    db.getContactos?.().then(c => {
-      setClientes(c || []);
+    Promise.all([
+      db.getContactos?.() || Promise.resolve([]),
+      db.getFacturas?.()  || Promise.resolve([]),
+      db.getDebts?.()     || Promise.resolve([]),
+    ]).then(([c, f, d]) => {
+      const contactos = c || [];
+      const facts     = f || [];
+      const ds        = d || [];
+      setClientes(contactos);
+      setFacturas(facts);
+      setDebts(ds);
+
+      // Calcular scores: normalizar volumen contra el máximo
+      const raw = contactos.map(cli => ({ id: cli.id, ...calcScore(cli, facts, ds) }));
+      const maxVol  = Math.max(...raw.map(r => r.volumen), 1);
+      const maxFreq = Math.max(...raw.map(r => r.freq), 1);
+      const scoreMap = {};
+      raw.forEach(r => {
+        const sVol  = (r.volumen / maxVol)  * 40;
+        const sFreq = Math.min(r.freq / Math.max(maxFreq, 1), 1) * 30;
+        const sPunt = (r.puntPct / 100) * 30;
+        scoreMap[r.id] = sVol + sFreq + sPunt;
+      });
+      setScores(scoreMap);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -440,6 +502,7 @@ export default function CRMClientesScreen() {
             <ClienteCard
               key={c.id}
               cliente={c}
+              score={scores[c.id]}
               onClick={() => setSeleccionado(c)}
             />
           ))}

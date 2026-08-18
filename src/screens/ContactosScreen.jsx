@@ -19,10 +19,24 @@ function ContactoModal({ contacto, onClose, onSave }) {
     const todos = await db.getContactos();
     const codigo = codigoCli.trim() || (contacto ? contacto.codigoCliente : generarCodigoCliente(todos));
     const dias = diasCredito === "" ? 0 : parseInt(diasCredito) || 0;
+    const esNuevo = !contacto;
+    const newId = genId();
     const upd = contacto
       ? todos.map((c) => c.id === contacto.id ? { ...c, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias } : c)
-      : [{ id: genId(), nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias, creadoEn: new Date().toISOString() }, ...todos];
+      : [{ id: newId, nombre, cedula, tipo, email, tel, notas, codigoCliente: codigo, dias_credito: dias, creadoEn: new Date().toISOString() }, ...todos];
     await db.setContactos(upd);
+
+    // Si es nuevo contacto de tipo cliente/ambos → agregar al CRM como prospecto
+    if (esNuevo && (tipo === "cliente" || tipo === "ambos")) {
+      const contactosCRM = await db.getContactos();
+      const yaExiste = contactosCRM.find(c => c.id === newId);
+      if (yaExiste && !yaExiste.etapaCRM) {
+        await db.setContactos(contactosCRM.map(c =>
+          c.id === newId ? { ...c, etapaCRM: "prospecto", notas: notas, crmCreadoEn: new Date().toISOString() } : c
+        ));
+      }
+    }
+
     onSave(); onClose();
   };
 

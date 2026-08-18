@@ -155,8 +155,8 @@ export default function ProyectosScreen() {
   const [expandido, setExpandido] = useState({});
 
   const cargar = useCallback(async ()=>{
-    const [p,f,g] = await Promise.all([db.getProyectos(), db.getFacturas(), db.getGastos()]);
-    setProyectos(p||[]); setFacturas(f||[]); setGastos(g||[]);
+    const [p,f,g,c] = await Promise.all([db.getProyectos(), db.getFacturas(), db.getGastos(), db.getCompras()]);
+    setProyectos(p||[]); setFacturas(f||[]); setGastos([...(g||[]), ...(c||[])]);
   },[]);
   useEffect(()=>{ cargar(); },[cargar]);
 
@@ -169,8 +169,14 @@ export default function ProyectosScreen() {
 
   const pnl = (proyecto) => {
     const asig = proyecto.asignaciones || {};
-    const ingresos = facturas.filter(f=>asig[f.id]==="facturas").reduce((s,f)=>s+(f.totalGeneral||0),0);
-    const costos   = gastos.filter(g=>asig[g.id]==="gastos").reduce((s,g)=>s+(g.monto||0),0);
+    // Facturas: manuales + auto-imputadas por proyectoId
+    const ingresos = facturas
+      .filter(f => asig[f.id]==="facturas" || f.proyectoId === proyecto.id)
+      .reduce((s,f) => s + (f.totalGeneral || f.total || 0), 0);
+    // Gastos: manuales + compras auto-imputadas por proyectoId
+    const costos = gastos
+      .filter(g => asig[g.id]==="gastos" || g.proyectoId === proyecto.id)
+      .reduce((s,g) => s + (g.monto || g.total || g.montoBase || 0), 0);
     return { ingresos, costos, utilidad: ingresos - costos };
   };
 

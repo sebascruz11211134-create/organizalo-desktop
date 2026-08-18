@@ -161,9 +161,11 @@ export default function FacturacionScreen() {
   const [contactos,  setContactos]  = useState([]);
   const [productos,  setProductos]  = useState([]);
   const [facturas,   setFacturas]   = useState([]);
+  const [proyectos,  setProyectos]  = useState([]);
   const [sending,    setSending]    = useState(false);
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
   const [authToken,  setAuthToken]  = useState(null);
+  const [proyectoId, setProyectoId] = useState("");
 
   // Encabezado
   const [tipoDoc,    setTipoDoc]    = useState("01");
@@ -180,12 +182,27 @@ export default function FacturacionScreen() {
   const [lineas, setLineas] = useState([lineaVacia()]);
 
   const cargar = useCallback(async () => {
-    const [s, c, p, f] = await Promise.all([db.getSettings(), db.getContactos(), db.getProductos(), db.getFacturas()]);
+    const [s, c, p, f, pr] = await Promise.all([db.getSettings(), db.getContactos(), db.getProductos(), db.getFacturas(), db.getProyectos()]);
     setSettings(s);
     setContactos(c);
     setProductos(p);
     setFacturas(f);
+    setProyectos(pr || []);
     if (s.moneda) setMoneda(s.moneda);
+    // Prefill desde OT si existe
+    const ot = sessionStorage.getItem("ot_prefill");
+    if (ot) {
+      try {
+        const d = JSON.parse(ot);
+        sessionStorage.removeItem("ot_prefill");
+        if (d.cliente) setBusqCliente(d.cliente);
+        if (d.notas)   setNotas(d.notas);
+        if (d.lineas?.length) {
+          const { genId: gid } = await import("../utils/fmt");
+          setLineas(d.lineas.map(l => ({ ...lineaVacia(), ...l, id: gid() })));
+        }
+      } catch {}
+    }
     import("../utils/auth").then(m => m.getToken()).then(setAuthToken);
   }, []);
 
@@ -276,6 +293,40 @@ export default function FacturacionScreen() {
     setCedulaError("");
   };
 
+  // ── Asiento contable automático por factura ──────────────────────────────
+  const crearAsientoFactura = async (factura) => {
+    try {
+      const asientos = await db.getAsientos();
+      const num  = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
+      const sub  = parseFloat(factura.subtotal  || 0);
+      const iva  = parseFloat(factura.totalIVA  || 0);
+      const tot  = parseFloat(factura.total     || 0);
+      if (tot <= 0) return;
+
+      const lineas = [];
+      if (factura.condPago === "02") {
+        lineas.push({ cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: tot, haber: 0 });
+      } else {
+        lineas.push({ cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: tot, haber: 0 });
+      }
+      if (sub > 0) lineas.push({ cuentaCodigo: "4101", cuentaNombre: "Ingresos por ventas", debe: 0, haber: sub });
+      if (iva > 0) lineas.push({ cuentaCodigo: "2301", cuentaNombre: "IVA por pagar",       debe: 0, haber: iva });
+
+      const totalDebe  = lineas.reduce((s, l) => s + l.debe,  0);
+      const totalHaber = lineas.reduce((s, l) => s + l.haber, 0);
+      if (Math.abs(totalDebe - totalHaber) > 0.02) return;
+
+      await db.setAsientos([...asientos, {
+        id: genId(), numero: num, estado: "confirmado", autoGenerado: true,
+        descripcion: `Factura ${factura.numero} — ${factura.cliente?.nombre || "Consumidor Final"}`,
+        fecha: factura.fecha, totalDebe, totalHaber, lineas,
+        facturaRef: factura.numero, creadoEn: new Date().toISOString(),
+      }]);
+    } catch (e) {
+      console.warn("[Facturacion] No se pudo crear asiento:", e.message);
+    }
+  };
+
   const guardarLocal = async (factura) => {
     const all = await db.getFacturas();
     await db.setFacturas([...all, factura]);
@@ -295,6 +346,9 @@ export default function FacturacionScreen() {
         token:      authToken,
       });
     }
+
+    // 3. Asiento contable automático
+    await crearAsientoFactura(factura);
 
     cargar();
   };
@@ -317,6 +371,7 @@ export default function FacturacionScreen() {
       totalIVA,
       total: totalFact,
       notas,
+      proyectoId: proyectoId || null,
       estado: "borrador",
       creadoEn: new Date().toISOString(),
     };
@@ -651,12 +706,24 @@ export default function FacturacionScreen() {
 
       {/* Notas + Totales + Botones */}
       <div className="bg-white border-t border-gray-200 px-6 py-4 flex gap-8">
-        {/* Notas */}
-        <div className="flex-1">
+        {/* Notas + Proyecto */}
+        <div className="flex-1 space-y-2">
           <label className="text-xs font-semibold text-slate-500 uppercase">Observaciones</label>
           <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
-            rows={3} placeholder="Condiciones, referencias, notas adicionales…"
+            rows={2} placeholder="Condiciones, referencias, notas adicionales…"
             className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500" />
+          {proyectos.length > 0 && (
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase">Imputar a proyecto</label>
+              <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                <option value="">— Sin proyecto —</option>
+                {proyectos.filter(p => p.estado === "Activo").map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}{p.codigo ? ` (${p.codigo})` : ""}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         {/* Totales */}
         <div className="w-72 space-y-1">

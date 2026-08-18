@@ -37,19 +37,36 @@ function PagoModal({ deuda, onClose, onSave, settings, token }) {
     );
     await db.setDebts(upd);
 
+    // Guardar recibo en RecibosScreen
+    const recibos = await db.getRecibos();
+    await db.setRecibos([{
+      id: genId(), numero: num, fecha, monto: m, metodo,
+      concepto: `Cobro CXC — ${deuda.nombre}${deuda.facturaRef ? ` (${deuda.facturaRef})` : ""}`,
+      cliente: deuda.nombre, notas,
+      creadoEn: new Date().toISOString(),
+    }, ...recibos]);
+
+    // Asiento contable de cobro: Db Caja/Efectivo / Cr CxC
+    try {
+      const asientos = await db.getAsientos();
+      const numAJ = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
+      await db.setAsientos([...asientos, {
+        id: genId(), numero: numAJ, estado: "confirmado", autoGenerado: true,
+        descripcion: `Cobro CXC — ${deuda.nombre} (${num})`,
+        fecha, totalDebe: m, totalHaber: m,
+        lineas: [
+          { cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",       debe: m, haber: 0 },
+          { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar",    debe: 0, haber: m },
+        ],
+        creadoEn: new Date().toISOString(),
+      }]);
+    } catch (e) { console.warn("[CXC] asiento:", e.message); }
+
     // Si queda saldada → eliminar eventos de calendario relacionados
     const nuevoPagado = (deuda.pagado || 0) + m;
     if (nuevoPagado >= deuda.total - 0.01 && token) {
-      await cancelarEventoCalendario({
-        token,
-        tituloMatch: `Cobro: ${deuda.nombre}`,
-        fecha: deuda.fechaVencimiento,
-      });
-      // También el recordatorio 3 días antes
-      await cancelarEventoCalendario({
-        token,
-        tituloMatch: `Cobro próximo: ${deuda.nombre}`,
-      });
+      await cancelarEventoCalendario({ token, tituloMatch: `Cobro: ${deuda.nombre}`, fecha: deuda.fechaVencimiento });
+      await cancelarEventoCalendario({ token, tituloMatch: `Cobro próximo: ${deuda.nombre}` });
     }
 
     onSave();

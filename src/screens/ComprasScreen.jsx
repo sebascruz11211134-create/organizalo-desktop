@@ -22,7 +22,7 @@ function Badge({ estado }) {
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.cls}`}>{e.label}</span>;
 }
 
-function FormCompra({ compra, contactos, productos, onGuardar, onCancelar }) {
+function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCancelar }) {
   const [proveedor,  setProveedor]  = useState(compra?.proveedor || "");
   const [numFactura, setNumFactura] = useState(compra?.numFactura || "");
   const [fecha,      setFecha]      = useState(compra?.fecha || hoy());
@@ -33,6 +33,7 @@ function FormCompra({ compra, contactos, productos, onGuardar, onCancelar }) {
   const [montoBase,  setMontoBase]  = useState(compra?.montoBase || "");
   const [pctIVA,     setPctIVA]     = useState(compra?.pctIVA ?? 13);
   const [notas,      setNotas]      = useState(compra?.notas || "");
+  const [proyectoId, setProyectoId] = useState(compra?.proyectoId || "");
   const [busq,       setBusq]       = useState(compra?.proveedor || "");
   const [showProv,   setShowProv]   = useState(false);
   const [diasProvee, setDiasProvee] = useState(0);
@@ -87,6 +88,7 @@ function FormCompra({ compra, contactos, productos, onGuardar, onCancelar }) {
       id: compra?.id || genId(),
       proveedor, numFactura, fecha, fechaVence, categoria, medio, estado,
       montoBase: base, pctIVA, montoIVA, total, notas,
+      proyectoId: proyectoId || null,
       lineas: INVENTARIABLE.includes(categoria) ? lineas : [],
       creadoEn: compra?.creadoEn || new Date().toISOString(),
     });
@@ -213,12 +215,26 @@ function FormCompra({ compra, contactos, productos, onGuardar, onCancelar }) {
             </div>
           </div>
 
-          {/* Notas */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Notas</label>
-            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={2}
-              placeholder="Observaciones, referencia interna…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
+          {/* Notas + Proyecto */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Notas</label>
+              <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={2}
+                placeholder="Observaciones, referencia interna…"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
+            </div>
+            {(proyectos||[]).length > 0 && (
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Imputar a proyecto</label>
+                <select value={proyectoId} onChange={e=>setProyectoId(e.target.value)}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                  <option value="">— Sin proyecto —</option>
+                  {(proyectos||[]).filter(p=>p.estado==="Activo").map(p=>(
+                    <option key={p.id} value={p.id}>{p.nombre}{p.codigo?` (${p.codigo})`:""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Productos recibidos (solo categorías inventariables) */}
@@ -276,6 +292,7 @@ export default function ComprasScreen() {
   const [compras,   setCompras]   = useState([]);
   const [contactos, setContactos] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [proyectos, setProyectos] = useState([]);
   const [vista,     setVista]     = useState("lista");
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
@@ -283,10 +300,11 @@ export default function ComprasScreen() {
   const [authToken, setAuthToken] = useState(null);
 
   const cargar = useCallback(async () => {
-    const [c, ct, pr] = await Promise.all([db.getCompras(), db.getContactos(), db.getProductos()]);
+    const [c, ct, pr, py] = await Promise.all([db.getCompras(), db.getContactos(), db.getProductos(), db.getProyectos()]);
     setCompras(c || []);
     setContactos(ct || []);
     setProductos(pr || []);
+    setProyectos(py || []);
     import("../utils/auth").then(m => m.getToken()).then(setAuthToken);
   }, []);
 
@@ -315,6 +333,37 @@ export default function ComprasScreen() {
       await aumentarInventario(c.lineas);
     }
 
+    // Asiento contable automático por compra
+    if (esNueva) {
+      try {
+        const asientos = await db.getAsientos();
+        const numAJ = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
+        const base  = parseFloat(c.montoBase || 0);
+        const iva   = parseFloat(c.montoIVA  || 0);
+        const tot   = parseFloat(c.total     || 0);
+        if (tot > 0) {
+          const lineas = [];
+          if (base > 0) lineas.push({ cuentaCodigo: "5201", cuentaNombre: "Gastos / Compras", debe: base, haber: 0 });
+          if (iva  > 0) lineas.push({ cuentaCodigo: "1106", cuentaNombre: "IVA crédito fiscal", debe: iva, haber: 0 });
+          if (c.medio === "Crédito proveedor") {
+            lineas.push({ cuentaCodigo: "2101", cuentaNombre: "Cuentas por pagar", debe: 0, haber: tot });
+          } else {
+            lineas.push({ cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",   debe: 0, haber: tot });
+          }
+          const totalDebe  = lineas.reduce((s, l) => s + l.debe,  0);
+          const totalHaber = lineas.reduce((s, l) => s + l.haber, 0);
+          if (Math.abs(totalDebe - totalHaber) <= 0.02) {
+            await db.setAsientos([...asientos, {
+              id: genId(), numero: numAJ, estado: "confirmado", autoGenerado: true,
+              descripcion: `Compra ${c.numFactura || ""} — ${c.proveedor || "Proveedor"}`,
+              fecha: c.fecha, totalDebe, totalHaber, lineas,
+              creadoEn: new Date().toISOString(),
+            }]);
+          }
+        }
+      } catch (e) { console.warn("[Compras] asiento:", e.message); }
+    }
+
     cargar(); setVista("lista"); setEditando(null);
   };
 
@@ -332,7 +381,7 @@ export default function ComprasScreen() {
   };
 
   if (vista==="form") {
-    return <FormCompra compra={editando} contactos={contactos} productos={productos}
+    return <FormCompra compra={editando} contactos={contactos} productos={productos} proyectos={proyectos}
       onGuardar={guardar} onCancelar={()=>{setVista("lista");setEditando(null);}} />;
   }
 

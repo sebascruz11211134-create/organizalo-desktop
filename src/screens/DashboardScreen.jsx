@@ -197,6 +197,76 @@ function InsightCard({ stats, facturas, debts }) {
   );
 }
 
+// ── Panel de alertas centralizadas ────────────────────────────────────────────
+function AlertasPanel({ debts, productos, contactos, navigate }) {
+  const hd = hoy();
+
+  const cxcVencidas = debts.filter(d =>
+    (d.tipo || "pagar") === "cobrar" &&
+    d.fechaVencimiento && d.fechaVencimiento < hd &&
+    Math.max(0, d.total - (d.pagado || 0)) > 0
+  );
+
+  const stockBajo = productos.filter(p =>
+    p.activo !== false && (p.stockMin || p.stock_minimo || 0) > 0 &&
+    (p.stock || 0) <= (p.stockMin || p.stock_minimo || 0)
+  );
+
+  const clientesInactivos = contactos.filter(c =>
+    c.etapaCRM === "inactivo" || c.tipo === "cliente"
+  ).filter(c => c.etapaCRM === "inactivo");
+
+  const alertas = [
+    ...cxcVencidas.map(d => ({
+      tipo: "cxc",
+      icono: "⚠️",
+      color: "border-red-200 bg-red-50 text-red-700",
+      mensaje: `CXC vencida — ${d.nombre}: ${fmtMoney(Math.max(0, d.total - (d.pagado || 0)), d.moneda || "CRC")}`,
+      ruta: "/cxc",
+    })),
+    ...stockBajo.map(p => ({
+      tipo: "stock",
+      icono: "📦",
+      color: "border-amber-200 bg-amber-50 text-amber-700",
+      mensaje: `Stock bajo — ${p.nombre}: ${p.stock ?? 0} ${p.unidad || "unid"} (mín. ${p.stockMin || p.stock_minimo || 0})`,
+      ruta: "/inventario",
+    })),
+    ...clientesInactivos.slice(0, 3).map(c => ({
+      tipo: "cliente",
+      icono: "😴",
+      color: "border-slate-200 bg-slate-50 text-slate-600",
+      mensaje: `Cliente inactivo — ${c.nombre}`,
+      ruta: "/crm",
+    })),
+  ];
+
+  if (alertas.length === 0) return null;
+
+  return (
+    <div className="mb-5 bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={14} className="text-red-500" />
+          <h3 className="text-sm font-bold text-slate-800">Alertas</h3>
+          <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+            {alertas.length}
+          </span>
+        </div>
+      </div>
+      <div className="p-3 space-y-2 max-h-48 overflow-auto">
+        {alertas.map((a, i) => (
+          <button key={i} onClick={() => navigate(a.ruta)}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left hover:opacity-80 transition-opacity ${a.color}`}>
+            <span className="text-base shrink-0">{a.icono}</span>
+            <span className="text-xs font-medium flex-1 truncate">{a.mensaje}</span>
+            <ChevronRight size={12} className="shrink-0 opacity-50" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const navigate = useNavigate();
@@ -207,17 +277,22 @@ export default function DashboardScreen() {
   const [facturas,      setFacturas]      = useState([]);
   const [debts,         setDebts]         = useState([]);
   const [settings,      setSettings]      = useState({});
+  const [productos,     setProductos]     = useState([]);
+  const [contactos,     setContactos]     = useState([]);
 
   useEffect(() => {
     (async () => {
-      const [r, c, f, d, s] = await Promise.all([
+      const [r, c, f, d, s, p, ct] = await Promise.all([
         db.getRecibos(), db.getCompras(), db.getFacturas(), db.getDebts(), db.getSettings(),
+        db.getProductos(), db.getContactos(),
       ]);
       setRecibos(r);
       setCompras(c);
       setFacturas(f);
       setDebts(d);
       setSettings(s || {});
+      setProductos(p || []);
+      setContactos(ct || []);
       setLoading(false);
     })();
   }, []);
@@ -360,6 +435,12 @@ export default function DashboardScreen() {
         <div className="mb-5">
           <InsightCard stats={statsForIA} facturas={facturas} debts={debts} />
         </div>
+
+        {/* ── Panel de alertas centralizadas ── */}
+        <AlertasPanel
+          debts={debts} productos={productos} contactos={contactos}
+          navigate={navigate}
+        />
 
         {/* ── Cuerpo principal: 2 columnas ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
