@@ -13,7 +13,7 @@ import { genId, hoy } from "./fmt";
 import { BACKEND } from "./config";
 
 // ── Crear evento en el calendario (backend) ───────────────────────────────────
-async function crearEvento({ token, titulo, descripcion, fecha, tipo = "recordatorio", color }) {
+export async function crearEvento({ token, titulo, descripcion, fecha, tipo = "recordatorio", color }) {
   if (!token || !fecha) return;
   try {
     await fetch(`${BACKEND}/api/eventos`, {
