@@ -102,12 +102,14 @@ export default function FacturasHistorialScreen() {
     <div className="flex flex-col h-full">
       {/* Toolbar principal */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        {/* Anular — outline ámbar: acción reversible (la factura queda, solo se marca) */}
         <button
           disabled={!sel || sel.estado === "anulada"}
           onClick={() => sel && anular(sel)}
-          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Ban size={13} /> Anular
         </button>
+        {/* Eliminar — sólido rojo: acción permanente e irreversible */}
         <button
           disabled={!sel}
           onClick={() => sel && eliminar(sel)}
