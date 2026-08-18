@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
@@ -191,6 +191,17 @@ export default function CXPScreen() {
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
+  const eliminar = async (d) => {
+    if (!confirm(`¿Eliminar la CXP de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
+    const todos = await db.getDebts();
+    await db.setDebts(todos.filter((x) => x.id !== d.id));
+    if (token && d.fechaVencimiento) {
+      await cancelarEventoCalendario({ token, tituloMatch: `Pago: ${d.nombre}`, fecha: d.fechaVencimiento });
+      await cancelarEventoCalendario({ token, tituloMatch: `Pago próximo: ${d.nombre}` });
+    }
+    cargar();
+  };
+
   useEffect(() => { cargar(); }, [cargar]);
 
   const busqL = busq.trim().toLowerCase();
@@ -255,6 +266,10 @@ export default function CXPScreen() {
                             Pagar
                           </button>
                         )}
+                        <button onClick={(e) => { e.stopPropagation(); eliminar(d); }}
+                          className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar CXP">
+                          <Trash2 size={13} />
+                        </button>
                         {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                       </div>
                     </td>

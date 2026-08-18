@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Users, Briefcase } from "lucide-react";
+import { Plus, Search, Users, Briefcase, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { genId } from "../utils/fmt";
 import { generarCodigoCliente } from "../utils/clienteUtils";
@@ -130,6 +130,13 @@ export default function ContactosScreen() {
     setContactos(c);
   }, []);
 
+  const eliminar = async (c) => {
+    if (!confirm(`¿Eliminar el contacto "${c.nombre}"?`)) return;
+    const todos = await db.getContactos();
+    await db.setContactos(todos.filter((x) => x.id !== c.id));
+    cargar();
+  };
+
   useEffect(() => { cargar(); }, [cargar]);
 
   const busqL = busq.trim().toLowerCase();
@@ -188,7 +195,12 @@ export default function ContactosScreen() {
                 <td className="text-slate-500">{c.tel || "—"}</td>
                 <td className="text-slate-400 text-xs">{c.notas || "—"}</td>
                 <td>
-                  <button onClick={() => setModal(c)} className="text-xs text-blue-600 hover:underline">Editar</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setModal(c)} className="text-xs text-blue-600 hover:underline">Editar</button>
+                    <button onClick={() => eliminar(c)} className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

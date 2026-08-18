@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, ChevronDown, ChevronUp, Printer, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, ChevronDown, ChevronUp, Printer, FileSpreadsheet, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
@@ -227,6 +227,18 @@ export default function CXCScreen() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const eliminar = async (d) => {
+    if (!confirm(`¿Eliminar la CXC de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
+    const todos = await db.getDebts();
+    await db.setDebts(todos.filter((x) => x.id !== d.id));
+    // Cancelar eventos de calendario si los hay
+    if (token && d.fechaVencimiento) {
+      await cancelarEventoCalendario({ token, tituloMatch: `Cobro: ${d.nombre}`, fecha: d.fechaVencimiento });
+      await cancelarEventoCalendario({ token, tituloMatch: `Cobro próximo: ${d.nombre}` });
+    }
+    cargar();
+  };
+
   const busqL = busq.trim().toLowerCase();
   const visibles = debts
     .filter((d) => {
@@ -333,6 +345,10 @@ export default function CXCScreen() {
                             Pagar
                           </button>
                         )}
+                        <button onClick={(e) => { e.stopPropagation(); eliminar(d); }}
+                          className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar CXC">
+                          <Trash2 size={13} />
+                        </button>
                         {isExp ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                       </div>
                     </td>

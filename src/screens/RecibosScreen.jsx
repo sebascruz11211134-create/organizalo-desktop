@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Printer } from "lucide-react";
+import { Plus, Search, Printer, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
 
@@ -119,6 +119,13 @@ export default function RecibosScreen() {
     setRecibos(r); setSettings(s); setContactos(c || []);
   }, []);
 
+  const eliminar = async (r) => {
+    if (!confirm(`¿Eliminar el recibo #${r.numero}?`)) return;
+    const todos = await db.getRecibos();
+    await db.setRecibos(todos.filter((x) => x.id !== r.id));
+    cargar();
+  };
+
   useEffect(() => { cargar(); }, [cargar]);
 
   const mesesDisp = [...new Set(recibos.map((r) => (r.fecha || "").slice(0, 7)).filter(Boolean))].sort().reverse();
@@ -163,10 +170,10 @@ export default function RecibosScreen() {
 
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Moneda</th><th>Monto</th><th>Concepto</th></tr></thead>
+          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Moneda</th><th>Monto</th><th>Concepto</th><th></th></tr></thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
+              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
             ) : visibles.map((r) => (
               <tr key={r.id}>
                 <td className="font-mono text-green-700 font-bold">#{r.numero}</td>
@@ -176,6 +183,11 @@ export default function RecibosScreen() {
                 <td>{settings.moneda || "CRC"}</td>
                 <td className="font-bold">{fmtMoney(r.monto, settings.moneda || "CRC")}</td>
                 <td className="text-slate-500">{r.concepto || "—"}</td>
+                <td>
+                  <button onClick={() => eliminar(r)} className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
+                    <Trash2 size={13} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -2,7 +2,7 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, ChevronDown, FileText, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
+import { Search, ChevronDown, FileText, CheckCircle, Clock, XCircle, AlertCircle, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 
@@ -11,6 +11,7 @@ const ESTADOS = {
   guardada: { label: "Borrador",  cls: "bg-gray-100 text-slate-600",   icon: FileText },
   pendiente: { label: "Pendiente", cls: "bg-amber-100 text-amber-700", icon: Clock },
   rechazada: { label: "Rechazada", cls: "bg-red-100 text-red-700",    icon: XCircle },
+  anulada:   { label: "Anulada",   cls: "bg-slate-100 text-slate-500", icon: Ban },
 };
 
 function DetalleFact({ f, moneda }) {
@@ -68,6 +69,20 @@ export default function FacturasHistorialScreen() {
     setFacturas(f.sort((a, b) => (b.creadoEn || "").localeCompare(a.creadoEn || "")));
     setSettings(s);
   }, []);
+
+  const anular = async (f) => {
+    if (!confirm(`¿Anular la factura ${f.numero}? Quedará marcada como anulada.`)) return;
+    const todas = await db.getFacturas();
+    await db.setFacturas(todas.map((x) => x.id === f.id ? { ...x, estado: "anulada" } : x));
+    cargar();
+  };
+
+  const eliminar = async (f) => {
+    if (!confirm(`¿Eliminar definitivamente la factura ${f.numero}? Esta acción no se puede deshacer.`)) return;
+    const todas = await db.getFacturas();
+    await db.setFacturas(todas.filter((x) => x.id !== f.id));
+    cargar();
+  };
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -130,9 +145,10 @@ export default function FacturasHistorialScreen() {
               const est   = ESTADOS[f.estado] || ESTADOS.pendiente;
               const isExp = expanded === f.id;
               const Icon  = est.icon;
+              const esAnulada = f.estado === "anulada";
               return (
                 <React.Fragment key={f.id}>
-                  <tr className="cursor-pointer" onClick={() => setExpanded(isExp ? null : f.id)}>
+                  <tr className={`cursor-pointer ${esAnulada ? "opacity-50 line-through" : ""}`} onClick={() => setExpanded(isExp ? null : f.id)}>
                     <td className="font-mono text-xs text-green-700 font-bold">{f.numero}</td>
                     <td className="text-slate-400 text-xs">{f.tipoDoc || "01"}</td>
                     <td className="text-slate-500">{fmtDate(f.fecha)}</td>
@@ -145,7 +161,21 @@ export default function FacturasHistorialScreen() {
                         <Icon size={10} /> {est.label}
                       </span>
                     </td>
-                    <td><ChevronDown size={14} className={`text-slate-400 transition-transform ${isExp ? "rotate-180" : ""}`} /></td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        {!esAnulada && (
+                          <button onClick={() => anular(f)}
+                            className="px-2 py-1 text-xs text-amber-600 border border-amber-200 rounded hover:bg-amber-50" title="Anular factura">
+                            Anular
+                          </button>
+                        )}
+                        <button onClick={() => eliminar(f)}
+                          className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
+                          <Trash2 size={13} />
+                        </button>
+                        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isExp ? "rotate-180" : ""}`} onClick={(e) => { e.stopPropagation(); setExpanded(isExp ? null : f.id); }} />
+                      </div>
+                    </td>
                   </tr>
                   {isExp && (
                     <tr><td colSpan={9} className="p-0"><DetalleFact f={f} moneda={f.moneda} /></td></tr>

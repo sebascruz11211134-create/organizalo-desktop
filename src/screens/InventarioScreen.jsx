@@ -2,7 +2,7 @@
  * InventarioScreen — Gestión de inventario / productos (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, X, Edit2, Package } from "lucide-react";
+import { Plus, Search, X, Edit2, Package, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { fmtMoney, genId } from "../utils/fmt";
 
@@ -104,6 +104,13 @@ export default function InventarioScreen() {
     setSettings(s);
   }, []);
 
+  const eliminar = async (p) => {
+    if (!confirm(`¿Eliminar el producto "${p.nombre}"?`)) return;
+    const todos = await db.getProductos();
+    await db.setProductos(todos.filter((x) => x.id !== p.id));
+    cargar();
+  };
+
   useEffect(() => { cargar(); }, [cargar]);
 
   const busqL    = busq.trim().toLowerCase();
@@ -186,10 +193,16 @@ export default function InventarioScreen() {
                   <td className="text-slate-400">{p.stockMin ?? "0"}</td>
                   <td className="text-slate-400 text-xs">{p.unidad || "Unid"}</td>
                   <td>
-                    <button onClick={() => setModal(p)}
-                      className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
-                      <Edit2 size={13} />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setModal(p)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
+                        <Edit2 size={13} />
+                      </button>
+                      <button onClick={() => eliminar(p)}
+                        className="p-1.5 rounded hover:bg-red-50 text-red-400">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
