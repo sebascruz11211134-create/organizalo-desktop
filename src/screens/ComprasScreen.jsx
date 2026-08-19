@@ -490,7 +490,7 @@ export default function ComprasScreen() {
                   <td className="px-4 py-2.5 font-semibold text-slate-800">{c.proveedor || "—"}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{c.numFactura || "—"}</td>
                   <td className="px-3 py-2.5 text-xs text-slate-500">{c.categoria}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-slate-400">Por: {c.creadoPor}</div>}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {c.creadoPor}</div>}</td>
                   <td className={`px-3 py-2.5 text-xs ${c.estado==="vencida"?"text-red-500 font-semibold":"text-slate-500"}`}>
                     {c.fechaVence ? fmtDate(c.fechaVence) : "—"}
                   </td>

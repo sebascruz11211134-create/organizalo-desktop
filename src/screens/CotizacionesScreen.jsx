@@ -110,7 +110,7 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
                     className={`cursor-pointer transition-colors ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"hover:bg-slate-50"}`}>
                     <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{c.numero}</td>
                     <td className="px-3 py-2.5 font-semibold text-slate-800">{c.cliente?.nombre || "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-slate-400">Por: {c.creadoPor}</div>}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {c.creadoPor}</div>}</td>
                     <td className="px-3 py-2.5 text-xs text-slate-500">{c.validez ? `${c.validez} días` : "—"}</td>
                     <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total||totCalc,"CRC")}</td>
                     <td className="px-3 py-2.5">{BADGE(c.estado)}</td>

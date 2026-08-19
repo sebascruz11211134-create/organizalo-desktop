@@ -424,7 +424,7 @@ export default function RecibosScreen() {
                   className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulado ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                   onClick={() => setSelected(isSel ? null : r.id)}>
                   <td className={`font-mono font-bold ${esAnulado ? "line-through text-slate-400" : "text-emerald-700"}`}>#{r.numero}</td>
-                  <td><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-slate-400">Por: {r.creadoPor}</div>}</td>
+                  <td><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {r.creadoPor}</div>}</td>
                   <td className={`font-medium ${esAnulado ? "line-through text-slate-400" : ""}`}>{r.clienteNombre || r.cliente || "Consumidor Final"}</td>
                   <td>
                     {r.esAdelanto

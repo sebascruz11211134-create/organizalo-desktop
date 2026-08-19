@@ -323,13 +323,13 @@ export default function CXPScreen() {
                     className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                     onClick={() => setSelected(isSel ? null : d.id)}
                   >
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-normal text-slate-400">Por: {d.creadoPor}</div>}</td>
+                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
                     <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
                     <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                      <div>{fmtDate(d.fechaVencimiento)}</div>{d.creadoPor && <div className="text-[10px] text-slate-400">Por: {d.creadoPor}</div>}
+                      <div>{fmtDate(d.fechaVencimiento)}</div>{d.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {d.creadoPor}</div>}
                     </td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
                   </tr>

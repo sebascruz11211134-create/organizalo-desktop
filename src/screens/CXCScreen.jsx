@@ -200,7 +200,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
                       <td className="px-3 py-2 font-mono font-bold text-slate-700">
                         {d.facturaRef || d.notas || "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-400"><div>{fmtDate(d.creadoEn?.slice(0,10))}</div>{d.creadoPor && <div className="text-[10px]">Por: {d.creadoPor}</div>}</td>
+                      <td className="px-3 py-2 text-slate-400"><div>{fmtDate(d.creadoEn?.slice(0,10))}</div>{d.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {d.creadoPor}</div>}</td>
                       <td className={`px-3 py-2 ${vencida ? "text-red-600 font-semibold" : "text-slate-400"}`}>
                         {fmtDate(d.fechaVencimiento)}
                       </td>
@@ -496,7 +496,7 @@ export default function CXCScreen() {
                     className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                     onClick={() => setSelected(isSel ? null : d.id)}
                   >
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-normal text-slate-400">Por: {d.creadoPor}</div>}</td>
+                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
                     <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
