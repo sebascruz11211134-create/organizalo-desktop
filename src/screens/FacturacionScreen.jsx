@@ -693,6 +693,7 @@ export default function FacturacionScreen() {
                   onFocus={() => setShowClientes(true)}
                   onBlur={() => setTimeout(() => setShowClientes(false), 150)}
                   placeholder="Nombre, código CLI-XXXX…"
+                  autoComplete="off"
                   className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"/>
                 {showClientes && clientesFiltrados.length > 0 && (
                   <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
