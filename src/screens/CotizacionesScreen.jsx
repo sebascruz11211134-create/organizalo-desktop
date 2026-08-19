@@ -33,25 +33,56 @@ const BADGE = (estado) => {
 
 // ── Vista lista ───────────────────────────────────────────────────────────────
 function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, onEliminar, busq, setBusq }) {
+  const [selected, setSelected] = useState(null);
+
   const filtradas = cotizaciones.filter(c =>
     c.numero?.includes(busq) ||
     c.cliente?.nombre?.toLowerCase().includes(busq.toLowerCase())
   );
+  const sel = filtradas.find(c => c.id === selected);
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={onNueva}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+          <Plus size={13}/> Nueva
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&onEditar(sel)}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          Editar
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&onConvertir(sel)}
+          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          <Send size={11}/> Facturar
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&onDuplicar(sel)}
+          className="flex items-center gap-1.5 bg-slate-500 hover:bg-slate-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          <Copy size={11}/> Duplicar
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&onEliminar(sel.id)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        <div className="ml-auto relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input value={busq} onChange={e=>setBusq(e.target.value)}
             placeholder="Buscar cotización o cliente…"
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400" />
+            className="pl-8 pr-3 py-1.5 text-xs border border-slate-500 bg-slate-600 text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 w-56" />
         </div>
-        <button onClick={onNueva}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
-          <Plus size={14}/> Nueva cotización
-        </button>
       </div>
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.numero}</span>
+          <span className="text-slate-500">{sel.cliente?.nombre || "Sin cliente"}</span>
+          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs px-2 py-0.5 rounded border border-slate-200 hover:bg-white">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="px-4 py-1.5 bg-slate-50 border-b text-xs text-slate-400">
+          {filtradas.length} cotizaciones — clic en una fila para seleccionar
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto p-6">
         {filtradas.length === 0 ? (
@@ -64,7 +95,8 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
             {filtradas.map(c => {
               const totCalc = (c.lineas||[]).map(calcLinea).reduce((s,l)=>s+l.total,0);
               return (
-                <div key={c.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-brand-300 transition-colors group">
+                <div key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
+                  className={`cursor-pointer rounded-xl px-5 py-3.5 flex items-center gap-4 transition-colors border ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"bg-white border-slate-200 hover:border-brand-300"}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="font-bold text-sm text-slate-800">{c.numero}</span>
@@ -73,22 +105,6 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
                     <p className="text-xs text-slate-500 truncate">{c.cliente?.nombre || "Sin cliente"} · {fmtDate(c.fecha)}</p>
                   </div>
                   <p className="font-bold text-slate-800 text-sm shrink-0">{fmtMoney(c.total||totCalc,"CRC")}</p>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={()=>onEditar(c)} title="Ver / editar"
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 text-xs">Ver</button>
-                    <button onClick={()=>onConvertir(c)} title="Convertir a factura"
-                      className="p-1.5 rounded-lg hover:bg-green-50 text-green-600 text-xs flex items-center gap-1">
-                      <Send size={11}/> Facturar
-                    </button>
-                    <button onClick={()=>onDuplicar(c)} title="Duplicar"
-                      className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500">
-                      <Copy size={13}/>
-                    </button>
-                    <button onClick={()=>onEliminar(c.id)} title="Eliminar"
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-400">
-                      <Trash2 size={13}/>
-                    </button>
-                  </div>
                 </div>
               );
             })}

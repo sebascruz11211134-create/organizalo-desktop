@@ -299,6 +299,7 @@ export default function ComprasScreen() {
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
   const [authToken, setAuthToken] = useState(null);
+  const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {
     const [c, ct, pr, py] = await Promise.all([db.getCompras(), db.getContactos(), db.getProductos(), db.getProyectos()]);
@@ -390,6 +391,7 @@ export default function ComprasScreen() {
     (filtroEst==="todos" || c.estado===filtroEst) &&
     (c.proveedor?.toLowerCase().includes(busq.toLowerCase()) || c.numFactura?.includes(busq))
   );
+  const sel = filtradas.find(c => c.id === selected);
 
   const totPendiente = compras.filter(x=>x.estado==="pendiente").reduce((s,c)=>s+c.total,0);
   const totMes = compras.filter(x=>x.fecha?.startsWith(new Date().toISOString().slice(0,7))).reduce((s,c)=>s+c.total,0);
@@ -410,23 +412,54 @@ export default function ComprasScreen() {
             <span className="text-[10px] text-slate-400">{k.sub}</span>
           </div>
         ))}
-        <div className="ml-auto flex items-center gap-3">
+      </div>
+
+      {/* Toolbar oscuro */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={()=>{setEditando(null);setVista("form");}}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+          <Plus size={13}/> Nueva compra
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&(setEditando(sel),setVista("form"))}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          Editar
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&eliminar(sel.id)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        {sel?.estado==="pendiente" && (
+          <button onClick={()=>marcarPagada(sel.id)}
+            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+            ✓ Marcar pagada
+          </button>
+        )}
+        <div className="ml-auto flex items-center gap-2">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
             <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar…"
-              className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="pl-8 pr-3 py-1.5 text-xs border border-slate-500 bg-slate-600 text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400" />
           </div>
           <select value={filtroEst} onChange={e=>setFiltroEst(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
+            className="text-xs border border-slate-500 bg-slate-600 text-white rounded-lg px-2 py-1.5 focus:outline-none">
             <option value="todos">Todos</option>
             {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
           </select>
-          <button onClick={()=>{setEditando(null);setVista("form");}}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
-            <Plus size={14}/> Nueva compra
-          </button>
         </div>
       </div>
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.proveedor || "Proveedor"}</span>
+          {sel.numFactura && <span className="text-slate-500">#{sel.numFactura}</span>}
+          <Badge estado={sel.estado}/>
+          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs px-2 py-0.5 rounded border border-slate-200 hover:bg-white">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="px-4 py-1.5 bg-slate-50 border-b text-xs text-slate-400">
+          {filtradas.length} compras — clic en una fila para seleccionar
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto p-6">
         {filtradas.length === 0 ? (
@@ -437,7 +470,8 @@ export default function ComprasScreen() {
         ) : (
           <div className="space-y-2">
             {filtradas.map(c=>(
-              <div key={c.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-brand-300 group">
+              <div key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
+                className={`cursor-pointer rounded-xl px-5 py-3.5 flex items-center gap-4 transition-colors border ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"bg-white border-slate-200 hover:border-brand-300"}`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-bold text-sm">{c.proveedor || "Proveedor"}</span>
@@ -449,13 +483,6 @@ export default function ComprasScreen() {
                 <div className="text-right shrink-0">
                   <p className="font-bold text-sm">{fmtMoney(c.total,"CRC")}</p>
                   <p className="text-[10px] text-green-600">IVA {fmtMoney(c.montoIVA||0,"CRC")}</p>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={()=>{setEditando(c);setVista("form");}} className="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-500">Editar</button>
-                  {c.estado==="pendiente" && (
-                    <button onClick={()=>marcarPagada(c.id)} className="text-xs px-2 py-1 rounded hover:bg-green-50 text-green-600 font-semibold">Marcar pagada</button>
-                  )}
-                  <button onClick={()=>eliminar(c.id)} className="p-1.5 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
                 </div>
               </div>
             ))}

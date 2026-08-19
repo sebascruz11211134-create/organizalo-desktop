@@ -213,6 +213,7 @@ export default function ContactosScreen() {
   const [busq,      setBusq]      = useState("");
   const [filtro,    setFiltro]    = useState("todos");
   const [modal,     setModal]     = useState(null);
+  const [selected,  setSelected]  = useState(null); // id seleccionado
 
   const cargar = useCallback(async () => {
     const c = await db.getContactos();
@@ -223,6 +224,7 @@ export default function ContactosScreen() {
     if (!confirm(`¿Eliminar el contacto "${c.nombre}"?`)) return;
     const todos = await db.getContactos();
     await db.setContactos(todos.filter((x) => x.id !== c.id));
+    setSelected(null);
     cargar();
   };
 
@@ -238,61 +240,90 @@ export default function ContactosScreen() {
     return match && tipo;
   });
 
+  const sel = visibles.find(c => c.id === selected);
   const TIPO_CLS = { cliente: "bg-blue-100 text-blue-700", proveedor: "bg-amber-100 text-amber-700", ambos: "bg-violet-100 text-violet-700" };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)} placeholder="Buscar contacto, cédula…" className="bg-transparent text-sm flex-1 outline-none" />
-        </div>
+      {/* Toolbar oscuro — igual que CXC */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={() => setModal({})}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+          <Plus size={13}/> Nuevo
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        <button
+          disabled={!sel}
+          onClick={() => sel && setModal(sel)}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold">
+          Editar
+        </button>
+        <button
+          disabled={!sel}
+          onClick={() => sel && eliminar(sel)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        <div className="flex-1"/>
         <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm">
+          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
           <option value="todos">Todos</option>
           <option value="cliente">Clientes</option>
           <option value="proveedor">Proveedores</option>
         </select>
-        <button onClick={() => setModal({})}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
-          <Plus size={15} /> Nuevo contacto
-        </button>
+        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300"/>
+          <input value={busq} onChange={(e) => setBusq(e.target.value)}
+            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
+        </div>
       </div>
+
+      {/* Barra de selección */}
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.nombre}</span>
+          <span className="text-slate-500">{sel.cedula || "Sin cédula"}</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[sel.tipo] || ""}`}>{sel.tipo}</span>
+          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="px-4 py-1.5 bg-slate-50 border-b border-slate-100 text-xs text-slate-400">
+          {visibles.length} contacto{visibles.length !== 1 ? "s" : ""} — clic en una fila para seleccionar
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr><th>Código</th><th>Nombre</th><th>Cédula / RUC</th><th>Tipo</th><th>Crédito</th><th>Email</th><th>Teléfono</th><th>Notas</th><th></th></tr></thead>
+          <thead><tr><th>Código</th><th>Nombre</th><th>Cédula / RUC</th><th>Tipo</th><th>Crédito</th><th>Email</th><th>Teléfono</th><th>Notas</th></tr></thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin contactos</td></tr>
-            ) : visibles.map((c) => (
-              <tr key={c.id}>
-                <td>
-                  {c.codigoCliente
-                    ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">{c.codigoCliente}</span>
-                    : <span className="text-slate-300 text-xs">—</span>}
-                </td>
-                <td className="font-semibold">{c.nombre}</td>
-                <td className="font-mono text-sm text-slate-500">{c.cedula || "—"}</td>
-                <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[c.tipo] || "bg-gray-100 text-slate-600"}`}>{c.tipo}</span></td>
-                <td>
-                  {c.dias_credito > 0
-                    ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
-                    : <span className="text-xs text-slate-400">contado</span>}
-                </td>
-                <td className="text-slate-500">{c.email || "—"}</td>
-                <td className="text-slate-500">{c.tel || "—"}</td>
-                <td className="text-slate-400 text-xs">{c.notas || "—"}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setModal(c)} className="text-xs text-blue-600 hover:underline">Editar</button>
-                    <button onClick={() => eliminar(c)} className="p-1.5 rounded hover:bg-red-50 text-red-400" title="Eliminar">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin contactos</td></tr>
+            ) : visibles.map((c) => {
+              const isSel = c.id === selected;
+              return (
+                <tr key={c.id}
+                  className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : "hover:bg-slate-50"}`}
+                  onClick={() => setSelected(isSel ? null : c.id)}>
+                  <td>
+                    {c.codigoCliente
+                      ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">{c.codigoCliente}</span>
+                      : <span className="text-slate-300 text-xs">—</span>}
+                  </td>
+                  <td className="font-semibold">{c.nombre}</td>
+                  <td className="font-mono text-sm text-slate-500">{c.cedula || "—"}</td>
+                  <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[c.tipo] || "bg-gray-100 text-slate-600"}`}>{c.tipo}</span></td>
+                  <td>
+                    {c.dias_credito > 0
+                      ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
+                      : <span className="text-xs text-slate-400">contado</span>}
+                  </td>
+                  <td className="text-slate-500">{c.email || "—"}</td>
+                  <td className="text-slate-500">{c.tel || "—"}</td>
+                  <td className="text-slate-400 text-xs">{c.notas || "—"}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

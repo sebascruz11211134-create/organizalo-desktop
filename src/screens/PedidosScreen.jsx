@@ -170,6 +170,7 @@ export default function PedidosScreen() {
   const [form,      setForm]      = useState(false);
   const [editando,  setEditando]  = useState(null);
   const [busq,      setBusq]      = useState("");
+  const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {
     const [p,c,pr] = await Promise.all([db.getPedidos(), db.getContactos(), db.getProductos()]);
@@ -210,27 +211,45 @@ export default function PedidosScreen() {
     p.cliente?.toLowerCase().includes(busq.toLowerCase()) ||
     p.descripcion?.toLowerCase().includes(busq.toLowerCase())
   );
+  const sel = pedidos.find(p => p.id === selected);
 
   return (
     <div className="flex flex-col h-full">
       {form && <FormPedido pedido={editando} contactos={contactos} productos={productos}
         onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}} />}
 
-      {/* Barra */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
-        <div className="relative">
+      {/* Toolbar oscuro */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <button onClick={()=>{setEditando(null);setForm(true);}}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+          <Plus size={13}/> Nuevo pedido
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&(setEditando(sel),setForm(true))}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          Editar
+        </button>
+        <button disabled={!sel} onClick={()=>sel&&eliminar(sel.id)}
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          <Trash2 size={13}/> Eliminar
+        </button>
+        <div className="ml-auto relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar pedido…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400" />
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-400">{pedidos.length} pedidos</span>
-          <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
-            <Plus size={14}/> Nuevo pedido
-          </button>
+            className="pl-8 pr-3 py-1.5 text-xs border border-slate-500 bg-slate-600 text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400" />
         </div>
       </div>
+      {sel ? (
+        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+          <span className="text-blue-700 font-semibold">Seleccionado:</span>
+          <span className="font-bold text-slate-800">{sel.cliente || "Sin cliente"}</span>
+          <span className="text-slate-500 truncate max-w-xs">{sel.descripcion}</span>
+          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs px-2 py-0.5 rounded border border-slate-200 hover:bg-white">✕ Deseleccionar</button>
+        </div>
+      ) : (
+        <div className="px-4 py-1.5 bg-slate-50 border-b text-xs text-slate-400">
+          {pedidos.length} pedidos — clic en una tarjeta para seleccionar
+        </div>
+      )}
 
       {/* Kanban */}
       <div className="flex-1 overflow-auto p-6">
@@ -248,13 +267,10 @@ export default function PedidosScreen() {
                 {/* Cards */}
                 <div className="flex-1 overflow-auto p-3 space-y-2">
                   {items.map(p=>(
-                    <div key={p.id} className="bg-white rounded-xl p-3 shadow-sm border border-white hover:border-brand-200 group">
+                    <div key={p.id} onClick={()=>setSelected(selected===p.id?null:p.id)}
+                      className={`cursor-pointer rounded-xl p-3 shadow-sm border transition-colors ${selected===p.id?"bg-blue-50 border-blue-400 border-l-4":"bg-white border-white hover:border-brand-200"}`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="font-semibold text-sm text-slate-800 leading-tight">{p.cliente || "Sin cliente"}</p>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                          <button onClick={()=>{setEditando(p);setForm(true);}} className="p-1 rounded hover:bg-slate-100 text-slate-400 text-xs">✏️</button>
-                          <button onClick={()=>eliminar(p.id)} className="p-1 rounded hover:bg-red-50 text-red-400"><Trash2 size={11}/></button>
-                        </div>
                       </div>
                       <p className="text-xs text-slate-500 mb-2 line-clamp-2">{p.descripcion}</p>
                       {p.monto>0 && <p className="text-xs font-bold text-green-700">{fmtMoney(p.monto,"CRC")}</p>}
