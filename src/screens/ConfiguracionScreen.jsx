@@ -44,7 +44,10 @@ export default function ConfiguracionScreen() {
   const [atvMsg,        setAtvMsg]        = useState(null);  // { type: "ok"|"err", text }
 
   // ── Gestión de usuarios de empresa ────────────────────────────────────────
-  const meUser = getUser();
+  // getUser() es async — leer sync desde localStorage para evitar Promise
+  const meUser = (() => {
+    try { return JSON.parse(localStorage.getItem("@finanzia/authUser")); } catch { return null; }
+  })();
   const esAdmin = meUser && ["admin", "superadmin"].includes(meUser.rol);
   const [equipo,       setEquipo]       = useState([]);
   const [equipoLoad,   setEquipoLoad]   = useState(false);
