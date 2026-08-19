@@ -112,8 +112,10 @@ const NAV = [
       { label: "Notas de crédito", path: "/notas-credito",    icon: FileText },
       { label: "CXC",              path: "/reporte-cxc",      icon: BarChart2 },
       { label: "Recibos",          path: "/reporte-recibos",  icon: Receipt },
-      { label: "Vencidos",         path: "/reporte-vencidos", icon: TrendingUp },
-      { label: "Análisis ventas",  path: "/analytics",        icon: TrendingUp },
+      { label: "Vencidos",           path: "/reporte-vencidos",        icon: TrendingUp },
+      { label: "Historial pagos",   path: "/reporte-historial-pagos", icon: Receipt    },
+      { label: "Cobros cliente",    path: "/reporte-cobros-cliente",  icon: BarChart2  },
+      { label: "Análisis ventas",   path: "/analytics",               icon: TrendingUp },
     ],
   },
 

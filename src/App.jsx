@@ -58,10 +58,12 @@ const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
 const ConfiguracionScreen   = lazy(() => import("./screens/ConfiguracionScreen"));
 const AdminScreen           = lazy(() => import("./screens/AdminScreen"));
 const ChatWidget            = lazy(() => import("./components/ChatWidget"));
-const LibrosLegalesScreen   = lazy(() => import("./screens/LibrosLegalesScreen"));
-const KardexScreen          = lazy(() => import("./screens/KardexScreen"));
-const AsistenciaScreen      = lazy(() => import("./screens/AsistenciaScreen"));
-const OrdenesCompraScreen   = lazy(() => import("./screens/OrdenesCompraScreen"));
+const LibrosLegalesScreen            = lazy(() => import("./screens/LibrosLegalesScreen"));
+const KardexScreen                   = lazy(() => import("./screens/KardexScreen"));
+const AsistenciaScreen               = lazy(() => import("./screens/AsistenciaScreen"));
+const OrdenesCompraScreen            = lazy(() => import("./screens/OrdenesCompraScreen"));
+const ReporteHistorialPagosScreen    = lazy(() => import("./screens/ReporteHistorialPagosScreen"));
+const ReporteCobrosClienteScreen     = lazy(() => import("./screens/ReporteCobrosClienteScreen"));
 
 // SUPERADMIN_EMAIL se exporta desde AdminScreen — lo duplicamos aquí para no
 // necesitar un import síncrono de ese módulo pesado.
@@ -102,8 +104,10 @@ const TITULOS = {
   "/notas-credito":     "Notas de crédito",
   "/reporte-cxc":       "Reporte CXC",
   "/reporte-recibos":   "Reporte de recibos",
-  "/reporte-vencidos":  "Cobros vencidos",
-  "/analytics":         "Análisis de ventas",
+  "/reporte-vencidos":         "Cobros vencidos",
+  "/reporte-historial-pagos": "Historial de pagos por cliente",
+  "/reporte-cobros-cliente":  "Estado de cobros por cliente",
+  "/analytics":               "Análisis de ventas",
   "/migracion":         "Importar datos",
   "/planillas":         "Planillas — Nómina",
   "/flujo-caja":        "Flujo de caja",
@@ -391,8 +395,10 @@ export default function App() {
                 <Route path="/notas-credito"       element={<NotasCreditoScreen />} />
                 <Route path="/reporte-cxc"         element={<ReporteCXCScreen />} />
                 <Route path="/reporte-recibos"     element={<ReporteRecibosScreen />} />
-                <Route path="/reporte-vencidos"    element={<ReporteVencidosScreen />} />
-                <Route path="/analytics"           element={<AnalyticsScreen />} />
+                <Route path="/reporte-vencidos"          element={<ReporteVencidosScreen />} />
+                <Route path="/reporte-historial-pagos"   element={<ReporteHistorialPagosScreen />} />
+                <Route path="/reporte-cobros-cliente"    element={<ReporteCobrosClienteScreen />} />
+                <Route path="/analytics"                 element={<AnalyticsScreen />} />
                 <Route path="/migracion"           element={<MigracionScreen />} />
                 <Route path="/planillas"           element={<PlanillasScreen />} />
                 <Route path="/flujo-caja"          element={<FlujoCajaScreen />} />
