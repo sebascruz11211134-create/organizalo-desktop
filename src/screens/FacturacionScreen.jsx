@@ -487,14 +487,42 @@ export default function FacturacionScreen() {
     const f = armarFactura();
     setSending(true);
     try {
-      const res = await fetch(`${BACKEND}/api/facturas/emitir`, {
+      // POST /api/invoices con el formato que espera el backend
+      const payload = {
+        cliente: {
+          nombre: f.cliente.nombre || "Consumidor Final",
+          cedula: f.cliente.cedula || undefined,
+          correo:  f.cliente.email || f.cliente.correo || undefined,
+        },
+        items: f.lineas.map(l => ({
+          descripcion:    l.descripcion,
+          cantidad:       Number(l.cantidad),
+          precioUnitario: Number(l.precioUnit),
+          tarifaIva:      l.pctIVA ?? 13,
+        })),
+        moneda:     f.moneda,
+        tipoCambio: f.moneda === "USD" ? (settings.tipoCambio || 600) : 1,
+      };
+      const res = await fetch(`${BACKEND}/api/invoices`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, empresaId: settings.empresaId }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
-      const estado = json.ok ? "aceptada" : "pendiente";
-      const guardada = { ...f, estado, haciendaRes: json };
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+
+      // El backend devuelve: { clave, numeroConsecutivo, estado, modoSimulacion, respuestaHacienda, ... }
+      const guardada = {
+        ...f,
+        estado:             json.estado || "enviado",
+        clave:              json.clave,
+        numeroConsecutivo:  json.numeroConsecutivo,
+        modoSimulacion:     json.modoSimulacion,
+        haciendaRes:        json.respuestaHacienda,
+      };
       await guardarLocal(guardada);
       setEnviada(guardada);
       resetForm();
@@ -586,20 +614,52 @@ export default function FacturacionScreen() {
 
   // ── Banner de confirmación ────────────────────────────────────────────────
   if (enviada) {
+    const esEnviada  = ["enviado","simulado","aceptada"].includes(enviada.estado);
+    const estadoLabel = enviada.estado === "simulado"  ? "Simulada (modo prueba)" :
+                        enviada.estado === "enviado"   ? "Enviada a Hacienda ✓" :
+                        enviada.estado === "aceptada"  ? "Aceptada por Hacienda ✓" :
+                        enviada.estado === "guardada"  ? "Guardada como borrador" :
+                        "Pendiente de envío";
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-6 fade-in">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${enviada.estado === "aceptada" ? "bg-green-100" : "bg-amber-100"}`}>
-          {enviada.estado === "aceptada" ? "✓" : "⏳"}
+      <div className="flex flex-col items-center justify-center h-full gap-4 fade-in overflow-y-auto py-6 px-4">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-emerald-100" : "bg-amber-100"}`}>
+          {esEnviada ? "✓" : "⏳"}
         </div>
         <div className="text-center">
           <h2 className="text-2xl font-black text-slate-900">{enviada.numero}</h2>
-          <p className="text-slate-500 mt-1">
-            {enviada.estado === "aceptada" ? "Enviada a Hacienda exitosamente" :
-             enviada.estado === "guardada" ? "Guardada como borrador" :
-             "Guardada — pendiente de envío"}
-          </p>
-          <p className="text-2xl font-black text-emerald-700 mt-3">{fmtMoney(enviada.total, enviada.moneda)}</p>
+          <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold ${esEnviada ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+            {estadoLabel}
+          </span>
+          {enviada.modoSimulacion && (
+            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">MODO PRUEBA</span>
+          )}
+          <p className="text-2xl font-black text-emerald-700 mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
         </div>
+
+        {/* Datos de Hacienda */}
+        {(enviada.clave || enviada.numeroConsecutivo || enviada.haciendaRes) && (
+          <div className="w-full max-w-md bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+            <p className="text-[10px] font-bold text-slate-500 uppercase">Respuesta de Hacienda</p>
+            {enviada.numeroConsecutivo && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Consecutivo</span>
+                <span className="font-mono font-semibold text-slate-800">{enviada.numeroConsecutivo}</span>
+              </div>
+            )}
+            {enviada.clave && (
+              <div>
+                <span className="text-slate-500">Clave numérica</span>
+                <p className="font-mono text-[10px] text-slate-700 break-all mt-0.5">{enviada.clave}</p>
+              </div>
+            )}
+            {enviada.haciendaRes?.nota && (
+              <p className="text-slate-600 italic">{enviada.haciendaRes.nota}</p>
+            )}
+            {enviada.haciendaRes?.message && (
+              <p className="text-slate-600 italic">{enviada.haciendaRes.message}</p>
+            )}
+          </div>
+        )}
 
         {/* QR de SINPE */}
         <div className="flex flex-col items-center gap-1 border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
