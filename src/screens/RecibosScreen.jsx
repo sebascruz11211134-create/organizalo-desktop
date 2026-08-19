@@ -19,8 +19,6 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
   const [concepto,   setConcepto]   = useState("");
   const [esAdelanto, setEsAdelanto] = useState(false);
   const [facturaId,  setFacturaId]  = useState("");
-  const [busqFact,   setBusqFact]   = useState("");
-  const [showFact,   setShowFact]   = useState(false);
   const [aplicado,   setAplicado]   = useState({}); // { cxcId: monto }
 
   // Autocompletar contactos
@@ -41,14 +39,14 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
   const totalCXC = Object.values(aplicado).reduce((s, v) => s + (parseFloat(v) || 0), 0);
   const hayCXC   = cxcPendientes.length > 0;
 
-  // Facturas filtrables
+  // Facturas del cliente seleccionado (vivas = no anuladas)
   const factSel = facturas.find(f => f.id === facturaId);
-  const facturasFiltradas = facturas.filter((f) => {
-    if (f.estado === "anulada") return false;
-    const matchCliente = !cliente || (f.clienteNombre || "").toLowerCase().includes(cliente.toLowerCase());
-    const matchBusq    = !busqFact || (f.numero || "").includes(busqFact) || (f.clienteNombre || "").toLowerCase().includes(busqFact.toLowerCase());
-    return matchCliente && matchBusq;
-  }).slice(0, 8);
+  const facturasCliente = cliente
+    ? facturas.filter(f =>
+        f.estado !== "anulada" &&
+        (f.clienteNombre || "").toLowerCase().includes(cliente.toLowerCase())
+      )
+    : [];
 
   const seleccionarCliente = (nombre) => {
     setBusqCli(nombre); setCliente(nombre);
@@ -224,43 +222,35 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
             </div>
           )}
 
-          {/* Selector de factura — solo si no es adelanto y no hay CXC pendientes */}
+          {/* Facturas vivas del cliente — auto-desplegadas */}
           {!esAdelanto && !hayCXC && (
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                 Factura <span className="text-red-500">*</span>
+                {cliente && facturasCliente.length === 0 && (
+                  <span className="ml-2 font-normal text-slate-400 normal-case">— sin facturas activas para este cliente</span>
+                )}
               </label>
-              {factSel ? (
-                <div className="flex items-center gap-2 px-3 py-2 border border-green-400 rounded-lg bg-green-50">
-                  <span className="font-mono font-bold text-green-800 text-sm">#{factSel.numero}</span>
-                  <span className="text-xs text-slate-600 flex-1">{factSel.clienteNombre}</span>
-                  <span className="text-xs font-bold text-green-700">{fmtMoney(factSel.total, factSel.moneda)}</span>
-                  <button type="button" onClick={() => { setFacturaId(""); setBusqFact(""); }} className="text-slate-400 hover:text-red-500 text-xs">✕</button>
-                </div>
+              {!cliente ? (
+                <p className="text-xs text-slate-400 italic">Seleccioná el cliente para ver sus facturas</p>
+              ) : facturasCliente.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No hay facturas activas para aplicar</p>
               ) : (
-                <div className="relative">
-                  <input value={busqFact}
-                    onChange={(e) => { setBusqFact(e.target.value); setShowFact(true); }}
-                    onFocus={() => setShowFact(true)}
-                    onBlur={() => setTimeout(() => setShowFact(false), 150)}
-                    placeholder="Buscar por N° o cliente…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-                  {showFact && facturasFiltradas.length > 0 && (
-                    <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-48 overflow-auto">
-                      {facturasFiltradas.map((f) => (
-                        <button key={f.id} type="button"
-                          onMouseDown={() => { setFacturaId(f.id); setBusqFact(""); setShowFact(false); if (!cliente) seleccionarCliente(f.clienteNombre || ""); }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
-                          <span className="font-mono font-bold text-green-700">#{f.numero}</span>
-                          <span className="ml-2 text-slate-600">{f.clienteNombre}</span>
-                          <span className="ml-auto float-right font-bold text-slate-700">{fmtMoney(f.total, f.moneda)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {showFact && facturasFiltradas.length === 0 && busqFact && (
-                    <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow z-10 px-3 py-2 text-xs text-slate-400">Sin facturas encontradas</div>
-                  )}
+                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                  {facturasCliente.map((f) => {
+                    const isSel = facturaId === f.id;
+                    return (
+                      <button key={f.id} type="button"
+                        onClick={() => setFacturaId(isSel ? "" : f.id)}
+                        className={`w-full text-left flex items-center gap-2 px-3 py-2 border-b last:border-0 transition-colors
+                          ${isSel ? "bg-green-50 border-l-4 border-green-500" : "bg-white hover:bg-slate-50"}`}>
+                        <span className={`font-mono font-bold text-sm ${isSel ? "text-green-700" : "text-slate-600"}`}>#{f.numero}</span>
+                        <span className="text-xs text-slate-500 flex-1 truncate">{fmtDate(f.fecha)}</span>
+                        <span className={`text-xs font-bold ${isSel ? "text-green-700" : "text-slate-700"}`}>{fmtMoney(f.total, f.moneda)}</span>
+                        {isSel && <span className="text-green-600 text-xs font-bold">✓</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
