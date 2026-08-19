@@ -110,6 +110,36 @@ function LineAreaChart({ series, height = 140 }) {
   );
 }
 
+// ── Gráfico de barras 28 días ─────────────────────────────────────────────────
+function BarChart28({ data }) {
+  if (!data?.length) return null;
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div className="flex items-end gap-px h-28 w-full">
+      {data.map((d, i) => {
+        const pct = (d.value / max) * 100;
+        const isToday = i === data.length - 1;
+        return (
+          <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5 group relative">
+            <div
+              className={`w-full rounded-t transition-all duration-300 ${isToday ? "bg-emerald-500" : "bg-emerald-200 group-hover:bg-emerald-400"}`}
+              style={{ height: `${Math.max(pct, 2)}%` }}
+            />
+            {d.label && (
+              <span className="text-[7px] text-slate-400 truncate w-full text-center leading-none mt-0.5">{d.label}</span>
+            )}
+            {d.value > 0 && (
+              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                {fmtMoney(d.value, "CRC", true)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── KPI Card ───────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert, color = "slate" }) {
   const colors = {
@@ -298,65 +328,66 @@ export default function DashboardScreen() {
   }, []);
 
   // ── Cálculos memoizados ────────────────────────────────────────────────────
-  const { kpis, chartData, recentFacturas, topClientes, statsForIA } = useMemo(() => {
+  const { kpis, chartData, recentFacturas, topClientes, statsForIA, proxVencer } = useMemo(() => {
     const hd  = hoy();
     const mes = hd.slice(0, 7);
     const prev = (() => { const d = new Date(mes + "-01"); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
 
-    // KPIs
-    const ingresosMes = recibos.filter(r => (r.fecha || "").startsWith(mes)).reduce((s, r) => s + (r.monto || 0), 0);
-    const ingresosPrev = recibos.filter(r => (r.fecha || "").startsWith(prev)).reduce((s, r) => s + (r.monto || 0), 0);
-    const gastosMes   = compras.filter(c => (c.fecha || "").startsWith(mes)).reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
-    const gastosPrev  = compras.filter(c => (c.fecha || "").startsWith(prev)).reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
+    // KPIs — ventas reales desde facturas
+    const ventasHoy = facturas.filter(f => (f.fecha || "").startsWith(hd)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+    const ventasMes = facturas.filter(f => (f.fecha || "").startsWith(mes)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+    const ventasPrev = facturas.filter(f => (f.fecha || "").startsWith(prev)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+    const gastosMes  = compras.filter(c => (c.fecha || "").startsWith(mes)).reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
+    const gastosPrev = compras.filter(c => (c.fecha || "").startsWith(prev)).reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
 
     const cxc = debts.filter(d => (d.tipo || "pagar") === "cobrar");
     const cxp = debts.filter(d => (d.tipo || "pagar") === "pagar");
-    const totalCXC = cxc.reduce((s, d) => s + Math.max(0, (d.saldo || d.total || 0) - (d.pagado || 0)), 0);
-    const totalCXP = cxp.reduce((s, d) => s + Math.max(0, (d.saldo || d.total || 0) - (d.pagado || 0)), 0);
-    const vencidas  = cxc.filter(d => d.fechaVencimiento && d.fechaVencimiento < hd && (d.saldo || d.total || 0) > 0).length;
+    const totalCXC = cxc.reduce((s, d) => s + Math.max(0, (d.total || 0) - (d.pagado || 0)), 0);
+    const totalCXP = cxp.reduce((s, d) => s + Math.max(0, (d.total || 0) - (d.pagado || 0)), 0);
+    const vencidas  = cxc.filter(d => d.fechaVencimiento && d.fechaVencimiento < hd && (d.total || 0) > (d.pagado || 0)).length;
 
-    const utilidad  = ingresosMes - gastosMes;
-    const ingTrend  = ingresosPrev > 0 ? `${((ingresosMes - ingresosPrev) / ingresosPrev * 100).toFixed(0)}%` : null;
-    const gasTrend  = gastosPrev  > 0 ? `${((gastosMes   - gastosPrev)  / gastosPrev  * 100).toFixed(0)}%` : null;
+    const utilidad   = ventasMes - gastosMes;
+    const ventTrend  = ventasPrev > 0 ? `${((ventasMes - ventasPrev) / ventasPrev * 100).toFixed(0)}%` : null;
+    const gasTrend   = gastosPrev > 0 ? `${((gastosMes - gastosPrev) / gastosPrev * 100).toFixed(0)}%` : null;
 
-    const kpis = { ingresosMes, gastosMes, totalCXC, utilidad, ingTrend, gasTrend, ingresosPrev, gastosPrev, vencidas };
+    const kpis = { ventasHoy, ventasMes, gastosMes, totalCXC, utilidad, ventTrend, gasTrend, vencidas };
 
-    // Chart: últimos 6 meses
-    const chartData = Array.from({ length: 6 }, (_, i) => {
-      const key = getMesKey(i - 5);
-      const lbl = getMesLabel(i - 5);
-      const ing = recibos.filter(r => (r.fecha || "").startsWith(key)).reduce((s, r) => s + (r.monto || 0), 0);
-      const gas = compras.filter(c => (c.fecha || "").startsWith(key)).reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
-      return { label: lbl, value: ing, value2: gas };
+    // Chart: últimas 4 semanas día a día (28 días)
+    const chartData = Array.from({ length: 28 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (27 - i));
+      const key = d.toISOString().slice(0, 10);
+      const lbl = i % 7 === 0 ? d.toLocaleString("es-CR", { month: "short", day: "numeric" }) : "";
+      const val = facturas.filter(f => (f.fecha || "").startsWith(key)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+      return { label: lbl, value: val };
     });
+
+    // Próximas a vencer (7 días)
+    const en7 = new Date(); en7.setDate(en7.getDate() + 7);
+    const en7str = en7.toISOString().slice(0, 10);
+    const proxVencer = cxc
+      .filter(d => d.fechaVencimiento && d.fechaVencimiento >= hd && d.fechaVencimiento <= en7str && (d.total || 0) > (d.pagado || 0))
+      .sort((a, b) => a.fechaVencimiento.localeCompare(b.fechaVencimiento))
+      .slice(0, 5);
 
     // Facturas recientes (últimas 5)
     const recentFacturas = [...facturas]
-      .sort((a, b) => (b.fecha || b.fechaEmision || "").localeCompare(a.fecha || a.fechaEmision || ""))
+      .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))
       .slice(0, 5);
 
-    // Top 5 clientes por CXC pendiente
+    // Top 5 clientes por facturación
     const clienteMap = {};
-    cxc.forEach(d => {
-      const nombre = d.clienteNombre || d.nombre || "Sin nombre";
-      clienteMap[nombre] = (clienteMap[nombre] || 0) + Math.max(0, (d.saldo || d.total || 0) - (d.pagado || 0));
-    });
-    // También de facturas
     facturas.forEach(f => {
-      const nombre = f.clienteNombre || f.cliente || "Sin nombre";
-      if (!clienteMap[nombre]) {
-        const total = f.totalGeneral || f.total || 0;
-        if (total > 0) clienteMap[nombre] = (clienteMap[nombre] || 0) + total;
-      }
+      const nombre = f.clienteNombre || (typeof f.cliente === "string" ? f.cliente : f.cliente?.nombre) || "Sin nombre";
+      if (nombre === "Consumidor Final") return;
+      clienteMap[nombre] = (clienteMap[nombre] || 0) + (f.total || f.totalGeneral || 0);
     });
     const topClientes = Object.entries(clienteMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
+      .sort((a, b) => b[1] - a[1]).slice(0, 5)
       .map(([nombre, total]) => ({ nombre, total }));
 
-    const statsForIA = { facturasMes: facturas.filter(f => (f.fecha || f.fechaEmision || "").startsWith(mes)).length, vencidas, totalCXC, totalCXP };
+    const statsForIA = { facturasMes: facturas.filter(f => (f.fecha || "").startsWith(mes)).length, vencidas, totalCXC, totalCXP };
 
-    return { kpis, chartData, recentFacturas, topClientes, statsForIA };
+    return { kpis, chartData, recentFacturas, topClientes, statsForIA, proxVencer };
   }, [recibos, compras, facturas, debts]);
 
   const negocio = settings?.nombreNegocio || "Mi negocio";
@@ -390,30 +421,37 @@ export default function DashboardScreen() {
         </div>
 
         {/* ── KPI Row ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
           <KpiCard
-            label="Ingresos este mes"
-            value={fmtMoney(kpis.ingresosMes, "CRC")}
-            sub="Recibos registrados"
+            label="Ventas hoy"
+            value={fmtMoney(kpis.ventasHoy, "CRC")}
+            sub={new Date().toLocaleDateString("es-CR", { weekday: "short", day: "numeric" })}
+            icon={Receipt}
+            color={kpis.ventasHoy > 0 ? "green" : "slate"}
+            onClick={() => navigate("/facturas-historial")}
+          />
+          <KpiCard
+            label="Ventas del mes"
+            value={fmtMoney(kpis.ventasMes, "CRC")}
+            sub="Facturación total"
             icon={TrendingUp}
             color="green"
-            trend={kpis.ingTrend}
-            trendUp={parseFloat(kpis.ingTrend) >= 0}
-            onClick={() => navigate("/recibos")}
+            trend={kpis.ventTrend}
+            trendUp={parseFloat(kpis.ventTrend) >= 0}
+            onClick={() => navigate("/analytics")}
           />
           <KpiCard
             label="Por cobrar (CXC)"
             value={fmtMoney(kpis.totalCXC, "CRC")}
-            sub={kpis.vencidas > 0 ? `${kpis.vencidas} vencida${kpis.vencidas > 1 ? "s" : ""}` : "Al día"}
+            sub={kpis.vencidas > 0 ? `⚠️ ${kpis.vencidas} vencida${kpis.vencidas > 1 ? "s" : ""}` : "Al día"}
             icon={DollarSign}
-            color={kpis.vencidas > 0 ? "slate" : "slate"}
             alert={kpis.vencidas > 0}
             onClick={() => navigate("/cxc")}
           />
           <KpiCard
-            label="Gastos este mes"
+            label="Gastos del mes"
             value={fmtMoney(kpis.gastosMes, "CRC")}
-            sub="Compras y gastos"
+            sub="Compras registradas"
             icon={TrendingDown}
             color="slate"
             trend={kpis.gasTrend}
@@ -423,7 +461,7 @@ export default function DashboardScreen() {
           <KpiCard
             label="Utilidad estimada"
             value={fmtMoney(Math.abs(kpis.utilidad), "CRC")}
-            sub={kpis.utilidad >= 0 ? "Ingresos − Gastos" : "Déficit este mes"}
+            sub={kpis.utilidad >= 0 ? "Ventas − Gastos" : "⚠️ Déficit"}
             icon={BarChart2}
             color={kpis.utilidad >= 0 ? "green" : "red"}
             alert={kpis.utilidad < 0}
@@ -448,23 +486,19 @@ export default function DashboardScreen() {
           {/* Columna izquierda (2/3) */}
           <div className="lg:col-span-2 flex flex-col gap-4">
 
-            {/* Gráfico ingresos vs gastos */}
+            {/* Gráfico ventas últimos 28 días */}
             <div className="bg-white border border-slate-200 rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Ingresos vs Gastos</h3>
-                  <p className="text-[10px] text-slate-400">Últimos 6 meses</p>
+                  <h3 className="text-sm font-bold text-slate-800">Ventas diarias</h3>
+                  <p className="text-[10px] text-slate-400">Últimos 28 días</p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600">
-                    <span className="w-4 h-0.5 bg-emerald-500 rounded inline-block"/> Ingresos
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold text-red-400">
-                    <span className="w-4 h-0.5 bg-red-400 rounded inline-block border-dashed"/> Gastos
-                  </span>
-                </div>
+                <button onClick={() => navigate("/analytics")}
+                  className="text-[10px] text-emerald-600 font-semibold hover:underline flex items-center gap-1">
+                  Ver análisis completo <ChevronRight size={10}/>
+                </button>
               </div>
-              <LineAreaChart series={chartData} height={140} />
+              <BarChart28 data={chartData} />
             </div>
 
             {/* Facturas recientes */}
@@ -520,6 +554,33 @@ export default function DashboardScreen() {
 
           {/* Columna derecha (1/3) */}
           <div className="flex flex-col gap-4">
+
+            {/* Próximos vencimientos */}
+            {proxVencer.length > 0 && (
+              <div className="bg-white border border-amber-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-amber-100 bg-amber-50">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={13} className="text-amber-500"/>
+                    <h3 className="text-xs font-bold text-amber-800">Vencen en 7 días</h3>
+                  </div>
+                  <button onClick={() => navigate("/cxc")}
+                    className="text-[10px] text-amber-600 font-semibold hover:underline">Ver CXC</button>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {proxVencer.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate">{d.nombre}</p>
+                        <p className="text-[10px] text-slate-400">{d.fechaVencimiento}</p>
+                      </div>
+                      <span className="text-xs font-bold text-amber-700 shrink-0 ml-2">
+                        {fmtMoney(Math.max(0, (d.total||0)-(d.pagado||0)), d.moneda||"CRC")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Top Clientes */}
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">

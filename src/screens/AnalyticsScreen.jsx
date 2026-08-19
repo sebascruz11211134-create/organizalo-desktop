@@ -1,167 +1,257 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart2, Users, Package, DollarSign } from "lucide-react";
+/**
+ * AnalyticsScreen — Reportes visuales con gráficas
+ * Ventas por mes · Top productos · Top clientes · Tendencia diaria
+ */
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
+} from "recharts";
+import { TrendingUp, Package, Users, FileSpreadsheet } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney } from "../utils/fmt";
+import { fmtMoney, hoy } from "../utils/fmt";
+import { exportExcel } from "../utils/reportHelpers";
 
-function KPI({ label, value, sub, color, Icon, trend }) {
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={16} className="text-white"/>
-        </div>
-        {trend != null && (
-          <span className={`text-[11px] font-bold flex items-center gap-0.5 ${trend>=0?"text-green-600":"text-red-500"}`}>
-            {trend>=0?<TrendingUp size={11}/>:<TrendingDown size={11}/>}{Math.abs(trend).toFixed(1)}%
-          </span>
-        )}
-      </div>
-      <p className="text-xl font-black text-slate-900">{value}</p>
-      <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-      {sub && <p className="text-[10px] text-slate-300 mt-0.5">{sub}</p>}
-    </div>
-  );
+const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#84cc16"];
+
+function getMesKey(offset = 0) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offset);
+  return d.toISOString().slice(0, 7);
+}
+function getMesLabel(offset = 0) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offset);
+  return d.toLocaleString("es-CR", { month: "short" });
 }
 
-function BarChart({ data, label, color="#059669" }) {
-  const max = Math.max(...data.map(d=>d.v), 1);
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4">
-      <h3 className="text-xs font-bold text-slate-500 uppercase mb-4">{label}</h3>
-      <div className="flex items-end gap-2 h-32">
-        {data.map((d,i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <span className="text-[9px] text-slate-400">{fmtMoney(d.v,"CRC").replace("₡","")}</span>
-            <div className="w-full rounded-t-md transition-all" style={{ height:`${(d.v/max)*100}%`, background:color, minHeight: d.v>0?"4px":"0" }}/>
-            <span className="text-[9px] text-slate-500 truncate w-full text-center">{d.k}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const fmtK = (v) => {
+  if (v >= 1_000_000) return `₡${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `₡${(v / 1_000).toFixed(0)}K`;
+  return `₡${v}`;
+};
 
-function ListTop({ items, label, valueKey="total", nameKey="nombre" }) {
-  const max = Math.max(...items.map(x=>x[valueKey]||0),1);
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4">
-      <h3 className="text-xs font-bold text-slate-500 uppercase mb-4">{label}</h3>
-      <div className="space-y-2.5">
-        {items.slice(0,5).map((x,i) => (
-          <div key={i} className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 truncate max-w-[60%]">{x[nameKey]||"Sin nombre"}</span>
-              <span className="text-xs font-bold text-slate-800">{fmtMoney(x[valueKey]||0,"CRC")}</span>
-            </div>
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full bg-brand-500 transition-all" style={{width:`${((x[valueKey]||0)/max)*100}%`}}/>
-            </div>
-          </div>
-        ))}
-        {items.length===0 && <p className="text-xs text-slate-400 text-center py-4">Sin datos</p>}
-      </div>
+    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3 text-xs">
+      <p className="font-bold text-slate-700 mb-1">{label}</p>
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color }} className="font-semibold">
+          {p.name}: {fmtMoney(p.value, "CRC")}
+        </p>
+      ))}
     </div>
   );
-}
+};
 
 export default function AnalyticsScreen() {
-  const [data, setData] = useState(null);
-  const [periodo, setPeriodo] = useState("mes"); // "mes" | "trimestre" | "año"
+  const [facturas, setFacturas] = useState([]);
+  const [compras,  setCompras]  = useState([]);
+  const [periodo,  setPeriodo]  = useState("12"); // meses hacia atrás
 
   const cargar = useCallback(async () => {
-    const [facturas, compras, recibos, productos, contactos] = await Promise.all([
-      db.getFacturas(), db.getCompras(), db.getRecibos(), db.getProductos(), db.getContactos()
-    ]);
+    const [f, c] = await Promise.all([db.getFacturas(), db.getCompras()]);
+    setFacturas(f || []);
+    setCompras(c || []);
+  }, []);
 
-    const ahora = new Date();
-    const filtrarPor = (arr, campoFecha) => {
-      return arr.filter(x => {
-        const f = new Date(x[campoFecha]||x.fecha||x.creadoEn||0);
-        if (periodo==="mes")      return f.getMonth()===ahora.getMonth() && f.getFullYear()===ahora.getFullYear();
-        if (periodo==="trimestre"){
-          const q = Math.floor(ahora.getMonth()/3);
-          return Math.floor(f.getMonth()/3)===q && f.getFullYear()===ahora.getFullYear();
-        }
-        return f.getFullYear()===ahora.getFullYear();
-      });
-    };
+  useEffect(() => { cargar(); }, [cargar]);
 
-    const factPer  = filtrarPor(facturas,"fecha");
-    const compraPer= filtrarPor(compras,"fecha");
-    const recibosPer=filtrarPor(recibos,"fecha");
+  const { ventasPorMes, topProductos, topClientes, tendenciaDiaria, resumen } = useMemo(() => {
+    const meses = parseInt(periodo);
 
-    const ingresos  = factPer.reduce((s,f)=>s+(f.total||0),0);
-    const gastos    = compraPer.reduce((s,c)=>s+(c.total||0),0);
-    const cobrado   = recibosPer.reduce((s,r)=>s+(r.monto||0),0);
-    const ivaCobrar = factPer.reduce((s,f)=>s+(f.totalIVA||0),0);
-    const ivaCredito= compraPer.reduce((s,c)=>s+(c.montoIVA||0),0);
-
-    // Por mes (últimos 6 meses)
-    const meses = Array.from({length:6},(_,i)=>{
-      const d = new Date(ahora.getFullYear(), ahora.getMonth()-5+i, 1);
-      return { mes:d.getMonth(), año:d.getFullYear(), label:d.toLocaleString("es-CR",{month:"short"}) };
+    // ── Ventas por mes (barras) ───────────────────────────────────────────────
+    const ventasPorMes = Array.from({ length: meses }, (_, i) => {
+      const key = getMesKey(i - meses + 1);
+      const lbl = getMesLabel(i - meses + 1);
+      const ventas = facturas.filter(f => (f.fecha || "").startsWith(key))
+        .reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+      const gastos = compras.filter(c => (c.fecha || "").startsWith(key))
+        .reduce((s, c) => s + (c.total || c.montoBase || 0), 0);
+      return { mes: lbl, Ventas: ventas, Gastos: gastos, Utilidad: Math.max(0, ventas - gastos) };
     });
-    const ventasMes = meses.map(m=>({
-      k:m.label,
-      v:facturas.filter(f=>{const d=new Date(f.fecha||f.creadoEn||0);return d.getMonth()===m.mes&&d.getFullYear()===m.año;}).reduce((s,f)=>s+(f.total||0),0)
-    }));
 
-    // Top productos (por cantidad facturada)
+    // ── Top productos (pie) ───────────────────────────────────────────────────
     const prodMap = {};
-    factPer.forEach(f=>(f.lineas||[]).forEach(l=>{
-      if(!prodMap[l.descripcion]) prodMap[l.descripcion]={nombre:l.descripcion,total:0,unidades:0};
-      prodMap[l.descripcion].total+=l.total||0;
-      prodMap[l.descripcion].unidades+=parseFloat(l.cantidad)||1;
-    }));
-    const topProductos = Object.values(prodMap).sort((a,b)=>b.total-a.total).slice(0,5);
-
-    // Top clientes
-    const clientMap = {};
-    factPer.forEach(f=>{
-      const k=f.cliente?.nombre||"Consumidor Final";
-      if(!clientMap[k]) clientMap[k]={nombre:k,total:0,facturas:0};
-      clientMap[k].total+=f.total||0; clientMap[k].facturas++;
+    facturas.forEach(f => {
+      (f.lineas || f.items || []).forEach(l => {
+        const nombre = l.nombre || l.descripcion || l.producto || "Otro";
+        const cant = parseFloat(l.cantidad || 1);
+        const precio = parseFloat(l.precio || l.precioUnit || l.precioUnitario || 0);
+        prodMap[nombre] = (prodMap[nombre] || 0) + cant * precio;
+      });
     });
-    const topClientes = Object.values(clientMap).sort((a,b)=>b.total-a.total).slice(0,5);
+    const topProductos = Object.entries(prodMap)
+      .sort((a, b) => b[1] - a[1]).slice(0, 6)
+      .map(([name, value]) => ({ name, value }));
 
-    setData({ ingresos, gastos, cobrado, ivaCobrar, ivaCredito, ventasMes, topProductos, topClientes,
-      numFacturas:factPer.length, margen:ingresos>0?((ingresos-gastos)/ingresos*100):0 });
-  },[periodo]);
+    // ── Top clientes (barras horizontales) ────────────────────────────────────
+    const clienteMap = {};
+    facturas.forEach(f => {
+      const nombre = f.clienteNombre ||
+        (typeof f.cliente === "string" ? f.cliente : f.cliente?.nombre) || "Consumidor Final";
+      if (nombre === "Consumidor Final") return;
+      clienteMap[nombre] = (clienteMap[nombre] || 0) + (f.total || f.totalGeneral || 0);
+    });
+    const topClientes = Object.entries(clienteMap)
+      .sort((a, b) => b[1] - a[1]).slice(0, 8)
+      .map(([nombre, total]) => ({ nombre, total }));
 
-  useEffect(()=>{ cargar(); },[cargar]);
+    // ── Tendencia últimos 30 días (línea) ─────────────────────────────────────
+    const tendenciaDiaria = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (29 - i));
+      const key = d.toISOString().slice(0, 10);
+      const lbl = i % 5 === 0 ? d.toLocaleString("es-CR", { day: "numeric", month: "short" }) : "";
+      const valor = facturas.filter(f => (f.fecha || "").startsWith(key))
+        .reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
+      return { dia: lbl || key.slice(8), valor };
+    });
 
-  if (!data) return <div className="flex items-center justify-center h-full text-slate-400 text-sm">Cargando análisis…</div>;
+    // ── Resumen total ────────────────────────────────────────────────────────
+    const totalVentas = ventasPorMes.reduce((s, m) => s + m.Ventas, 0);
+    const totalGastos = ventasPorMes.reduce((s, m) => s + m.Gastos, 0);
+    const mejorMes = ventasPorMes.reduce((best, m) => m.Ventas > (best?.Ventas || 0) ? m : best, null);
+
+    return { ventasPorMes, topProductos, topClientes, tendenciaDiaria, resumen: { totalVentas, totalGastos, mejorMes } };
+  }, [facturas, compras, periodo]);
+
+  const exportar = () => {
+    exportExcel(
+      ventasPorMes.map(m => ({ Mes: m.mes, Ventas: m.Ventas, Gastos: m.Gastos, Utilidad: m.Utilidad })),
+      `analytics-ventas-${periodo}meses`
+    );
+  };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Selector de período */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500 uppercase mr-2">Período:</span>
-        {[["mes","Este mes"],["trimestre","Este trimestre"],["año","Este año"]].map(([k,l])=>(
-          <button key={k} onClick={()=>setPeriodo(k)}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${periodo===k?"bg-brand-500 text-white":"border border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
-            {l}
-          </button>
-        ))}
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 border-b border-slate-600">
+        <TrendingUp size={13} className="text-emerald-400"/>
+        <span className="text-white text-xs font-semibold">Análisis de negocio</span>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        <label className="text-slate-300 text-xs">Período:</label>
+        <select value={periodo} onChange={e => setPeriodo(e.target.value)}
+          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5">
+          <option value="3">3 meses</option>
+          <option value="6">6 meses</option>
+          <option value="12">12 meses</option>
+        </select>
+        <div className="flex-1"/>
+        <button onClick={exportar}
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold">
+          <FileSpreadsheet size={13}/> Excel
+        </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 space-y-5">
-        {/* KPIs */}
-        <div className="grid grid-cols-5 gap-4">
-          <KPI label="Ventas" value={fmtMoney(data.ingresos,"CRC")} sub={`${data.numFacturas} facturas`} Icon={TrendingUp} color="bg-green-500" trend={null}/>
-          <KPI label="Gastos" value={fmtMoney(data.gastos,"CRC")} sub="compras registradas" Icon={TrendingDown} color="bg-red-500" trend={null}/>
-          <KPI label="Margen bruto" value={`${data.margen.toFixed(1)}%`} sub="(Ventas - Compras) / Ventas" Icon={BarChart2} color="bg-blue-500" trend={null}/>
-          <KPI label="IVA por declarar" value={fmtMoney(data.ivaCobrar-data.ivaCredito,"CRC")} sub={`D-104 estimado`} Icon={DollarSign} color="bg-amber-500" trend={null}/>
-          <KPI label="Cobrado" value={fmtMoney(data.cobrado,"CRC")} sub="recibos del período" Icon={TrendingUp} color="bg-brand-500" trend={null}/>
-        </div>
+      <div className="flex-1 overflow-auto p-4 bg-slate-50">
+        <div className="max-w-[1100px] mx-auto space-y-4">
 
-        {/* Gráfico de ventas */}
-        <BarChart data={data.ventasMes} label="Ventas mensuales (últimos 6 meses)"/>
+          {/* ── KPI strip ── */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Total ventas período", value: fmtMoney(resumen.totalVentas, "CRC"), color: "text-emerald-700" },
+              { label: "Total gastos período", value: fmtMoney(resumen.totalGastos, "CRC"), color: "text-red-600" },
+              { label: "Mejor mes", value: resumen.mejorMes ? `${resumen.mejorMes.mes} · ${fmtMoney(resumen.mejorMes.Ventas, "CRC")}` : "—", color: "text-blue-700" },
+            ].map((k, i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-xl p-4">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{k.label}</p>
+                <p className={`text-lg font-black mt-1 ${k.color}`}>{k.value}</p>
+              </div>
+            ))}
+          </div>
 
-        {/* Top productos y clientes */}
-        <div className="grid grid-cols-2 gap-4">
-          <ListTop items={data.topProductos} label="Top productos / servicios" valueKey="total" nameKey="nombre"/>
-          <ListTop items={data.topClientes} label="Top clientes" valueKey="total" nameKey="nombre"/>
+          {/* ── Ventas vs Gastos por mes ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-800 mb-1">Ventas vs Gastos por mes</h3>
+            <p className="text-[10px] text-slate-400 mb-4">Últimos {periodo} meses</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={ventasPorMes} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                <XAxis dataKey="mes" tick={{ fontSize: 10, fill: "#94a3b8" }}/>
+                <YAxis tickFormatter={fmtK} tick={{ fontSize: 9, fill: "#94a3b8" }} width={52}/>
+                <Tooltip content={<CustomTooltip/>}/>
+                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }}/>
+                <Bar dataKey="Ventas" fill="#10b981" radius={[3,3,0,0]}/>
+                <Bar dataKey="Gastos" fill="#ef4444" radius={[3,3,0,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ── Row: Pie productos + tendencia diaria ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* Top productos */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Package size={13} className="text-emerald-500"/>
+                <h3 className="text-sm font-bold text-slate-800">Productos más vendidos</h3>
+              </div>
+              {topProductos.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-8">Sin datos de líneas en facturas</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={topProductos} dataKey="value" nameKey="name"
+                      cx="50%" cy="50%" outerRadius={75} innerRadius={40}
+                      paddingAngle={2}>
+                      {topProductos.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmtMoney(v, "CRC")}/>
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: 9 }}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Tendencia diaria */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5">
+              <h3 className="text-sm font-bold text-slate-800 mb-1">Tendencia diaria</h3>
+              <p className="text-[10px] text-slate-400 mb-4">Ventas últimos 30 días</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={tendenciaDiaria}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                  <XAxis dataKey="dia" tick={{ fontSize: 9, fill: "#94a3b8" }}/>
+                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 9, fill: "#94a3b8" }} width={48}/>
+                  <Tooltip formatter={(v) => fmtMoney(v, "CRC")} labelFormatter={(l) => `Día ${l}`}/>
+                  <Line type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={2}
+                    dot={false} activeDot={{ r: 4, fill: "#10b981" }}/>
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* ── Top clientes ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Users size={13} className="text-emerald-500"/>
+              <h3 className="text-sm font-bold text-slate-800">Top clientes por facturación</h3>
+            </div>
+            {topClientes.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-6">Sin clientes identificados (facturas a Consumidor Final no se cuentan)</p>
+            ) : (
+              <div className="space-y-3">
+                {topClientes.map((c, i) => {
+                  const max = topClientes[0].total;
+                  const pct = max > 0 ? (c.total / max) * 100 : 0;
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">#{i+1}</span>
+                      <span className="text-xs font-semibold text-slate-700 w-36 truncate shrink-0">{c.nombre}</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, background: COLORS[i % COLORS.length] }}/>
+                      </div>
+                      <span className="text-xs font-bold text-slate-600 shrink-0 w-28 text-right">
+                        {fmtMoney(c.total, "CRC")}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

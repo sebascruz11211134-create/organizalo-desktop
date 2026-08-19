@@ -33,6 +33,7 @@ const ReporteCXCScreen      = lazy(() => import("./screens/ReporteCXCScreen"));
 const ReporteRecibosScreen  = lazy(() => import("./screens/ReporteRecibosScreen"));
 const ReporteVencidosScreen = lazy(() => import("./screens/ReporteVencidosScreen"));
 const AnalyticsScreen       = lazy(() => import("./screens/AnalyticsScreen"));
+const OnboardingScreen      = lazy(() => import("./screens/OnboardingScreen"));
 const MigracionScreen       = lazy(() => import("./screens/MigracionScreen"));
 const PlanillasScreen       = lazy(() => import("./screens/PlanillasScreen"));
 const FlujoCajaScreen       = lazy(() => import("./screens/FlujoCajaScreen"));
@@ -65,6 +66,8 @@ const OrdenesCompraScreen   = lazy(() => import("./screens/OrdenesCompraScreen")
 // SUPERADMIN_EMAIL se exporta desde AdminScreen — lo duplicamos aquí para no
 // necesitar un import síncrono de ese módulo pesado.
 const SUPERADMIN_EMAIL = "sebascruz11211134@gmail.com";
+
+const ONBOARDING_KEY = "@finanzia/onboarding_completado";
 
 // ── Spinner de pantalla durante lazy-load ─────────────────────────────────────
 function ScreenFallback() {
@@ -158,6 +161,7 @@ export default function App() {
   const [user,               setUser]               = useState(null);
   const [plan,               setPlan]               = useState(null);
   const [modulosHabilitados, setModulosHabilitados] = useState(null); // null = todos
+  const [showOnboarding,     setShowOnboarding]     = useState(false);
   const location = useLocation();
 
   const titulo = TITULOS[location.pathname] || "Organízalo.AI";
@@ -182,6 +186,7 @@ export default function App() {
       setUser(storedUser);
       setPlan(planStatus);
       setModulosHabilitados(modulos);
+      setShowOnboarding(localStorage.getItem(ONBOARDING_KEY) !== "1");
       setAuthState("authenticated");
 
       // Verificar sesión en el servidor en BACKGROUND (no bloquea el splash)
@@ -207,6 +212,7 @@ export default function App() {
       planStatus = { plan: loggedUser?.plan || "trial", daysLeft, expired: daysLeft === 0 };
     }
     setPlan(planStatus);
+    setShowOnboarding(localStorage.getItem(ONBOARDING_KEY) !== "1");
     setAuthState("authenticated");
     if (token) {
       handleSync();
@@ -380,6 +386,13 @@ export default function App() {
       <Suspense fallback={null}>
         <ChatWidget />
       </Suspense>
+
+      {/* Onboarding wizard — solo la primera vez */}
+      {showOnboarding && (
+        <Suspense fallback={null}>
+          <OnboardingScreen onDone={() => setShowOnboarding(false)} />
+        </Suspense>
+      )}
     </div>
     </CurrencyProvider>
   );
