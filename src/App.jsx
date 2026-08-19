@@ -267,7 +267,12 @@ export default function App() {
     setShowOnboarding(localStorage.getItem(ONBOARDING_KEY) !== "1");
     setAuthState("authenticated");
     if (token) {
-      handleSync();
+      // freshLogin: true → solo pull, no push, para no contaminar esta cuenta
+      // con datos residuales de una sesión anterior en el mismo browser
+      setSyncStatus("syncing");
+      syncAll({ freshLogin: true })
+        .then(r => setSyncStatus(r.ok ? "idle" : "error"))
+        .catch(() => setSyncStatus("error"));
       // Conectar WebSocket para sync en tiempo real
       connectSocket().catch(console.warn);
     }

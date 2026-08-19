@@ -78,16 +78,24 @@ export async function pullSync() {
 
 // ── Sync completo (al arrancar o manualmente) ─────────────────────────────────
 
-export async function syncAll() {
+/**
+ * syncAll — sincroniza datos entre el cliente y el servidor.
+ *
+ * @param {object} opts
+ * @param {boolean} opts.freshLogin — si es true, SOLO hace pull (no push).
+ *   Usar al hacer login para evitar subir datos residuales de la cuenta anterior.
+ */
+export async function syncAll({ freshLogin = false } = {}) {
   try {
     const headers = await authHeaders();
     if (!headers.Authorization) return { ok: true, skipped: true };
 
-    // 1. Subir datos locales primero (contribuye lo que tiene este browser)
-    //    pushSync ya filtra arrays vacíos → no sobrescribe datos de otros
-    await pushSync().catch(() => {});
+    if (!freshLogin) {
+      // Subir datos locales (solo si no es un login recién hecho)
+      await pushSync().catch(() => {});
+    }
 
-    // 2. Jalar del servidor (recibe datos de todos los demás dispositivos)
+    // Jalar del servidor
     const res = await axios.get(
       `${BACKEND}/api/clouddata/pull`,
       { headers, timeout: 15000 }

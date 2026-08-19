@@ -57,6 +57,44 @@ export async function login({ email, password }) {
   return res.data;
 }
 
+// ── Limpiar datos locales de la empresa ───────────────────────────────────────
+// Borra TODAS las claves @finanzia/ excepto las de autenticación.
+// Se llama al hacer logout y antes de guardar un nuevo login,
+// para evitar que datos de una cuenta contaminen otra.
+
+const AUTH_KEYS = new Set([TOKEN_KEY, REFRESH_KEY, USER_KEY, MODULOS_KEY]);
+
+export function clearLocalData() {
+  if (isElectron) {
+    // En Electron no podemos iterar las claves fácilmente — limpiamos las conocidas
+    const DATA_KEYS = [
+      "@finanzia/settings","@finanzia/debts","@finanzia/recibos","@finanzia/facturas",
+      "@finanzia/notasCredito","@finanzia/productos","@finanzia/contactos",
+      "@finanzia/empleados","@finanzia/transactions","@finanzia/ingresos",
+      "@finanzia/cuentas","@finanzia/reconciliadas","@finanzia/pedidos",
+      "@finanzia/ordenesTrabajo","@finanzia/cotizaciones","@finanzia/lastSync",
+      "@finanzia/empresaId","@finanzia/planillas","@finanzia/asientosContables",
+      "@finanzia/cuentasContables","@finanzia/empresas","@finanzia/usuarios",
+      "@finanzia/usuarioActivo","@finanzia/compras","@finanzia/caja",
+      "@finanzia/activosFijos","@finanzia/presupuestos","@finanzia/proyectos",
+      "@finanzia/tiendaConfig","@finanzia/portalConfig","@finanzia/ordenes",
+      "@finanzia/ordenesPedido","@finanzia/movimientosInventario",
+      "@finanzia/asistencia","@finanzia/onboarding_completado",
+    ];
+    DATA_KEYS.forEach(k => window.electronAPI?.store?.delete?.(k));
+  } else {
+    // Web: iterar localStorage y borrar todo lo que sea @finanzia/ y no sea auth
+    const toDelete = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("@finanzia/") && !AUTH_KEYS.has(key)) {
+        toDelete.push(key);
+      }
+    }
+    toDelete.forEach(k => localStorage.removeItem(k));
+  }
+}
+
 // ── Logout ────────────────────────────────────────────────────────────────────
 
 export async function logout() {
@@ -69,9 +107,12 @@ export async function logout() {
       { headers: token ? { Authorization: `Bearer ${token}` } : {}, timeout: 8000 }
     );
   } catch { /* ignorar si falla la red */ }
+  // Limpiar datos de la empresa ANTES de borrar el token
+  clearLocalData();
   await storeSet(TOKEN_KEY, null);
   await storeSet(REFRESH_KEY, null);
   await storeSet(USER_KEY, null);
+  await storeSet(MODULOS_KEY, null);
 }
 
 // ── Refresh session ───────────────────────────────────────────────────────────
