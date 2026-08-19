@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { RefreshCw, LogOut, ChevronDown, Menu } from "lucide-react";
+import { RefreshCw, LogOut, ChevronDown, Menu, Users } from "lucide-react";
 
 export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMobileMenu }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,11 +75,30 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                   <div className="px-3 py-2 border-b border-slate-100 mb-1">
                     <p className="text-[11px] font-semibold text-slate-800 truncate">{user.nombre}</p>
                     <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
-                    <span className={`inline-block mt-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full
-                      ${user.plan==="activo" ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700"}`}>
-                      {user.plan === "activo" ? "Plan Activo" : "Prueba gratis"}
-                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full
+                        ${user.plan==="activo" ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700"}`}>
+                        {user.plan === "activo" ? "Plan Activo" : "Prueba gratis"}
+                      </span>
+                      {(user.rol === "admin" || user.rol === "superadmin") && (
+                        <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                          {user.rol}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {(user.rol === "admin" || user.rol === "superadmin") && (
+                    <a
+                      href="#/configuracion"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      <Users size={12} />
+                      Gestionar usuarios
+                    </a>
+                  )}
+
                   <button
                     onClick={() => { setMenuOpen(false); onLogout && onLogout(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 transition-colors"
