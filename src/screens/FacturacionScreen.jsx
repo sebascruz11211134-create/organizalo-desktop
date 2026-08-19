@@ -626,8 +626,8 @@ export default function FacturacionScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab bar — solo móvil */}
-      <div className="md:hidden flex shrink-0 bg-white border-b border-gray-200">
+      {/* Tab bar — móvil + iPad (< 1280px) */}
+      <div className="xl:hidden flex shrink-0 bg-white border-b border-gray-200">
         <button onClick={() => setActiveTab("encabezado")}
           className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === "encabezado" ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-400"}`}>
           Encabezado
@@ -639,7 +639,7 @@ export default function FacturacionScreen() {
       </div>
 
       {/* Encabezado — desktop: siempre; móvil: solo si tab activo */}
-      <div className={`bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 overflow-y-auto md:overflow-visible ${activeTab === "encabezado" ? "" : "hidden"} md:block`}>
+      <div className={`bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 overflow-y-auto md:overflow-visible ${activeTab === "encabezado" ? "" : "hidden"} xl:block`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
           {/* Fila 1: Tipo doc / Fecha / Moneda */}
           <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
@@ -778,7 +778,7 @@ export default function FacturacionScreen() {
       </div>
 
       {/* Líneas de factura — desktop: siempre; móvil: solo si tab activo */}
-      <div className={`flex-1 overflow-auto ${activeTab === "lineas" ? "" : "hidden"} md:block`}>
+      <div className={`flex-1 overflow-auto ${activeTab === "lineas" ? "" : "hidden"} xl:block`}>
         {/* ── Móvil + iPad: tarjetas apiladas ── */}
         <div className="block xl:hidden px-3 py-2 space-y-3">
           {lineas.map((l, i) => (
