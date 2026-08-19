@@ -57,6 +57,10 @@ const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
 const ConfiguracionScreen   = lazy(() => import("./screens/ConfiguracionScreen"));
 const AdminScreen           = lazy(() => import("./screens/AdminScreen"));
 const ChatWidget            = lazy(() => import("./components/ChatWidget"));
+const LibrosLegalesScreen   = lazy(() => import("./screens/LibrosLegalesScreen"));
+const KardexScreen          = lazy(() => import("./screens/KardexScreen"));
+const AsistenciaScreen      = lazy(() => import("./screens/AsistenciaScreen"));
+const OrdenesCompraScreen   = lazy(() => import("./screens/OrdenesCompraScreen"));
 
 // SUPERADMIN_EMAIL se exporta desde AdminScreen — lo duplicamos aquí para no
 // necesitar un import síncrono de ese módulo pesado.
@@ -117,6 +121,10 @@ const TITULOS = {
   "/configuracion":     "Configuración",
   "/calendario":        "Calendario",
   "/crm-clientes":      "CRM — Seguimiento de clientes",
+  "/libros-legales":    "Libros legales",
+  "/kardex":            "Kardex de inventario",
+  "/asistencia":        "Control de asistencia",
+  "/ordenes-compra":    "Órdenes de compra",
 };
 
 // ── TrialBanner ───────────────────────────────────────────────────────────────
@@ -355,6 +363,10 @@ export default function App() {
                 <Route path="/configuracion"       element={<ConfiguracionScreen />} />
                 <Route path="/calendario"          element={<CalendarioScreen />} />
                 <Route path="/crm-clientes"        element={<CRMClientesScreen />} />
+                <Route path="/libros-legales"      element={<LibrosLegalesScreen />} />
+                <Route path="/kardex"              element={<KardexScreen />} />
+                <Route path="/asistencia"          element={<AsistenciaScreen />} />
+                <Route path="/ordenes-compra"      element={<OrdenesCompraScreen />} />
                 {user?.email === SUPERADMIN_EMAIL && (
                   <Route path="/admin"             element={<AdminScreen />} />
                 )}

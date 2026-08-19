@@ -36,9 +36,10 @@ const NAV = [
     label: "Compras",
     icon: ShoppingCart,
     children: [
-      { label: "Facturas proveedor", path: "/compras",   icon: ShoppingCart },
-      { label: "Recepción",          path: "/recepcion", icon: Inbox },
-      { label: "Taller",             path: "/ordenes",   icon: Settings },
+      { label: "Facturas proveedor", path: "/compras",        icon: ShoppingCart },
+      { label: "Órdenes de compra",  path: "/ordenes-compra", icon: FileText },
+      { label: "Recepción",          path: "/recepcion",      icon: Inbox },
+      { label: "Taller",             path: "/ordenes",        icon: Settings },
     ],
   },
 
@@ -50,6 +51,7 @@ const NAV = [
     children: [
       { label: "Inventario", path: "/inventario", icon: Package },
       { label: "Catálogo",   path: "/catalogo",   icon: FileText },
+      { label: "Kardex",     path: "/kardex",     icon: BarChart2 },
     ],
   },
 
@@ -75,6 +77,7 @@ const NAV = [
     children: [
       { label: "Planillas",     path: "/planillas",  icon: Calculator },
       { label: "Empleados",     path: "/empleados",  icon: UserCheck },
+      { label: "Asistencia",    path: "/asistencia", icon: UserCheck },
       { label: "Flujo de Caja", path: "/flujo-caja", icon: TrendingUp },
     ],
   },
@@ -89,6 +92,7 @@ const NAV = [
       { label: "Mayor / Balances", path: "/balances",         icon: BarChart2 },
       { label: "Catálogo cuentas", path: "/catalogo-cuentas", icon: FileText },
       { label: "D-104 (IVA)",      path: "/d104",             icon: FileCheck },
+      { label: "Libros legales",   path: "/libros-legales",   icon: BookOpen },
       { label: "Presupuesto",      path: "/presupuesto",      icon: PieChart },
       { label: "Proyectos",        path: "/proyectos",        icon: Target },
       { label: "CXC — Cobrar",     path: "/cxc",              icon: DollarSign },

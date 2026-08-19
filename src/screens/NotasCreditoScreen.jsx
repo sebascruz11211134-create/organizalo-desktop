@@ -49,6 +49,23 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
       await restaurarInventarioPorFactura(form.facturaRef.trim());
     }
 
+    // ── Asiento contable de reversión ────────────────────────────────────────
+    try {
+      const asientos = await db.getAsientos();
+      const numAJ = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
+      const monto = parseFloat(form.monto) || 0;
+      await db.setAsientos([...asientos, {
+        id: genId(), numero: numAJ, estado: "confirmado", autoGenerado: true,
+        descripcion: `NC ${nueva.numero} — ${form.cliente} (${form.motivo})`,
+        fecha: form.fecha, totalDebe: monto, totalHaber: monto,
+        lineas: [
+          { cuentaCodigo: "4101", cuentaNombre: "Ventas / Ingresos",    debe: monto, haber: 0 },
+          { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar",   debe: 0, haber: monto },
+        ],
+        creadoEn: new Date().toISOString(),
+      }]);
+    } catch (e) { console.warn("[NC] asiento:", e.message); }
+
     onSave();
     onClose();
   };
