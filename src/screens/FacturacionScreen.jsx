@@ -255,6 +255,7 @@ export default function FacturacionScreen() {
   const [productos,  setProductos]  = useState([]);
   const [facturas,   setFacturas]   = useState([]);
   const [proyectos,  setProyectos]  = useState([]);
+  const [empleados,  setEmpleados]  = useState([]);
   const [sending,    setSending]    = useState(false);
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
   const [authToken,  setAuthToken]  = useState(null);
@@ -276,12 +277,13 @@ export default function FacturacionScreen() {
   const [lineas, setLineas] = useState([lineaVacia()]);
 
   const cargar = useCallback(async () => {
-    const [s, c, p, f, pr] = await Promise.all([db.getSettings(), db.getContactos(), db.getProductos(), db.getFacturas(), db.getProyectos()]);
+    const [s, c, p, f, pr, em] = await Promise.all([db.getSettings(), db.getContactos(), db.getProductos(), db.getFacturas(), db.getProyectos(), db.getEmpleados()]);
     setSettings(s);
     setContactos(c);
     setProductos(p);
     setFacturas(f);
     setProyectos(pr || []);
+    setEmpleados(em || []);
     if (s.moneda) setMoneda(s.moneda);
     // Prefill desde OT si existe
     const ot = sessionStorage.getItem("ot_prefill");
@@ -799,9 +801,13 @@ export default function FacturacionScreen() {
             {/* Vendedor */}
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendedor / Agente</label>
-              <input value={cliente.vendedor || ""} onChange={(e) => setCliente((p) => ({ ...p, vendedor: e.target.value }))}
-                placeholder="Nombre del vendedor…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              <select value={cliente.vendedor || ""} onChange={(e) => setCliente((p) => ({ ...p, vendedor: e.target.value }))}
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                <option value="">— Sin asignar —</option>
+                {empleados.map((e) => (
+                  <option key={e.id} value={e.nombre}>{e.nombre}{e.puesto ? ` · ${e.puesto}` : ""}</option>
+                ))}
+              </select>
             </div>
 
             {/* Lista de precio */}
