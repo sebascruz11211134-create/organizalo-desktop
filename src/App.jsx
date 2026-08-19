@@ -418,7 +418,7 @@ export default function App() {
                 <Route path="/calendario"          element={<CalendarioScreen />} />
                 <Route path="/crm-clientes"        element={<CRMClientesScreen />} />
                 <Route path="/libros-legales"      element={<LibrosLegalesScreen />} />
-                <Route path="/kardex"              element={<KardexScreen />} />
+                <Route path="/kardex"              element={<InventarioScreen />} />
                 <Route path="/asistencia"          element={<AsistenciaScreen />} />
                 <Route path="/ordenes-compra"      element={<OrdenesCompraScreen />} />
                 {user?.email === SUPERADMIN_EMAIL && (

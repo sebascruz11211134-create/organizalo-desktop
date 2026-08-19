@@ -51,7 +51,6 @@ const NAV = [
     children: [
       { label: "Inventario", path: "/inventario", icon: Package },
       { label: "Catálogo",   path: "/catalogo",   icon: FileText },
-      { label: "Kardex",     path: "/kardex",     icon: BarChart2 },
     ],
   },
 
