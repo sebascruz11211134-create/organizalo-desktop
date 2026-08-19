@@ -259,6 +259,7 @@ export default function FacturacionScreen() {
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
   const [authToken,  setAuthToken]  = useState(null);
   const [proyectoId, setProyectoId] = useState("");
+  const [headerExpanded, setHeaderExpanded] = useState(false); // colapsado en móvil por defecto
 
   // Encabezado
   const [tipoDoc,    setTipoDoc]    = useState("01");
@@ -626,7 +627,30 @@ export default function FacturacionScreen() {
   return (
     <div className="flex flex-col h-full">
       {/* Encabezado */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 overflow-y-auto md:overflow-visible max-h-[45vh] md:max-h-none">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2 md:py-4">
+        {/* Barra resumen colapsable — solo visible en móvil */}
+        <button
+          className="md:hidden flex items-center gap-2 w-full text-left py-1.5"
+          onClick={() => setHeaderExpanded(h => !h)}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap gap-1.5 mb-1">
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {TIPOS_DOC.find(t => t.value === tipoDoc)?.label?.split(" ").map(w => w[0]).join("").toUpperCase() || tipoDoc}
+              </span>
+              <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full">{fechaEm}</span>
+              <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full">{moneda}</span>
+              <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full">
+                {CONDICIONES.find(c => c.value === condPago)?.label || condPago}
+              </span>
+            </div>
+            <p className="text-xs text-slate-700 font-semibold truncate">{busqCliente || "— Sin receptor —"}</p>
+          </div>
+          <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform duration-200 ${headerExpanded ? "rotate-180" : ""}`} />
+        </button>
+
+        {/* Campos completos — siempre en desktop; en móvil solo si expandido */}
+        <div className={`md:block ${headerExpanded ? "block" : "hidden"} pt-2 md:pt-0`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
           {/* Fila 1: Tipo doc / Fecha / Moneda */}
           <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
@@ -761,6 +785,7 @@ export default function FacturacionScreen() {
                 className="col-span-2 w-full md:flex-1 md:min-w-[10rem] border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
             </div>
           </div>
+        </div>
         </div>
       </div>
 
