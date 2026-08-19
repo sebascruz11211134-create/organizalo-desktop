@@ -1,73 +1,14 @@
-name: Build & Deploy Mac Installer
+# Workflow desactivado — el proyecto migrĂł a web pura (Vercel).
+# El build del instalador Mac ya no aplica.
+# Deploy automatico lo maneja Vercel al hacer push a main.
+
+name: Build & Deploy Mac Installer (DESACTIVADO)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-  schedule:
-    # Rebuild el primer día de cada mes a las 6am UTC
-    # Así el .dmg siempre usa el Electron más reciente automáticamente
-    - cron: '0 6 1 * *'
-
-permissions:
-  contents: write
+  workflow_dispatch:  # Solo manual — no corre automaticamente
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
-
+  skipped:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Auto-versionar por commit count
-        run: |
-          COUNT=$(git rev-list --count HEAD)
-          npm version "1.0.$COUNT" --no-git-tag-version
-          echo "Versión: 1.0.$COUNT"
-
-      - name: Actualizar Electron a la versión más reciente
-        run: |
-          STABLE=$(npm view electron version)
-          BUILDER=$(npm view electron-builder version)
-          echo "Electron stable: $STABLE"
-          echo "electron-builder: $BUILDER"
-          npm pkg set devDependencies.electron="$STABLE"
-          npm pkg set devDependencies.electron-builder="$BUILDER"
-
-      - name: Instalar dependencias
-        run: npm install --legacy-peer-deps
-        env:
-          npm_config_electron_skip_binary_download: false
-
-      - name: Crear y pushear git tag de versión
-        run: |
-          COUNT=$(git rev-list --count HEAD)
-          VERSION="v1.0.$COUNT"
-          git config user.email "github-actions@github.com"
-          git config user.name "github-actions"
-          git tag "$VERSION" -m "Release $VERSION" --force
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git "$VERSION" --force
-          echo "Tag creado: $VERSION"
-
-      - name: Build Vite (frontend)
-        run: npx vite build
-
-      - name: Build y publicar macOS (.dmg)
-        run: npx electron-builder --mac -p always
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Confirmar publicación
-        run: |
-          echo "✓ Build completado. Releases en:"
-          echo "  https://github.com/${{ github.repository }}/releases"
+      - run: echo "Este workflow esta desactivado. El frontend se despliega en Vercel automaticamente."
