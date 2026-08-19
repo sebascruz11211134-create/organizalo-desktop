@@ -367,30 +367,30 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         <div className="mx-3 my-2 rounded-xl bg-white/5 border border-white/8 px-3 py-2">
           {tipoCambio ? (
             <div className="mb-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-500 mb-1">Tipo de cambio BCCR</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Tipo de cambio BCCR</p>
               <div className="flex justify-between">
                 <div>
-                  <p className="text-[9px] text-slate-500">Compra</p>
+                  <p className="text-[9px] text-slate-400">Compra</p>
                   <p className="text-[12px] font-semibold text-emerald-400">₡{tipoCambio.compra?.toLocaleString("es-CR")}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-slate-500">Venta</p>
-                  <p className="text-[12px] font-semibold text-slate-200">₡{tipoCambio.venta?.toLocaleString("es-CR")}</p>
+                  <p className="text-[9px] text-slate-400">Venta</p>
+                  <p className="text-[12px] font-semibold text-white">₡{tipoCambio.venta?.toLocaleString("es-CR")}</p>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="text-[10px] text-slate-600 mb-2">{cargando ? "Cargando tipo de cambio…" : "Tipo de cambio no disponible"}</p>
+            <p className="text-[10px] text-slate-400 mb-2">{cargando ? "Cargando tipo de cambio…" : "Tipo de cambio no disponible"}</p>
           )}
           <div className="flex items-center gap-1">
-            <p className="text-[10px] text-slate-500 flex-1">Mostrar en:</p>
+            <p className="text-[10px] text-slate-400 flex-1">Mostrar en:</p>
             <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
               <button onClick={() => setMoneda("CRC")} title="Colones"
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-200"}`}>
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-emerald-500 text-white shadow-sm" : "text-slate-400 hover:text-white"}`}>
                 ₡ CRC
               </button>
               <button onClick={() => setMoneda("USD")} title="Dólares"
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-200"}`}>
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-emerald-500 text-white shadow-sm" : "text-slate-400 hover:text-white"}`}>
                 $ USD
               </button>
             </div>
