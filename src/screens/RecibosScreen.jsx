@@ -173,13 +173,13 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
                 onFocus={() => setShowCli(true)}
                 onBlur={() => setTimeout(() => setShowCli(false), 150)}
                 placeholder="Nombre o código CLI-XXXX…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               {showCli && filtCli.length > 0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
                   {filtCli.map((c) => (
                     <button key={c.id} type="button"
                       onMouseDown={() => seleccionarCliente(c.nombre)}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-0">
                       {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
                       <span className="text-slate-400 ml-2">{c.cedula}</span>
@@ -210,7 +210,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
                         placeholder="0"
                         value={aplicado[d.id] || ""}
                         onChange={(e) => setAplicado(p => ({ ...p, [d.id]: e.target.value }))}
-                        className="w-28 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-28 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-emerald-400"
                       />
                     </div>
                   );
@@ -262,7 +262,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
               <div className="flex-1">
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
                 <input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>

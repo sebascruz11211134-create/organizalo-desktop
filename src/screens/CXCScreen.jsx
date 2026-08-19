@@ -140,7 +140,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
               value={cliente}
               onChange={e => handleClienteChange(e.target.value)}
               placeholder="Nombre del cliente…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"
             />
             <datalist id="cxc-clientes">
               {clientesUnicos.map(c => <option key={c} value={c}/>)}
@@ -150,13 +150,13 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
           </div>
           {/* Método */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método</label>
             <select value={metodo} onChange={e => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
               {METODOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
@@ -164,7 +164,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <div className="col-span-2 md:col-span-4">
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observación</label>
             <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="N° de transferencia, comprobante…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
           </div>
         </div>
 
@@ -315,12 +315,12 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
               <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
               <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 <option value="CRC">₡ CRC</option>
                 <option value="USD">$ USD</option>
               </select>
@@ -329,12 +329,12 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha vencimiento</label>
             <input type="date" value={vence} onChange={(e) => setVence(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia / Notas</label>
             <input value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura, descripción…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
         </div>
         <div className="flex gap-3 mt-6">

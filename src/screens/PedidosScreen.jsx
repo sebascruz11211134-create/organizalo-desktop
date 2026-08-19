@@ -58,12 +58,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <input value={busq} onChange={e=>{setBusq(e.target.value);setCliente(e.target.value);setShowC(true);}}
               onFocus={()=>setShowC(true)} onBlur={()=>setTimeout(()=>setShowC(false),150)}
               placeholder="Nombre o código CLI-XXXX…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             {showC && filtrados.length>0 && (
               <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
                 {filtrados.map(c=>(
                   <button key={c.id} onMouseDown={()=>{setCliente(c.nombre);setBusq(c.nombre);setShowC(false);}}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-0">
                     {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                     <span className="font-semibold">{c.nombre}</span>
                     <span className="text-slate-400 ml-2">{c.cedula}</span>
@@ -77,7 +77,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Descripción del pedido</label>
             <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3}
               placeholder="Qué incluye el pedido…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -85,12 +85,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Monto (₡)</label>
               <input type="number" value={monto} onChange={e=>setMonto(e.target.value)} min="0"
                 placeholder="0"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Estado</label>
               <select value={estado} onChange={e=>setEstado(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 {COLS.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
@@ -100,12 +100,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha pedido</label>
               <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha entrega</label>
               <input type="date" value={entrega} onChange={e=>setEntrega(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
           </div>
 
@@ -113,7 +113,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Notas</label>
             <input value={notas} onChange={e=>setNotas(e.target.value)}
               placeholder="Notas adicionales…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
 
           {/* Productos del pedido (opcional — reduce inventario al entregar) */}
@@ -123,12 +123,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
               <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowProd(true);}}
                 onFocus={()=>setShowProd(true)} onBlur={()=>setTimeout(()=>setShowProd(false),150)}
                 placeholder="Buscar producto…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               {showProd && prodsFilt.length>0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
                   {prodsFilt.map(p=>(
                     <button key={p.id} onMouseDown={()=>agregarProd(p)}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 border-b last:border-0 flex justify-between">
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-0 flex justify-between">
                       <span>{p.nombre}</span><span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
                     </button>
                   ))}
@@ -154,7 +154,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
           <button onClick={()=>onGuardar({ id:pedido?.id||genId(), cliente, descripcion:desc, monto:parseFloat(monto)||0, fecha, fechaEntrega:entrega, estado, notas, lineas, creadoEn:pedido?.creadoEn||new Date().toISOString() })}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">
             <Check size={14}/> Guardar
           </button>
         </div>

@@ -77,11 +77,13 @@ function ContactoModal({ contacto, onClose, onSave }) {
   const TIPO_CED_LABEL = { "01": "Física", "02": "Jurídica", "03": "DIMEX", "04": "NITE" };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-5">{contacto ? "Editar contacto" : "Nuevo contacto"}</h3>
-        <div className="space-y-4">
-
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 bg-slate-700 border-b border-slate-600">
+          <h3 className="text-sm font-bold text-white">{contacto ? "Editar contacto" : "Nuevo contacto"}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white text-xs">✕</button>
+        </div>
+        <div className="p-5 space-y-3">
           {/* Cédula + lookup Hacienda */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula / RUC</label>
@@ -142,13 +144,13 @@ function ContactoModal({ contacto, onClose, onSave }) {
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre *</label>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div className="w-28">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código</label>
               <input value={codigoCli} onChange={(e) => setCodigoCli(e.target.value.toUpperCase())}
                 placeholder="CLI-0001"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
           </div>
 
@@ -156,7 +158,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo</label>
             <select value={tipo} onChange={(e) => setTipo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm">
               <option value="cliente">Cliente</option>
               <option value="proveedor">Proveedor</option>
               <option value="ambos">Ambos</option>
@@ -166,18 +168,18 @@ function ContactoModal({ contacto, onClose, onSave }) {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm" />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
             <input value={tel} onChange={(e) => setTel(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm" />
           </div>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
               <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm resize-none" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm resize-none" />
             </div>
             <div className="w-32">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
@@ -189,7 +191,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
                   value={diasCredito}
                   onChange={(e) => setDiasCredito(e.target.value)}
                   placeholder="0 = contado"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">días</span>
               </div>
@@ -198,15 +200,15 @@ function ContactoModal({ contacto, onClose, onSave }) {
               </p>
             </div>
           </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-emerald-600 rounded text-sm font-semibold text-white hover:bg-emerald-700">Guardar</button>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default function ContactosScreen() {
   const [contactos, setContactos] = useState([]);

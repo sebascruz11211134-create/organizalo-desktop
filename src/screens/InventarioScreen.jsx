@@ -96,25 +96,25 @@ function ProductoModal({ prod, onClose, onSave }) {
             <label key={key} className={`block ${cls}`}>
               <span className="text-xs font-semibold text-slate-500 uppercase">{label}</span>
               <input type={type} value={form[key]??""} onChange={e=>u(key,e.target.value)} step={type==="number"?"any":undefined} min={type==="number"?"0":undefined}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </label>
           ))}
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Categoría</span>
-            <select value={form.categoria} onChange={e=>u("categoria",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+            <select value={form.categoria} onChange={e=>u("categoria",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
               {CATEGORIAS.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Unidad</span>
-            <select value={form.unidad} onChange={e=>u("unidad",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+            <select value={form.unidad} onChange={e=>u("unidad",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
               {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
             </select>
           </label>
           <label className="block col-span-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
             <textarea value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} rows={2}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
           </label>
           <label className="flex items-center gap-2 col-span-2">
             <input type="checkbox" checked={form.activo} onChange={e=>u("activo",e.target.checked)} className="rounded"/>
@@ -123,7 +123,7 @@ function ProductoModal({ prod, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600">Guardar</button>
+          <button onClick={guardar}  className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -360,7 +360,7 @@ export default function InventarioScreen() {
             <select value={cat} onChange={e=>setCat(e.target.value)} className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none">
               {categorias.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
-            <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
+            <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
               <Plus size={15}/> Nuevo producto
             </button>
           </div>

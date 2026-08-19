@@ -43,72 +43,81 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
         <button onClick={onNueva}
-          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
           <Plus size={13}/> Nueva
         </button>
         <button disabled={!sel} onClick={()=>sel&&onEditar(sel)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
           Editar
         </button>
         <button disabled={!sel} onClick={()=>sel&&onConvertir(sel)}
-          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          className="flex items-center gap-1.5 border border-emerald-400 text-emerald-300 hover:bg-emerald-500/20 text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
           <Send size={11}/> Facturar
         </button>
         <button disabled={!sel} onClick={()=>sel&&onDuplicar(sel)}
-          className="flex items-center gap-1.5 bg-slate-500 hover:bg-slate-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
           <Copy size={11}/> Duplicar
         </button>
         <button disabled={!sel} onClick={()=>sel&&onEliminar(sel.id)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
           <Trash2 size={13}/> Eliminar
         </button>
-        <div className="ml-auto relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={busq} onChange={e=>setBusq(e.target.value)}
-            placeholder="Buscar cotización o cliente…"
-            className="pl-8 pr-3 py-1.5 text-xs border border-slate-500 bg-slate-600 text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 w-56" />
+        <div className="ml-auto flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
+          <Search size={12} className="text-slate-300"/>
+          <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar…"
+            className="bg-transparent text-white text-xs outline-none w-44 placeholder-slate-400"/>
         </div>
       </div>
       {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
+        <div className="flex items-center gap-3 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs shrink-0">
           <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">{sel.numero}</span>
-          <span className="text-slate-500">{sel.cliente?.nombre || "Sin cliente"}</span>
-          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs px-2 py-0.5 rounded border border-slate-200 hover:bg-white">✕ Deseleccionar</button>
+          <span className="font-bold">{sel.numero}</span>
+          <span className="text-slate-400">{sel.cliente?.nombre}</span>
+          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕</button>
         </div>
       ) : (
-        <div className="px-4 py-1.5 bg-slate-50 border-b text-xs text-slate-400">
-          {filtradas.length} cotizaciones — clic en una fila para seleccionar
+        <div className="px-4 py-1.5 bg-slate-50 border-b text-[10px] text-slate-400 shrink-0">
+          {filtradas.length} cotizaciones — clic en fila para seleccionar
         </div>
       )}
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto">
         {filtradas.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
             <FileText size={40} className="text-slate-200"/>
             <p className="text-sm">No hay cotizaciones. Creá una nueva.</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtradas.map(c => {
-              const totCalc = (c.lineas||[]).map(calcLinea).reduce((s,l)=>s+l.total,0);
-              return (
-                <div key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
-                  className={`cursor-pointer rounded-xl px-5 py-3.5 flex items-center gap-4 transition-colors border ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"bg-white border-slate-200 hover:border-brand-300"}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-bold text-sm text-slate-800">{c.numero}</span>
-                      {BADGE(c.estado)}
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">{c.cliente?.nombre || "Sin cliente"} · {fmtDate(c.fecha)}</p>
-                  </div>
-                  <p className="font-bold text-slate-800 text-sm shrink-0">{fmtMoney(c.total||totCalc,"CRC")}</p>
-                </div>
-              );
-            })}
-          </div>
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-slate-100 border-b border-slate-200">
+              <tr>
+                <th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">N.°</th>
+                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Cliente</th>
+                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Fecha</th>
+                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Válida por</th>
+                <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Total</th>
+                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Estado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtradas.map(c => {
+                const totCalc = (c.lineas||[]).map(calcLinea).reduce((s,l)=>s+l.total,0);
+                return (
+                  <tr key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
+                    className={`cursor-pointer transition-colors ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"hover:bg-slate-50"}`}>
+                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{c.numero}</td>
+                    <td className="px-3 py-2.5 font-semibold text-slate-800">{c.cliente?.nombre || "—"}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(c.fecha)}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{c.validez ? `${c.validez} días` : "—"}</td>
+                    <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total||totCalc,"CRC")}</td>
+                    <td className="px-3 py-2.5">{BADGE(c.estado)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
@@ -143,151 +152,152 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
     onGuardar({ id: cotizacion?.id || genId(), numero:num, cliente, estado, fecha, validez, notas, lineas:lineasCalc, subtotal, totalIVA, total, creadoEn: cotizacion?.creadoEn || new Date().toISOString() });
   };
 
+  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400";
+  const LBL = "block text-[10px] font-bold text-slate-500 uppercase mb-1";
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
-        <button onClick={onCancelar} className="text-slate-500 hover:text-slate-800 text-sm flex items-center gap-1">
-          <X size={14}/> Cancelar
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
+        <button onClick={onCancelar} className="flex items-center gap-1.5 border border-slate-500 text-slate-300 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold">
+          <X size={13}/> Cancelar
         </button>
-        <span className="text-slate-300">|</span>
-        <h2 className="font-bold text-slate-700 text-sm flex-1">{esNueva ? "Nueva cotización" : cotizacion.numero}</h2>
+        <span className="text-slate-300 text-xs font-bold flex-1">{esNueva ? "Nueva cotización" : cotizacion.numero}</span>
+        <div className="flex items-center gap-2 text-xs text-slate-300">
+          <span className="text-white font-black">{fmtMoney(total,"CRC")}</span>
+        </div>
         <select value={estado} onChange={e=>setEstado(e.target.value)}
-          className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none">
+          className="text-xs border border-slate-500 bg-slate-600 text-white rounded px-2 py-1.5 focus:outline-none">
           {ESTADOS.map(e=><option key={e.value} value={e.value}>{e.label}</option>)}
         </select>
-        <button onClick={guardar}
-          className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
-          <Check size={14}/> Guardar
+        <button onClick={guardar} className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
+          <Check size={13}/> Guardar
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 space-y-4">
-        {/* Encabezado */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-3 gap-4">
-          {/* Cliente */}
-          <div className="col-span-2">
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Cliente</label>
+      {/* Body 3 paneles */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Panel izquierdo */}
+        <div className="w-64 shrink-0 bg-slate-50 border-r border-slate-200 overflow-y-auto px-3 py-3 space-y-3">
+          <div>
+            <label className={LBL}>Cliente</label>
             <div className="relative">
-              <input value={busqCliente}
+              <input value={busqCliente} autoComplete="off"
                 onChange={e=>{setBusqCliente(e.target.value);setCliente(p=>({...p,nombre:e.target.value}));setShowClientes(true);}}
                 onFocus={()=>setShowClientes(true)} onBlur={()=>setTimeout(()=>setShowClientes(false),150)}
-                placeholder="Nombre del cliente…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                placeholder="Nombre del cliente…" className={INP}/>
               {showClientes && filtrados.length>0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
+                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
                   {filtrados.map(c=>(
                     <button key={c.id} onMouseDown={()=>{setCliente({nombre:c.nombre,cedula:c.cedula||"",email:c.email||"",tipo:c.tipoCedula||"01"});setBusqCliente(c.nombre);setShowClientes(false);}}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
-                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-0">
+                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
-                      <span className="text-slate-400 ml-2">{c.cedula}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <div className="flex gap-2 mt-2">
-              <input value={cliente.cedula} onChange={e=>setCliente(p=>({...p,cedula:e.target.value}))}
-                placeholder="Cédula" className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-              <input value={cliente.email} onChange={e=>setCliente(p=>({...p,email:e.target.value}))}
-                placeholder="Correo" className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-            </div>
           </div>
-          {/* Fechas */}
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha</label>
-              <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Válida por (días)</label>
-              <input type="number" value={validez} onChange={e=>setValidez(e.target.value)} min="1"
-                className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-            </div>
+          <div>
+            <label className={LBL}>Cédula</label>
+            <input value={cliente.cedula} onChange={e=>setCliente(p=>({...p,cedula:e.target.value}))} placeholder="Número…" className={INP}/>
+          </div>
+          <div>
+            <label className={LBL}>Correo</label>
+            <input value={cliente.email} onChange={e=>setCliente(p=>({...p,email:e.target.value}))} placeholder="cliente@…" className={INP}/>
+          </div>
+          <div className="border-t border-slate-200"/>
+          <div>
+            <label className={LBL}>Fecha</label>
+            <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} className={INP}/>
+          </div>
+          <div>
+            <label className={LBL}>Válida por (días)</label>
+            <input type="number" value={validez} onChange={e=>setValidez(e.target.value)} min="1" className={INP}/>
           </div>
         </div>
 
-        {/* Líneas */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr className="text-[11px] font-semibold text-slate-500 uppercase">
-                <th className="text-left px-4 py-2">Descripción</th>
-                <th className="text-center px-2 py-2 w-16">Cant.</th>
-                <th className="text-right px-4 py-2 w-28">P. Unit.</th>
-                <th className="text-center px-2 py-2 w-14">%Desc</th>
-                <th className="text-center px-2 py-2 w-20">IVA</th>
-                <th className="text-right px-4 py-2 w-28">Total</th>
-                <th className="w-8"/>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {lineas.map((l,i)=>(
-                <tr key={l.id} className="group">
-                  <td className="relative px-1">
-                    <input value={l.descripcion}
-                      onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,descripcion:e.target.value}:x))}
-                      placeholder="Descripción…"
-                      className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-green-50" />
-                  </td>
-                  <td className="px-1">
-                    <input value={l.cantidad} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
-                      type="number" min="0"
-                      className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-green-50 text-center" />
-                  </td>
-                  <td className="px-1">
-                    <input value={l.precioUnit} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,precioUnit:e.target.value}:x))}
-                      type="number" min="0" placeholder="0"
-                      className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-green-50 text-right" />
-                  </td>
-                  <td className="px-1">
-                    <input value={l.pctDesc} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,pctDesc:e.target.value}:x))}
-                      type="number" min="0" max="100" placeholder="0"
-                      className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-green-50 text-center" />
-                  </td>
-                  <td className="px-1">
-                    <select value={l.codigoIVA} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,codigoIVA:e.target.value}:x))}
-                      className="border-0 bg-transparent text-xs outline-none py-2 px-1 rounded focus:bg-green-50">
-                      <option value="01">0%</option>
-                      <option value="07">8%</option>
-                      <option value="08">13%</option>
-                    </select>
-                  </td>
-                  <td className="text-right font-semibold text-sm px-4">{fmtMoney(calcLinea(l).total,"CRC")}</td>
-                  <td>
-                    <button onClick={()=>setLineas(p=>p.filter((_,j)=>j!==i))}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
-                      <Trash2 size={12}/>
-                    </button>
-                  </td>
+        {/* Panel central: líneas */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 z-10">
+                <tr>
+                  <th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">Descripción</th>
+                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Cant.</th>
+                  <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">P. Unit.</th>
+                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-14">%Desc</th>
+                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-20">IVA</th>
+                  <th className="text-right px-4 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">Total</th>
+                  <th className="w-8"/>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-2 border-t border-slate-100">
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {lineas.map((l,i)=>(
+                  <tr key={l.id} className="group">
+                    <td className="px-1">
+                      <input value={l.descripcion}
+                        onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,descripcion:e.target.value}:x))}
+                        placeholder="Descripción…"
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-emerald-50"/>
+                    </td>
+                    <td className="px-1">
+                      <input value={l.cantidad} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
+                        type="number" min="0"
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-emerald-50 text-center"/>
+                    </td>
+                    <td className="px-1">
+                      <input value={l.precioUnit} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,precioUnit:e.target.value}:x))}
+                        type="number" min="0" placeholder="0"
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-emerald-50 text-right"/>
+                    </td>
+                    <td className="px-1">
+                      <input value={l.pctDesc} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,pctDesc:e.target.value}:x))}
+                        type="number" min="0" max="100" placeholder="0"
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-emerald-50 text-center"/>
+                    </td>
+                    <td className="px-1">
+                      <select value={l.codigoIVA} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,codigoIVA:e.target.value}:x))}
+                        className="border-0 bg-transparent text-xs outline-none py-2 px-1 rounded focus:bg-emerald-50">
+                        <option value="01">0%</option>
+                        <option value="07">8%</option>
+                        <option value="08">13%</option>
+                      </select>
+                    </td>
+                    <td className="text-right font-semibold text-sm px-4 text-emerald-700">{fmtMoney(calcLinea(l).total,"CRC")}</td>
+                    <td>
+                      <button onClick={()=>setLineas(p=>p.filter((_,j)=>j!==i))}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
+                        <Trash2 size={12}/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-slate-100 px-4 py-2">
             <button onClick={()=>setLineas(p=>[...p,lineaVacia()])}
-              className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-semibold">
-              <Plus size={12}/> Agregar línea
+              className="flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 font-semibold">
+              <Plus size={13}/> Agregar línea
             </button>
           </div>
         </div>
 
-        {/* Totales + Notas */}
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Notas / condiciones</label>
-            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={3}
-              placeholder="Validez, condiciones de pago, notas adicionales…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
+        {/* Panel derecho: totales + notas */}
+        <div className="w-52 shrink-0 bg-white border-l border-slate-200 overflow-y-auto px-4 py-4 space-y-2">
+          <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Resumen</p>
+          <div className="flex justify-between text-xs text-slate-600"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
+          <div className="flex justify-between text-xs text-slate-500"><span>IVA</span><span>{fmtMoney(totalIVA,"CRC")}</span></div>
+          <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2">
+            <span>TOTAL</span><span className="text-emerald-700">{fmtMoney(total,"CRC")}</span>
           </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 w-60 space-y-1.5 text-sm self-start">
-            <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
-            <div className="flex justify-between text-slate-500"><span>IVA</span><span>{fmtMoney(totalIVA,"CRC")}</span></div>
-            <div className="flex justify-between font-black text-slate-900 border-t border-slate-200 pt-1.5 mt-1">
-              <span>Total</span><span>{fmtMoney(total,"CRC")}</span>
-            </div>
+          <div className="border-t border-slate-100 pt-3">
+            <label className={LBL}>Notas / condiciones</label>
+            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={5}
+              placeholder="Condiciones de pago, validez…"
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
           </div>
         </div>
       </div>
