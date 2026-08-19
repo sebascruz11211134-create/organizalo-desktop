@@ -195,7 +195,7 @@ export default function CalendarioScreen() {
       }, 5000);
       if (res.ok) {
         const json = await res.json();
-        setEventos(json.eventos || []);
+        setEventos(Array.isArray(json) ? json : (json.eventos || []));
       }
     } catch { /* offline, usar eventos locales */ }
     finally { setLoading(false); }
