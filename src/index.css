@@ -164,8 +164,9 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
     margin: 0 !important;
   }
 
-  /* 2g. TopBar — título más compacto */
-  header h1 { font-size: 12px !important; }
+  /* 2g. TopBar — título más compacto, ocultar etiqueta sync */
+  header h1 { font-size: 11px !important; }
+  header .sync-label { display: none !important; }
 
   /* 2h. Botones full-width en flex stacked */
   .flex.flex-col > .btn-primary,
@@ -176,6 +177,36 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   .max-w-lg  { max-width: 100% !important; }
   .max-w-xl  { max-width: 100% !important; }
   .max-w-2xl { max-width: 100% !important; }
+
+  /* ── 2j. TOOLBARS de acciones (bg-slate-700) ─────────────────────────────
+     Scroll horizontal suave — el usuario desliza para ver todos los botones.
+     Patrón estándar en apps móviles (WhatsApp formatting bar, etc.)         */
+  div.bg-slate-700 {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important;        /* Firefox */
+    flex-wrap: nowrap !important;
+  }
+  div.bg-slate-700::-webkit-scrollbar { display: none !important; } /* Chrome/Safari */
+
+  /* Evitar que elementos se encojan — cada botón mantiene su tamaño */
+  div.bg-slate-700 > * { flex-shrink: 0 !important; }
+
+  /* Botones más compactos en móvil */
+  div.bg-slate-700 button {
+    padding-left:  8px !important;
+    padding-right: 8px !important;
+    font-size:     11px !important;
+    white-space:   nowrap;
+  }
+
+  /* Search/filter inputs más pequeños */
+  div.bg-slate-700 input  { min-width: 110px !important; max-width: 150px !important; }
+  div.bg-slate-700 select { min-width: 90px  !important; }
+
+  /* Separadores verticales — reducir ancho */
+  div.bg-slate-700 .w-px { margin-left: 2px !important; margin-right: 2px !important; }
 }
 
 /* ── 3. Pantallas ≤ 480px (teléfonos pequeños) ──────────────────────────── */

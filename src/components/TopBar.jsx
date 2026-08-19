@@ -37,7 +37,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
         <div className="hidden lg:block w-[70px]" />
       </div>
 
-      <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight">{title}</h1>
+      <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight truncate max-w-[160px] sm:max-w-none">{title}</h1>
 
       <div className="no-drag flex items-center gap-4">
         {/* Sync indicator */}
@@ -49,7 +49,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
           {isSyncing
             ? <RefreshCw size={11} className="animate-spin text-slate-400" />
             : <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />}
-          <span>{label}</span>
+          <span className="sync-label">{label}</span>
         </button>
 
         {/* User menu */}
