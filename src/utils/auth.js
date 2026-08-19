@@ -9,6 +9,7 @@ import { BACKEND } from "./config";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
+const REFRESH_KEY = "@finanzia/refreshToken";
 const USER_KEY    = "@finanzia/authUser";
 const MODULOS_KEY = "@finanzia/modulosHabilitados";
 
@@ -37,6 +38,7 @@ export async function register({ nombre, email, password, telefono, codigoAcceso
     { timeout: 20000 }
   );
   await storeSet(TOKEN_KEY, res.data.token);
+  await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
   return res.data;
 }
@@ -50,6 +52,7 @@ export async function login({ email, password }) {
     { timeout: 20000 }
   );
   await storeSet(TOKEN_KEY, res.data.token);
+  await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
   return res.data;
 }
@@ -57,18 +60,40 @@ export async function login({ email, password }) {
 // ── Logout ────────────────────────────────────────────────────────────────────
 
 export async function logout() {
-  const token = await getToken();
-  if (token) {
-    try {
-      await axios.post(
-        `${BACKEND}/api/auth/logout`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` }, timeout: 8000 }
-      );
-    } catch { /* ignorar si falla la red */ }
-  }
+  const token        = await getToken();
+  const refreshToken = await storeGet(REFRESH_KEY);
+  try {
+    await axios.post(
+      `${BACKEND}/api/auth/logout`,
+      { refreshToken },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {}, timeout: 8000 }
+    );
+  } catch { /* ignorar si falla la red */ }
   await storeSet(TOKEN_KEY, null);
+  await storeSet(REFRESH_KEY, null);
   await storeSet(USER_KEY, null);
+}
+
+// ── Refresh session ───────────────────────────────────────────────────────────
+
+export async function refreshSession() {
+  const refreshToken = await storeGet(REFRESH_KEY);
+  if (!refreshToken) return false;
+  try {
+    const res = await axios.post(
+      `${BACKEND}/api/auth/refresh`,
+      { refreshToken },
+      { timeout: 10000 }
+    );
+    await storeSet(TOKEN_KEY, res.data.token);
+    await storeSet(REFRESH_KEY, res.data.refreshToken);
+    return true;
+  } catch {
+    await storeSet(TOKEN_KEY, null);
+    await storeSet(REFRESH_KEY, null);
+    await storeSet(USER_KEY, null);
+    return false;
+  }
 }
 
 // ── Getters ───────────────────────────────────────────────────────────────────
@@ -91,21 +116,37 @@ export async function isAuthenticated() {
 // Útil al arrancar la app (por si venció o fue revocado).
 
 export async function verifySession() {
-  const token = await getToken();
-  if (!token) return false;
+  let token = await getToken();
+  if (!token) {
+    // Sin JWT — intentar renovar con refresh token
+    const renewed = await refreshSession();
+    if (!renewed) return false;
+    token = await getToken();
+  }
   try {
     const res = await axios.get(
       `${BACKEND}/api/auth/me`,
-      { headers: { Authorization: `Bearer ${token}` }, timeout: 3000 }
+      { headers: { Authorization: `Bearer ${token}` }, timeout: 5000 }
     );
-    // Actualizar datos del usuario y módulos con los del servidor
     await storeSet(USER_KEY, res.data.user);
     await storeSet(MODULOS_KEY, res.data.modulosHabilitados ?? null);
     return true;
   } catch (err) {
     if (err.response?.status === 401) {
-      await storeSet(TOKEN_KEY, null);
-      await storeSet(USER_KEY, null);
+      // JWT vencido — intentar renovar con refresh token
+      const renewed = await refreshSession();
+      if (renewed) {
+        token = await getToken();
+        try {
+          const res2 = await axios.get(
+            `${BACKEND}/api/auth/me`,
+            { headers: { Authorization: `Bearer ${token}` }, timeout: 5000 }
+          );
+          await storeSet(USER_KEY, res2.data.user);
+          await storeSet(MODULOS_KEY, res2.data.modulosHabilitados ?? null);
+          return true;
+        } catch { return false; }
+      }
       await storeSet(MODULOS_KEY, null);
     }
     return false;
