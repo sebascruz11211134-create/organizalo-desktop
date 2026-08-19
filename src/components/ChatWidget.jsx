@@ -1,11 +1,11 @@
 /**
  * ChatWidget — Burbuja de chat flotante arrastrable.
- * - Drag para reposicionarla donde no estorbe.
- * - Posición persiste en localStorage.
- * - Click (sin arrastrar) abre/cierra el panel.
+ * Usa Pointer Events + setPointerCapture para drag confiable.
+ * Click sin mover = abrir/cerrar panel.
+ * Posición persiste en localStorage.
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageSquare, X, Send, ChevronDown, Hash, GripVertical } from "lucide-react";
+import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
 
@@ -18,38 +18,43 @@ const CANALES = [
 ];
 
 const POS_KEY = "@finanzia/chatWidgetPos";
-const DEFAULT_POS = { x: window.innerWidth - 80, y: window.innerHeight - 80 };
 
 function loadPos() {
   try {
     const raw = localStorage.getItem(POS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const p = JSON.parse(raw);
+      // Validar que esté dentro de pantalla
+      if (p.x > 0 && p.y > 0 && p.x < window.innerWidth && p.y < window.innerHeight) return p;
+    }
   } catch {}
-  return DEFAULT_POS;
+  return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
 }
 
 export default function ChatWidget() {
-  const [abierto,      setAbierto]      = useState(false);
-  const [canalActivo,  setCanalActivo]  = useState("general");
-  const [mensajes,     setMensajes]     = useState([]);
-  const [texto,        setTexto]        = useState("");
-  const [enviando,     setEnviando]     = useState(false);
-  const [authToken,    setAuthToken]    = useState("");
-  const [user,         setUser]         = useState({});
-  const [noLeidos,     setNoLeidos]     = useState(0);
-  const [showCanales,  setShowCanales]  = useState(false);
-  const [prevLen,      setPrevLen]      = useState(0);
+  const [abierto,     setAbierto]     = useState(false);
+  const [canalActivo, setCanalActivo] = useState("general");
+  const [mensajes,    setMensajes]    = useState([]);
+  const [texto,       setTexto]       = useState("");
+  const [enviando,    setEnviando]    = useState(false);
+  const [authToken,   setAuthToken]   = useState("");
+  const [user,        setUser]        = useState({});
+  const [noLeidos,    setNoLeidos]    = useState(0);
+  const [showCanales, setShowCanales] = useState(false);
+  const [prevLen,     setPrevLen]     = useState(0);
+  const [pos,         setPos]         = useState(loadPos);
+  const [isDragging,  setIsDragging]  = useState(false);
 
-  // ── Drag state ────────────────────────────────────────────────────────────
-  const [pos,       setPos]       = useState(loadPos);
-  const dragging    = useRef(false);
-  const dragStart   = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
-  const moved       = useRef(false);   // detectar si fue drag real vs click
-
-  const bottomRef = useRef(null);
-  const inputRef  = useRef(null);
-  const fallosRef = useRef(0);
+  const posRef     = useRef(pos);          // siempre actualizado sin stale closure
+  const dragStart  = useRef(null);         // { mx, my, ox, oy }
+  const movedRef   = useRef(false);
+  const bottomRef  = useRef(null);
+  const inputRef   = useRef(null);
+  const fallosRef  = useRef(0);
   const cortadoRef = useRef(false);
+
+  // Mantener posRef sincronizado
+  useEffect(() => { posRef.current = pos; }, [pos]);
 
   // ── Auth desde localStorage ───────────────────────────────────────────────
   useEffect(() => {
@@ -104,42 +109,40 @@ export default function ChatWidget() {
     if (abierto) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, abierto]);
 
-  // ── Drag handlers ─────────────────────────────────────────────────────────
-  const onMouseDown = useCallback((e) => {
-    // Solo botón izquierdo, no en el panel
+  // ── Drag con Pointer Events + setPointerCapture ───────────────────────────
+  const onPointerDown = (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    dragging.current = true;
-    moved.current = false;
-    dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
-
-    const onMove = (ev) => {
-      if (!dragging.current) return;
-      const dx = ev.clientX - dragStart.current.mx;
-      const dy = ev.clientY - dragStart.current.my;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
-      const BUBBLE = 52;
-      const nx = Math.max(BUBBLE / 2, Math.min(window.innerWidth  - BUBBLE / 2, dragStart.current.ox + dx));
-      const ny = Math.max(BUBBLE / 2, Math.min(window.innerHeight - BUBBLE / 2, dragStart.current.oy + dy));
-      setPos({ x: nx, y: ny });
+    e.currentTarget.setPointerCapture(e.pointerId);   // ← toda la magia aquí
+    movedRef.current = false;
+    setIsDragging(true);
+    dragStart.current = {
+      mx: e.clientX,
+      my: e.clientY,
+      ox: posRef.current.x,
+      oy: posRef.current.y,
     };
+  };
 
-    const onUp = () => {
-      dragging.current = false;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      // Guardar posición final
-      setPos(p => {
-        try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch {}
-        return p;
-      });
-      // Si no se movió → toggle panel
-      if (!moved.current) setAbierto(a => !a);
-    };
+  const onPointerMove = (e) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.mx;
+    const dy = e.clientY - dragStart.current.my;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) movedRef.current = true;
+    const BUBBLE = 26;
+    const nx = Math.max(BUBBLE, Math.min(window.innerWidth  - BUBBLE, dragStart.current.ox + dx));
+    const ny = Math.max(BUBBLE, Math.min(window.innerHeight - BUBBLE, dragStart.current.oy + dy));
+    posRef.current = { x: nx, y: ny };
+    setPos({ x: nx, y: ny });
+  };
 
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }, [pos]);
+  const onPointerUp = (e) => {
+    if (!dragStart.current) return;
+    dragStart.current = null;
+    setIsDragging(false);
+    try { localStorage.setItem(POS_KEY, JSON.stringify(posRef.current)); } catch {}
+    if (!movedRef.current) setAbierto(a => !a);   // click sin drag → toggle
+  };
 
   // ── Enviar mensaje ────────────────────────────────────────────────────────
   const enviar = async () => {
@@ -173,28 +176,28 @@ export default function ChatWidget() {
   if (!authToken) return null;
   if (location.pathname === "/chat") return null;
 
-  // El panel se abre hacia arriba/izquierda según la posición de la burbuja
-  const panelRight = pos.x < window.innerWidth / 2 ? "auto" : 0;
-  const panelLeft  = pos.x < window.innerWidth / 2 ? 0 : "auto";
+  // El panel se abre hacia arriba y hacia el lado que tenga más espacio
+  const abrirDerecha = pos.x < window.innerWidth / 2;
 
   return (
     <div
       style={{
         position: "fixed",
         left: pos.x - 26,
-        top: pos.y - 26,
+        top:  pos.y - 26,
+        width: 52,
+        height: 52,
         zIndex: 9999,
-        userSelect: "none",
       }}
     >
-      {/* ── Panel de chat ────────────────────────────────────────────────── */}
+      {/* ── Panel de mensajes ────────────────────────────────────────────── */}
       {abierto && (
         <div
-          className="absolute"
+          onClick={e => e.stopPropagation()}
           style={{
+            position: "absolute",
             bottom: 60,
-            right: panelRight,
-            left: panelLeft,
+            ...(abrirDerecha ? { left: 0 } : { right: 0 }),
             width: 320,
             height: 420,
             display: "flex",
@@ -223,7 +226,7 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          {/* Canales */}
+          {/* Selector canales */}
           {showCanales && (
             <div className="bg-slate-800 flex-shrink-0 border-b border-slate-700">
               {CANALES.map(c => (
@@ -284,7 +287,7 @@ export default function ChatWidget() {
                 style={{ lineHeight: "1.5", maxHeight: 56 }}
               />
               <button onClick={enviar} disabled={!texto.trim() || enviando}
-                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 transition-colors">
                 <Send size={10} />
               </button>
             </div>
@@ -293,19 +296,28 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* ── Burbuja arrastrable ───────────────────────────────────────────── */}
-      <button
-        onMouseDown={onMouseDown}
-        className="relative flex items-center justify-center rounded-full text-white select-none"
+      {/* ── Burbuja ───────────────────────────────────────────────────────── */}
+      <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
         style={{
           width: 52,
           height: 52,
-          cursor: dragging.current ? "grabbing" : "grab",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: isDragging ? "grabbing" : "grab",
           background: abierto
             ? "#334155"
             : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
           boxShadow: "0 4px 20px rgba(16,185,129,0.4), 0 2px 6px rgba(0,0,0,0.15)",
-          transition: "background 0.2s",
+          color: "#fff",
+          userSelect: "none",
+          touchAction: "none",            // necesario para touch drag
+          position: "relative",
+          transition: isDragging ? "none" : "background 0.2s",
         }}
         title="Chat interno — arrastra para mover"
       >
@@ -313,12 +325,18 @@ export default function ChatWidget() {
 
         {/* Badge no leídos */}
         {!abierto && noLeidos > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center"
-            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
+          <span style={{
+            position: "absolute", top: -4, right: -4,
+            width: 18, height: 18,
+            background: "#ef4444", color: "#fff",
+            borderRadius: "50%", fontSize: 10, fontWeight: 700,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+          }}>
             {noLeidos > 9 ? "9+" : noLeidos}
           </span>
         )}
-      </button>
+      </div>
     </div>
   );
 }
