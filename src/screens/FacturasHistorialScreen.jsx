@@ -15,7 +15,8 @@ const ESTADOS = {
   anulada:   { label: "Anulada",   cls: "bg-slate-100 text-slate-500", icon: Ban },
 };
 
-function DetalleFact({ f, moneda }) {
+function DetalleFact({ f, moneda, recibos = [] }) {
+  const recibosVinculados = recibos.filter(r => r.facturaId === f.id && r.estado !== "anulado");
   return (
     <div className="bg-gray-50 px-8 py-4">
       {/* Líneas */}
@@ -54,21 +55,47 @@ function DetalleFact({ f, moneda }) {
       {f.haciendaRes && (
         <p className="mt-2 text-xs text-slate-400">Hacienda: {JSON.stringify(f.haciendaRes).slice(0, 120)}</p>
       )}
+      {/* Recibos vinculados a esta factura */}
+      {recibosVinculados.length > 0 && (
+        <div className="mt-4 border-t border-slate-200 pt-3">
+          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Recibos de pago vinculados</p>
+          <table className="w-full text-xs">
+            <thead><tr className="text-slate-400">
+              <th className="text-left pb-1">N° Recibo</th>
+              <th className="text-left pb-1">Fecha</th>
+              <th className="text-left pb-1">Método</th>
+              <th className="text-right pb-1">Monto</th>
+            </tr></thead>
+            <tbody>
+              {recibosVinculados.map(r => (
+                <tr key={r.id} className="border-t border-slate-100">
+                  <td className="py-1 font-mono font-bold text-green-700">#{r.numero}</td>
+                  <td className="py-1 text-slate-500">{r.fecha}</td>
+                  <td className="py-1 text-slate-500">{r.metodoPago}</td>
+                  <td className="py-1 text-right font-bold text-green-700">{fmtMoney(r.monto, r.moneda || moneda)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function FacturasHistorialScreen() {
   const [facturas,  setFacturas]  = useState([]);
+  const [recibos,   setRecibos]   = useState([]);
   const [settings,  setSettings]  = useState({});
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
   const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {
-    const [f, s] = await Promise.all([db.getFacturas(), db.getSettings()]);
+    const [f, s, r] = await Promise.all([db.getFacturas(), db.getSettings(), db.getRecibos()]);
     setFacturas(f.sort((a, b) => (b.creadoEn || "").localeCompare(a.creadoEn || "")));
     setSettings(s);
+    setRecibos(r || []);
   }, []);
 
   const anular = async (f) => {
@@ -194,7 +221,7 @@ export default function FacturasHistorialScreen() {
                     </td>
                   </tr>
                   {isSel && (
-                    <tr><td colSpan={8} className="p-0"><DetalleFact f={f} moneda={f.moneda} /></td></tr>
+                    <tr><td colSpan={8} className="p-0"><DetalleFact f={f} moneda={f.moneda} recibos={recibos} /></td></tr>
                   )}
                 </React.Fragment>
               );

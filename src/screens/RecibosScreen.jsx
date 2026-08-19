@@ -5,15 +5,19 @@ import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
 import { ReciboCXCModal } from "./CXCScreen";
 
-function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
-  const [cliente, setCliente] = useState("");
-  const [monto,   setMonto]   = useState("");
-  const [moneda,  setMoneda]  = useState(settings.moneda || "CRC");
-  const [metodo,  setMetodo]  = useState("Transferencia");
-  const [fecha,   setFecha]   = useState(hoy());
-  const [concepto,setConcepto]= useState("");
-  const [busqCli, setBusqCli] = useState("");
-  const [showCli, setShowCli] = useState(false);
+function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas = [] }) {
+  const [cliente,    setCliente]    = useState("");
+  const [monto,      setMonto]      = useState("");
+  const [moneda,     setMoneda]     = useState(settings.moneda || "CRC");
+  const [metodo,     setMetodo]     = useState("Transferencia");
+  const [fecha,      setFecha]      = useState(hoy());
+  const [concepto,   setConcepto]   = useState("");
+  const [busqCli,    setBusqCli]    = useState("");
+  const [showCli,    setShowCli]    = useState(false);
+  const [esAdelanto, setEsAdelanto] = useState(false);
+  const [facturaId,  setFacturaId]  = useState("");
+  const [busqFact,   setBusqFact]   = useState("");
+  const [showFact,   setShowFact]   = useState(false);
 
   const filtCli = contactos.filter((c) =>
     c.nombre?.toLowerCase().includes(busqCli.toLowerCase()) ||
@@ -21,14 +25,34 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
     c.codigoCliente?.toUpperCase().includes(busqCli.toUpperCase())
   ).slice(0, 6);
 
-  const guardar = async () => {
+  // Facturas filtrables por cliente y búsqueda
+  const facturasFiltradas = facturas.filter((f) => {
+    if (f.estado === "anulada") return false;
+    const matchCliente = !cliente || (f.clienteNombre || "").toLowerCase().includes(cliente.toLowerCase());
+    const matchBusq    = !busqFact || (f.numero || "").includes(busqFact) || (f.clienteNombre || "").toLowerCase().includes(busqFact.toLowerCase());
+    return matchCliente && matchBusq;
+  }).slice(0, 8);
+
+  const factSel = facturas.find(f => f.id === facturaId);
+
+  const canSave = () => {
     const m = parseFloat(monto);
-    if (!m || m <= 0) return;
+    if (!m || m <= 0) return false;
+    if (!esAdelanto && !facturaId) return false;
+    return true;
+  };
+
+  const guardar = async () => {
+    if (!canSave()) return;
+    const m = parseFloat(monto);
     const todos = await db.getRecibos();
     const num   = String((todos.length || 0) + 1).padStart(5, "0");
     const nuevo = {
       id: genId(), numero: num, clienteNombre: cliente.trim(), monto: m,
       moneda, metodoPago: metodo, fecha, concepto: concepto.trim(),
+      esAdelanto,
+      facturaId:     esAdelanto ? null : (facturaId || null),
+      facturaNumero: esAdelanto ? null : (factSel?.numero || null),
       creadoEn: new Date().toISOString(),
     };
     await db.setRecibos([nuevo, ...todos]);
@@ -38,14 +62,29 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-5">Nuevo recibo de caja</h3>
+        <h3 className="text-lg font-bold mb-4">Nuevo recibo de caja</h3>
+
+        {/* Toggle Adelanto */}
+        <div className="flex items-center gap-3 mb-5 p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <button
+            type="button"
+            onClick={() => { setEsAdelanto(!esAdelanto); setFacturaId(""); setBusqFact(""); }}
+            className={`relative w-10 h-5 rounded-full transition-colors ${esAdelanto ? "bg-amber-500" : "bg-slate-300"}`}>
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${esAdelanto ? "translate-x-5" : ""}`}/>
+          </button>
+          <div>
+            <p className="text-xs font-bold text-slate-700">{esAdelanto ? "Recibo de adelanto" : "Recibo de pago"}</p>
+            <p className="text-[10px] text-slate-500">{esAdelanto ? "Sin factura — pago anticipado" : "Debe vincularse a una factura"}</p>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente</label>
             <div className="relative">
               <input
                 value={busqCli}
-                onChange={(e) => { setBusqCli(e.target.value); setCliente(e.target.value); setShowCli(true); }}
+                onChange={(e) => { setBusqCli(e.target.value); setCliente(e.target.value); setShowCli(true); setFacturaId(""); }}
                 onFocus={() => setShowCli(true)}
                 onBlur={() => setTimeout(() => setShowCli(false), 150)}
                 placeholder="Nombre o código CLI-XXXX…"
@@ -54,7 +93,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
                   {filtCli.map((c) => (
                     <button key={c.id} type="button"
-                      onMouseDown={() => { setBusqCli(c.nombre); setCliente(c.nombre); setShowCli(false); }}
+                      onMouseDown={() => { setBusqCli(c.nombre); setCliente(c.nombre); setShowCli(false); setFacturaId(""); }}
                       className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
                       {c.codigoCliente && (
                         <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>
@@ -67,6 +106,52 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
               )}
             </div>
           </div>
+
+          {/* Selector de factura — solo si NO es adelanto */}
+          {!esAdelanto && (
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                Factura <span className="text-red-500">*</span>
+              </label>
+              {factSel ? (
+                <div className="flex items-center gap-2 px-3 py-2 border border-green-400 rounded-lg bg-green-50">
+                  <span className="font-mono font-bold text-green-800 text-sm">#{factSel.numero}</span>
+                  <span className="text-xs text-slate-600 flex-1">{factSel.clienteNombre}</span>
+                  <span className="text-xs font-bold text-green-700">{fmtMoney(factSel.total, factSel.moneda)}</span>
+                  <button type="button" onClick={() => { setFacturaId(""); setBusqFact(""); }} className="text-slate-400 hover:text-red-500 text-xs">✕</button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    value={busqFact}
+                    onChange={(e) => { setBusqFact(e.target.value); setShowFact(true); }}
+                    onFocus={() => setShowFact(true)}
+                    onBlur={() => setTimeout(() => setShowFact(false), 150)}
+                    placeholder="Buscar por N° o cliente…"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                  {showFact && facturasFiltradas.length > 0 && (
+                    <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-48 overflow-auto">
+                      {facturasFiltradas.map((f) => (
+                        <button key={f.id} type="button"
+                          onMouseDown={() => { setFacturaId(f.id); setBusqFact(""); setShowFact(false); if (!cliente) { setCliente(f.clienteNombre || ""); setBusqCli(f.clienteNombre || ""); } }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
+                          <span className="font-mono font-bold text-green-700">#{f.numero}</span>
+                          <span className="ml-2 text-slate-600">{f.clienteNombre}</span>
+                          <span className="ml-auto float-right font-bold text-slate-700">{fmtMoney(f.total, f.moneda)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showFact && facturasFiltradas.length === 0 && busqFact && (
+                    <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow z-10 px-3 py-2 text-xs text-slate-400">
+                      Sin facturas encontradas
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
@@ -101,7 +186,10 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar recibo</button>
+          <button onClick={guardar} disabled={!canSave()}
+            className="flex-1 py-2.5 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
+            Guardar recibo
+          </button>
         </div>
       </div>
     </div>
@@ -112,6 +200,7 @@ export default function RecibosScreen() {
   const [recibos,      setRecibos]      = useState([]);
   const [settings,     setSettings]     = useState({});
   const [contactos,    setContactos]    = useState([]);
+  const [facturas,     setFacturas]     = useState([]);
   const [debts,        setDebts]        = useState([]);
   const [token,        setToken]        = useState(null);
   const [busq,         setBusq]         = useState("");
@@ -121,8 +210,8 @@ export default function RecibosScreen() {
   const [selected,     setSelected]     = useState(null);
 
   const cargar = useCallback(async () => {
-    const [r, s, c, d] = await Promise.all([db.getRecibos(), db.getSettings(), db.getContactos(), db.getDebts()]);
-    setRecibos(r); setSettings(s); setContactos(c || []); setDebts(d || []);
+    const [r, s, c, d, f] = await Promise.all([db.getRecibos(), db.getSettings(), db.getContactos(), db.getDebts(), db.getFacturas()]);
+    setRecibos(r); setSettings(s); setContactos(c || []); setDebts(d || []); setFacturas(f || []);
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
@@ -222,10 +311,10 @@ export default function RecibosScreen() {
 
       <div className="flex-1 overflow-auto">
         <table className="table-base">
-          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Método</th><th>Monto</th><th>Concepto</th><th>Estado</th></tr></thead>
+          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Método</th><th>Monto</th><th>Concepto</th><th>Estado</th></tr></thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
+              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
             ) : visibles.map((r) => {
               const isSel     = selected === r.id;
               const esAnulado = r.estado === "anulado";
@@ -236,6 +325,13 @@ export default function RecibosScreen() {
                   <td className={`font-mono font-bold ${esAnulado ? "line-through text-slate-400" : "text-green-700"}`}>#{r.numero}</td>
                   <td>{fmtDate(r.fecha)}</td>
                   <td className={`font-medium ${esAnulado ? "line-through text-slate-400" : ""}`}>{r.clienteNombre || "Consumidor Final"}</td>
+                  <td>
+                    {r.esAdelanto
+                      ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Adelanto</span>
+                      : r.facturaNumero
+                        ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 font-mono">Fact #{r.facturaNumero}</span>
+                        : <span className="text-slate-400 text-xs">—</span>}
+                  </td>
                   <td className="text-slate-500">{r.metodoPago}</td>
                   <td className={`font-bold ${esAnulado ? "line-through text-slate-400" : "text-green-700"}`}>{fmtMoney(r.monto, r.moneda || settings.moneda || "CRC")}</td>
                   <td className="text-slate-500 text-xs">{r.concepto || "—"}</td>
@@ -251,7 +347,7 @@ export default function RecibosScreen() {
         </table>
       </div>
 
-      {showModal && <NuevoReciboModal settings={settings} contactos={contactos} onClose={() => setShowModal(false)} onSave={cargar} />}
+      {showModal && <NuevoReciboModal settings={settings} contactos={contactos} facturas={facturas} onClose={() => setShowModal(false)} onSave={cargar} />}
       {showCXCModal && (
         <ReciboCXCModal
           clienteInicial={null}
