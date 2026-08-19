@@ -197,10 +197,10 @@ export default function App() {
   const [mobileMenuOpen,     setMobileMenuOpen]     = useState(false);
   // Tablet detection (md range: 768–1023px) → sidebar always icon-only
   const [isTablet, setIsTablet] = useState(
-    typeof window !== "undefined" && window.innerWidth >= 768 && window.innerWidth < 1280
+    typeof window !== "undefined" && window.innerWidth >= 768 && window.innerWidth < 1024
   );
   useEffect(() => {
-    const handler = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1280);
+    const handler = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
