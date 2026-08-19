@@ -205,10 +205,14 @@ export default function CXPScreen() {
     if (!confirm(`¿Eliminar la CXP de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.filter((x) => x.id !== d.id));
-    if (token && d.fechaVencimiento) {
-      await cancelarEventoCalendario({ token, tituloMatch: `Pago: ${d.nombre}`, fecha: d.fechaVencimiento });
-      await cancelarEventoCalendario({ token, tituloMatch: `Pago próximo: ${d.nombre}` });
-    }
+    try {
+      const { getToken } = await import("../utils/auth");
+      const tkn = await getToken();
+      if (tkn) {
+        await cancelarEventoCalendario({ token: tkn, tituloMatch: `Pago: ${d.nombre}`, fecha: d.fechaVencimiento });
+        await cancelarEventoCalendario({ token: tkn, tituloMatch: `Pago próximo: ${d.nombre}` });
+      }
+    } catch {}
     setSelected(null);
     cargar();
   };

@@ -241,11 +241,15 @@ export default function CXCScreen() {
     if (!confirm(`¿Eliminar la CXC de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.filter((x) => x.id !== d.id));
-    // Cancelar eventos de calendario si los hay
-    if (token && d.fechaVencimiento) {
-      await cancelarEventoCalendario({ token, tituloMatch: `Cobro: ${d.nombre}`, fecha: d.fechaVencimiento });
-      await cancelarEventoCalendario({ token, tituloMatch: `Cobro próximo: ${d.nombre}` });
-    }
+    // Cancelar eventos de calendario — obtener token fresco para no depender del state
+    try {
+      const { getToken } = await import("../utils/auth");
+      const tkn = await getToken();
+      if (tkn) {
+        await cancelarEventoCalendario({ token: tkn, tituloMatch: `Cobro: ${d.nombre}`, fecha: d.fechaVencimiento });
+        await cancelarEventoCalendario({ token: tkn, tituloMatch: `Cobro próximo: ${d.nombre}` });
+      }
+    } catch {}
     setSelected(null);
     cargar();
   };
