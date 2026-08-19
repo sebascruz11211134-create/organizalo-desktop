@@ -156,6 +156,98 @@ function LineaRow({ linea, productos, onChange, onDelete }) {
   );
 }
 
+// ── Línea como tarjeta (móvil) ────────────────────────────────────────────────
+function LineaCard({ linea, productos, onChange, onDelete, idx }) {
+  const [showProd, setShowProd] = useState(false);
+  const busqProd = (val) => {
+    const p = productos.find((x) => x.nombre === val || x.codigoInterno === val);
+    if (p) onChange({ ...linea, descripcion: p.nombre, productoId: p.id, codigoCabys: p.codigoCabys || "", precioUnit: String(p.precio || ""), unidad: p.unidad || "Unid" });
+    else    onChange({ ...linea, descripcion: val, productoId: null });
+    setShowProd(false);
+  };
+  const l = calcLinea(linea);
+
+  return (
+    <div className="border border-slate-200 rounded-xl p-3 space-y-2 bg-white relative">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-bold text-slate-400 uppercase">Línea {idx + 1}</span>
+        <button onClick={onDelete} className="p-1 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
+      </div>
+      {/* Descripción */}
+      <div className="relative">
+        <label className="text-[10px] font-bold text-slate-400 uppercase">Descripción / producto</label>
+        <input value={linea.descripcion}
+          onChange={(e) => { onChange({ ...linea, descripcion: e.target.value }); setShowProd(true); }}
+          onFocus={() => setShowProd(true)}
+          onBlur={() => setTimeout(() => setShowProd(false), 150)}
+          placeholder="Buscar o escribir…"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5"/>
+        {showProd && productos.filter((p) => p.nombre?.toLowerCase().includes(linea.descripcion?.toLowerCase() || "")).length > 0 && (
+          <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg z-20 max-h-36 overflow-auto">
+            {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 6).map((p) => (
+              <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b border-gray-50 last:border-0">
+                <span className="font-semibold">{p.nombre}</span>
+                <span className="text-green-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* CABYS */}
+      <div>
+        <label className="text-[10px] font-bold text-slate-400 uppercase">Código CABYS</label>
+        <input value={linea.codigoCabys} onChange={(e) => onChange({ ...linea, codigoCabys: e.target.value })}
+          placeholder="Código CABYS (opcional)"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5"/>
+      </div>
+      {/* Cant + Unid + Precio */}
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Cant.</label>
+          <input value={linea.cantidad} onChange={(e) => onChange({ ...linea, cantidad: e.target.value })}
+            type="number" min="0" step="any"
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5 text-center"/>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Unidad</label>
+          <select value={linea.unidad} onChange={(e) => onChange({ ...linea, unidad: e.target.value })}
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5">
+            {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Precio unit.</label>
+          <input value={linea.precioUnit} onChange={(e) => onChange({ ...linea, precioUnit: e.target.value })}
+            type="number" min="0" step="any" placeholder="0"
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5 text-right"/>
+        </div>
+      </div>
+      {/* Desc + IVA */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Desc. %</label>
+          <input value={linea.pctDesc} onChange={(e) => onChange({ ...linea, pctDesc: e.target.value })}
+            type="number" min="0" max="100" step="0.01" placeholder="0"
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5 text-center"/>
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Tarifa IVA</label>
+          <select value={linea.codigoIVA} onChange={(e) => onChange({ ...linea, codigoIVA: e.target.value })}
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mt-0.5">
+            {TIPOS_IVA.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </select>
+        </div>
+      </div>
+      {/* Totales */}
+      <div className="flex justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+        <span>IVA: {fmtMoney(l.montoIVA, "CRC")}</span>
+        <span className="font-bold text-slate-800 text-sm">Total: {fmtMoney(l.total, "CRC")}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Pantalla principal ────────────────────────────────────────────────────────
 export default function FacturacionScreen() {
   const [settings,   setSettings]   = useState({});
@@ -674,34 +766,49 @@ export default function FacturacionScreen() {
 
       {/* Líneas de factura */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-3 py-2 text-xs font-bold text-slate-500 uppercase min-w-[180px]">Descripción</th>
-              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">CABYS</th>
-              <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Cant.</th>
-              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">Unid.</th>
-              <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">P. Unit.</th>
-              <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Desc. %</th>
-              <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">IVA</th>
-              <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">Mto. IVA</th>
-              <th className="text-right px-3 py-2 text-xs font-bold text-slate-500 uppercase">Total</th>
-              <th className="w-6"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {lineas.map((l, i) => (
-              <LineaRow key={l.id} linea={l} productos={productos}
-                onChange={(v) => updateLinea(i, v)}
-                onDelete={() => deleteLinea(i)} />
-            ))}
-          </tbody>
-        </table>
-        <div className="px-4 py-2">
+        {/* ── Móvil: tarjetas apiladas ── */}
+        <div className="block md:hidden px-3 py-2 space-y-3">
+          {lineas.map((l, i) => (
+            <LineaCard key={l.id} linea={l} idx={i} productos={productos}
+              onChange={(v) => updateLinea(i, v)}
+              onDelete={() => deleteLinea(i)} />
+          ))}
           <button onClick={agregarLinea}
-            className="flex items-center gap-2 text-green-700 text-sm font-semibold hover:text-green-900">
+            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-green-300 text-green-700 text-sm font-semibold py-3 rounded-xl hover:bg-green-50">
             <Plus size={15} /> Agregar línea
           </button>
+        </div>
+        {/* ── Tablet/Desktop: tabla con scroll horizontal ── */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm" style={{ minWidth: 780 }}>
+            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-3 py-2 text-xs font-bold text-slate-500 uppercase min-w-[180px]">Descripción</th>
+                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">CABYS</th>
+                <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Cant.</th>
+                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">Unid.</th>
+                <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">P. Unit.</th>
+                <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Desc. %</th>
+                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">IVA</th>
+                <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">Mto. IVA</th>
+                <th className="text-right px-3 py-2 text-xs font-bold text-slate-500 uppercase">Total</th>
+                <th className="w-6"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {lineas.map((l, i) => (
+                <LineaRow key={l.id} linea={l} productos={productos}
+                  onChange={(v) => updateLinea(i, v)}
+                  onDelete={() => deleteLinea(i)} />
+              ))}
+            </tbody>
+          </table>
+          <div className="px-4 py-2">
+            <button onClick={agregarLinea}
+              className="flex items-center gap-2 text-green-700 text-sm font-semibold hover:text-green-900">
+              <Plus size={15} /> Agregar línea
+            </button>
+          </div>
         </div>
       </div>
 
