@@ -32,16 +32,17 @@ export async function pushSync() {
   const rawData  = await db.getAll();
   const updatedAt = new Date().toISOString();
 
-  // Solo subir claves que tengan contenido real — nunca sobrescribir con vacíos
+  // Excluir solo nulls/undefined — los arrays vacíos SÍ se suben para que
+  // el servidor refleje borrados (ej: usuario eliminó todas las CXC)
   const data = Object.fromEntries(
-    Object.entries(rawData).filter(([, v]) => {
-      if (v === null || v === undefined) return false;
-      if (Array.isArray(v) && v.length === 0) return false;
-      return true;
-    })
+    Object.entries(rawData).filter(([, v]) => v !== null && v !== undefined)
   );
 
-  if (Object.keys(data).length === 0) return updatedAt;
+  // No pushear si literalmente no hay ningún dato local (browser recién iniciado)
+  const hayDatosReales = Object.values(data).some(v =>
+    Array.isArray(v) ? v.length > 0 : v !== false && v !== ""
+  );
+  if (!hayDatosReales) return updatedAt;
 
   await axios.post(
     `${BACKEND}/api/clouddata/push`,
