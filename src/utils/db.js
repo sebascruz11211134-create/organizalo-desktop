@@ -214,6 +214,10 @@ const db = {
   getFlujoCajaMovs:       () => getJSON("@finanzia/fcMovimientos", []),
   setFlujoCajaMovs:       (v) => setJSON("@finanzia/fcMovimientos", v),
 
+  // Movimientos manuales de inventario (entradas, salidas, ajustes)
+  getMovimientosInv: () => getJSON("@finanzia/movimientosInventario", []),
+  setMovimientosInv: (v) => setJSON("@finanzia/movimientosInventario", v),
+
   // Dump completo para sync
   getAll: () => isElectron ? window.electronAPI.store.getAll() : webGetAll(),
   setAll: (data) => isElectron ? window.electronAPI.store.setAll(data) : webSetAll(data),
