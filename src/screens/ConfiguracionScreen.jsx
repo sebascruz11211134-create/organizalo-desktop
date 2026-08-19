@@ -915,12 +915,14 @@ Ingresá en: ${window.location.origin}
           {/* Modal: Nuevo usuario */}
           {showNuevoUsr && (
             <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-                <h4 className="font-semibold text-slate-800 text-lg mb-4">Crear nuevo usuario</h4>
-
-                <div className="space-y-3">
+              <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 bg-slate-700 border-b border-slate-600">
+                  <h4 className="text-sm font-bold text-white">Crear nuevo usuario</h4>
+                  <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }} className="text-slate-400 hover:text-white text-xs">✕</button>
+                </div>
+                <div className="p-5 space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre completo</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nombre completo</label>
                     <input value={nuevoNombre} onChange={e => {
                         const n = e.target.value;
                         setNuevoNombre(n);
@@ -929,66 +931,66 @@ Ingresá en: ${window.location.origin}
                         setNuevoUser(auto.replace(/[^a-z0-9.]/g,""));
                       }}
                       placeholder="Ej: María González"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">
-                      Nombre de usuario <span className="text-emerald-500 font-normal">· auto-generado</span>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                      Usuario <span className="text-emerald-500 normal-case font-normal">· auto-generado</span>
                     </label>
                     <input value={nuevoUser} onChange={e => setNuevoUser(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ""))}
                       placeholder="Ej: maria.gonzalez"
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Contraseña</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contraseña</label>
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
                         <input
                           type={showPass ? "text" : "password"}
                           value={nuevoPass}
                           onChange={e => setNuevoPass(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300 pr-9" />
+                          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 pr-8" />
                         <button type="button" onClick={() => setShowPass(p => !p)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                          {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                          {showPass ? <EyeOff size={13} /> : <Eye size={13} />}
                         </button>
                       </div>
                       <button type="button" onClick={() => setNuevoPass(genPassword())}
                         title="Generar contraseña"
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-slate-500 hover:bg-slate-50 text-xs font-medium">
-                        <RefreshCcw size={13} />
+                        className="px-2.5 border border-slate-200 rounded text-slate-500 hover:bg-slate-50 text-xs">
+                        <RefreshCcw size={12} />
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Rol</label>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Rol</label>
                     <select value={nuevoRol} onChange={e => setNuevoRol(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
                       <option value="colaborador">Colaborador</option>
                       <option value="vendedor">Vendedor</option>
                       <option value="contador">Contador</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-                </div>
 
-                {usrMsg && (
-                  <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                    ${usrMsg.type === "ok" ? "bg-green-50 border border-emerald-300 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
-                    {usrMsg.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
-                    {usrMsg.text}
+                  {usrMsg && (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded text-sm
+                      ${usrMsg.type === "ok" ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                      {usrMsg.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+                      {usrMsg.text}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }}
+                      className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                      Cancelar
+                    </button>
+                    <button onClick={crearUsuario} disabled={usrLoading}
+                      className="flex-1 py-2 bg-emerald-600 text-white rounded text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                      {usrLoading ? "Creando…" : "Crear usuario"}
+                    </button>
                   </div>
-                )}
-
-                <div className="flex gap-2 mt-5">
-                  <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }}
-                    className="flex-1 px-4 py-2 border border-gray-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
-                    Cancelar
-                  </button>
-                  <button onClick={crearUsuario} disabled={usrLoading}
-                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
-                    {usrLoading ? "Creando…" : "Crear usuario"}
-                  </button>
                 </div>
               </div>
             </div>
