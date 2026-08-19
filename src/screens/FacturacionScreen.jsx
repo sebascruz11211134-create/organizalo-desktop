@@ -780,7 +780,7 @@ export default function FacturacionScreen() {
       {/* Líneas de factura — desktop: siempre; móvil: solo si tab activo */}
       <div className={`flex-1 overflow-auto ${activeTab === "lineas" ? "" : "hidden"} md:block`}>
         {/* ── Móvil + iPad: tarjetas apiladas ── */}
-        <div className="block lg:hidden px-3 py-2 space-y-3">
+        <div className="block xl:hidden px-3 py-2 space-y-3">
           {lineas.map((l, i) => (
             <LineaCard key={l.id} linea={l} idx={i} productos={productos}
               onChange={(v) => updateLinea(i, v)}
@@ -792,7 +792,7 @@ export default function FacturacionScreen() {
           </button>
         </div>
         {/* ── Desktop (≥1024px): tabla con scroll horizontal ── */}
-        <div className="hidden lg:block overflow-x-auto">
+        <div className="hidden xl:block overflow-x-auto">
           <table className="w-full text-sm" style={{ minWidth: 780 }}>
             <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
               <tr>
