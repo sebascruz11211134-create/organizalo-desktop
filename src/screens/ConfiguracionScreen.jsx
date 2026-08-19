@@ -921,13 +921,21 @@ Ingresá en: ${window.location.origin}
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre completo</label>
-                    <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
+                    <input value={nuevoNombre} onChange={e => {
+                        const n = e.target.value;
+                        setNuevoNombre(n);
+                        const parts = n.trim().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().split(/\s+/).filter(Boolean);
+                        const auto = parts.length >= 2 ? `${parts[0]}.${parts[parts.length-1]}` : parts[0] || "";
+                        setNuevoUser(auto.replace(/[^a-z0-9.]/g,""));
+                      }}
                       placeholder="Ej: María González"
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre de usuario</label>
-                    <input value={nuevoUser} onChange={e => setNuevoUser(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">
+                      Nombre de usuario <span className="text-emerald-500 font-normal">· auto-generado</span>
+                    </label>
+                    <input value={nuevoUser} onChange={e => setNuevoUser(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ""))}
                       placeholder="Ej: maria.gonzalez"
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                   </div>
