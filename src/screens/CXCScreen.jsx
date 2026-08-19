@@ -25,7 +25,7 @@ const ESTADO = (d) => {
  * Seleccionás el cliente → salen todas sus facturas pendientes en la grilla
  * → ingresás el monto aplicado por factura → guardás un solo recibo.
  */
-function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, settings, token }) {
+export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, settings, token }) {
   const [cliente,  setCliente]  = useState(clienteInicial?.nombre || "");
   const [metodo,   setMetodo]   = useState("Transferencia");
   const [fecha,    setFecha]    = useState(hoy());
@@ -412,12 +412,6 @@ export default function CXCScreen() {
           className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Plus size={13} /> Nueva
         </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button
-          onClick={() => setModal({ tipo: "recibo", clienteInicial: sel || null })}
-          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Recibo CXC
-        </button>
         <button
           disabled={!sel || sel.estado === "anulada"}
           onClick={anular}
@@ -549,16 +543,6 @@ export default function CXCScreen() {
 
       {/* Modales */}
       {modal === "nueva" && <NuevaCXCModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
-      {modal?.tipo === "recibo" && (
-        <ReciboCXCModal
-          clienteInicial={modal.clienteInicial}
-          allDebts={debts}
-          settings={settings}
-          token={token}
-          onClose={() => setModal(null)}
-          onSave={cargar}
-        />
-      )}
     </div>
   );
 }

@@ -98,7 +98,6 @@ const NAV = [
       { label: "Recibos",          path: "/recibos",          icon: Receipt },
       { label: "CXP — Pagar",      path: "/cxp",              icon: CreditCard },
       { label: "Conciliación",     path: "/conciliacion",     icon: Landmark },
-      { label: "Importar CSV",     path: "/importar-csv",     icon: FileText },
     ],
   },
 

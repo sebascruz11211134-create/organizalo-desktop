@@ -3,6 +3,7 @@ import { Plus, Search, Printer, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
+import { ReciboCXCModal } from "./CXCScreen";
 
 function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
   const [cliente, setCliente] = useState("");
@@ -108,17 +109,21 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [] }) {
 }
 
 export default function RecibosScreen() {
-  const [recibos,   setRecibos]   = useState([]);
-  const [settings,  setSettings]  = useState({});
-  const [contactos, setContactos] = useState([]);
-  const [busq,      setBusq]      = useState("");
-  const [mes,       setMes]       = useState(() => hoy().slice(0, 7));
-  const [showModal, setShowModal] = useState(false);
-  const [selected,  setSelected]  = useState(null);
+  const [recibos,      setRecibos]      = useState([]);
+  const [settings,     setSettings]     = useState({});
+  const [contactos,    setContactos]    = useState([]);
+  const [debts,        setDebts]        = useState([]);
+  const [token,        setToken]        = useState(null);
+  const [busq,         setBusq]         = useState("");
+  const [mes,          setMes]          = useState(() => hoy().slice(0, 7));
+  const [showModal,    setShowModal]    = useState(false);
+  const [showCXCModal, setShowCXCModal] = useState(false);
+  const [selected,     setSelected]     = useState(null);
 
   const cargar = useCallback(async () => {
-    const [r, s, c] = await Promise.all([db.getRecibos(), db.getSettings(), db.getContactos()]);
-    setRecibos(r); setSettings(s); setContactos(c || []);
+    const [r, s, c, d] = await Promise.all([db.getRecibos(), db.getSettings(), db.getContactos(), db.getDebts()]);
+    setRecibos(r); setSettings(s); setContactos(c || []); setDebts(d || []);
+    import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
   useSyncRefresh(cargar);
@@ -164,6 +169,10 @@ export default function RecibosScreen() {
         <button onClick={() => setShowModal(true)}
           className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Plus size={13}/> Nuevo recibo
+        </button>
+        <button onClick={() => setShowCXCModal(true)}
+          className="flex items-center gap-1.5 bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13}/> Recibo CXC
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
         {/* Anular — outline ámbar: reversible */}
@@ -243,6 +252,16 @@ export default function RecibosScreen() {
       </div>
 
       {showModal && <NuevoReciboModal settings={settings} contactos={contactos} onClose={() => setShowModal(false)} onSave={cargar} />}
+      {showCXCModal && (
+        <ReciboCXCModal
+          clienteInicial={null}
+          allDebts={debts}
+          settings={settings}
+          token={token}
+          onClose={() => setShowCXCModal(false)}
+          onSave={cargar}
+        />
+      )}
     </div>
   );
 }
