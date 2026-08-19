@@ -216,7 +216,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                     onChange={e => setNuevaNota(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && !fechaSeguimiento && agregarNota()}
                     placeholder="Agregar nota de seguimiento…"
-                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                    className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                   />
                   <button
                     onClick={agregarNota}

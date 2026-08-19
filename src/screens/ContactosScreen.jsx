@@ -94,14 +94,14 @@ function ContactoModal({ contacto, onClose, onSave }) {
                   onChange={(e) => { setCedula(e.target.value); setCedulaError(""); setSituacion(null); }}
                   onKeyDown={(e) => e.key === "Enter" && buscarEnHacienda()}
                   placeholder="Número de cédula"
-                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 border-r-0"
+                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 border-r-0"
                 />
                 <button
                   type="button"
                   onClick={buscarEnHacienda}
                   disabled={buscando || !cedula.trim()}
                   title="Consultar Hacienda CR"
-                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-green-50 hover:border-green-400 hover:text-green-700 text-slate-500 transition-colors disabled:opacity-40"
+                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 text-slate-500 transition-colors disabled:opacity-40"
                 >
                   {buscando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
                 </button>
@@ -122,7 +122,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
               <div className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border
                 ${situacion.moroso === "SI" || situacion.omiso === "SI"
                   ? "bg-red-50 text-red-700 border-red-200"
-                  : "bg-green-50 text-green-700 border-green-200"}`}>
+                  : "bg-green-50 text-emerald-700 border-emerald-300"}`}>
                 <span>{situacion.moroso === "SI" || situacion.omiso === "SI" ? "⚠️" : "✓"}</span>
                 <span>
                   {situacion.moroso === "SI" && situacion.omiso === "SI" ? "Moroso + Omiso" :
@@ -150,7 +150,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código</label>
               <input value={codigoCli} onChange={(e) => setCodigoCli(e.target.value.toUpperCase())}
                 placeholder="CLI-0001"
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
           </div>
 
@@ -191,7 +191,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
                   value={diasCredito}
                   onChange={(e) => setDiasCredito(e.target.value)}
                   placeholder="0 = contado"
-                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-emerald-400"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">días</span>
               </div>

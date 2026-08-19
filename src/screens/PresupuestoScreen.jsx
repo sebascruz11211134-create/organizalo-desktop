@@ -94,7 +94,7 @@ export default function PresupuestoScreen() {
               <button onClick={()=>setAno(a=>a+1)} className="p-2 rounded-lg hover:bg-gray-100"><ChevronRight size={14}/></button>
             </div>
             {editado && (
-              <button onClick={guardar} className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
+              <button onClick={guardar} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
                 <Save size={14}/> Guardar
               </button>
             )}
@@ -107,7 +107,7 @@ export default function PresupuestoScreen() {
         {MESES.map((m,i)=>(
           <button key={i} onClick={()=>setMesVista(i)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
-              ${mesVista===i?"bg-brand-500 text-white":"text-slate-500 hover:bg-slate-100"}`}>
+              ${mesVista===i?"bg-emerald-600 text-white":"text-slate-500 hover:bg-slate-100"}`}>
             {m}
           </button>
         ))}
@@ -151,15 +151,15 @@ export default function PresupuestoScreen() {
                           value={presupuestos?.[ano]?.[c.codigo]?.[mesVista]||""}
                           onChange={e=>setPresup(c.codigo,mesVista,e.target.value)}
                           placeholder="0"
-                          className="w-28 border border-slate-200 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                          className="w-28 border border-slate-200 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
                       </td>
                       <td className="px-4 py-2.5 text-right font-semibold text-slate-700">{fmtMoney(real,"CRC")}</td>
-                      <td className={`px-4 py-2.5 text-right font-bold ${presp===0?"text-slate-400":ok?"text-green-700":"text-red-600"}`}>
+                      <td className={`px-4 py-2.5 text-right font-bold ${presp===0?"text-slate-400":ok?"text-emerald-700":"text-red-600"}`}>
                         {presp===0?"—":`${var_>=0?"+":""}${fmtMoney(var_,"CRC")}`}
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         {pct!==null ? (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${parseInt(pct)>=80?"bg-green-50 text-green-700":parseInt(pct)>=50?"bg-yellow-50 text-yellow-700":"bg-red-50 text-red-600"}`}>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${parseInt(pct)>=80?"bg-green-50 text-emerald-700":parseInt(pct)>=50?"bg-yellow-50 text-yellow-700":"bg-red-50 text-red-600"}`}>
                             {pct}%
                           </span>
                         ) : <span className="text-slate-300">—</span>}
@@ -173,12 +173,12 @@ export default function PresupuestoScreen() {
                   <td className="px-4 py-3 text-slate-900">TOTAL</td>
                   <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(totalPresupMes,"CRC")}</td>
                   <td className="px-4 py-3 text-right text-slate-900">{fmtMoney(totalRealMes,"CRC")}</td>
-                  <td className={`px-4 py-3 text-right ${varianza>=0?"text-green-700":"text-red-600"}`}>
+                  <td className={`px-4 py-3 text-right ${varianza>=0?"text-emerald-700":"text-red-600"}`}>
                     {varianza>=0?"+":""}{fmtMoney(varianza,"CRC")}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {totalPresupMes>0 && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(totalRealMes/totalPresupMes)>=0.8?"bg-green-50 text-green-700":"bg-red-50 text-red-600"}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(totalRealMes/totalPresupMes)>=0.8?"bg-green-50 text-emerald-700":"bg-red-50 text-red-600"}`}>
                         {(totalRealMes/totalPresupMes*100).toFixed(0)}%
                       </span>
                     )}

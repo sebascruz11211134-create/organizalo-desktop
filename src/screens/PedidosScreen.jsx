@@ -8,7 +8,7 @@ import { reducirInventario } from "../utils/clienteUtils";
 const COLS = [
   { key:"pendiente",  label:"Pendiente",   color:"bg-amber-50  border-amber-200",  dot:"bg-amber-400" },
   { key:"proceso",    label:"En proceso",  color:"bg-blue-50   border-blue-200",   dot:"bg-blue-500" },
-  { key:"listo",      label:"Listo",       color:"bg-green-50  border-green-200",  dot:"bg-green-500" },
+  { key:"listo",      label:"Listo",       color:"bg-emerald-50  border-emerald-300",  dot:"bg-emerald-500" },
   { key:"entregado",  label:"Entregado",   color:"bg-slate-50  border-slate-200",  dot:"bg-slate-400" },
 ];
 
@@ -268,12 +268,12 @@ export default function PedidosScreen() {
                 <div className="flex-1 overflow-auto p-3 space-y-2">
                   {items.map(p=>(
                     <div key={p.id} onClick={()=>setSelected(selected===p.id?null:p.id)}
-                      className={`cursor-pointer rounded-xl p-3 shadow-sm border transition-colors ${selected===p.id?"bg-blue-50 border-blue-400 border-l-4":"bg-white border-white hover:border-brand-200"}`}>
+                      className={`cursor-pointer rounded-xl p-3 shadow-sm border transition-colors ${selected===p.id?"bg-blue-50 border-blue-400 border-l-4":"bg-white border-white hover:border-emerald-200"}`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="font-semibold text-sm text-slate-800 leading-tight">{p.cliente || "Sin cliente"}</p>
                       </div>
                       <p className="text-xs text-slate-500 mb-2 line-clamp-2">{p.descripcion}</p>
-                      {p.monto>0 && <p className="text-xs font-bold text-green-700">{fmtMoney(p.monto,"CRC")}</p>}
+                      {p.monto>0 && <p className="text-xs font-bold text-emerald-700">{fmtMoney(p.monto,"CRC")}</p>}
                       {p.fechaEntrega && <p className="text-[10px] text-slate-400 mt-1">📅 Entrega: {fmtDate(p.fechaEntrega)}</p>}
                       {/* Mover a siguiente estado */}
                       <div className="flex gap-1 mt-2 pt-2 border-t border-slate-100">

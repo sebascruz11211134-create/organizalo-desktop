@@ -45,7 +45,7 @@ export default function EstadoCuentaScreen() {
       <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
         <Search size={14} className="text-slate-400 shrink-0" />
         <select value={cliente} onChange={(e) => setCliente(e.target.value)}
-          className="flex-1 border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+          className="flex-1 border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
           {clientes.length === 0 && <option value="">Sin clientes con CXC</option>}
           {clientes.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -61,10 +61,10 @@ export default function EstadoCuentaScreen() {
 
       {/* Resumen */}
       {filtradas.length > 0 && (
-        <div className="flex gap-6 px-6 py-2 bg-green-50 border-b border-green-100 text-sm">
+        <div className="flex gap-6 px-6 py-2 bg-green-50 border-b border-emerald-300 text-sm">
           <span className="text-slate-500">Total: <strong>{fmtMoney(totB, mon)}</strong></span>
-          <span className="text-green-700">Cobrado: <strong>{fmtMoney(totP, mon)}</strong></span>
-          <span className={`font-bold ${totB - totP > 0 ? "text-red-600" : "text-green-700"}`}>
+          <span className="text-emerald-700">Cobrado: <strong>{fmtMoney(totP, mon)}</strong></span>
+          <span className={`font-bold ${totB - totP > 0 ? "text-red-600" : "text-emerald-700"}`}>
             Saldo: {fmtMoney(Math.max(0, totB - totP), mon)}
           </span>
           <span className="ml-auto text-slate-400">{filtradas.length} cuenta{filtradas.length !== 1 ? "s" : ""}</span>
@@ -101,8 +101,8 @@ export default function EstadoCuentaScreen() {
                     <tr className="cursor-pointer" onClick={() => setExpanded(isExp ? null : d.id)}>
                       <td className="text-slate-700">{d.notas || "—"}</td>
                       <td>{fmtMoney(d.total, dMon)}</td>
-                      <td className="text-green-700">{fmtMoney(d.pagado || 0, dMon)}</td>
-                      <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-700"}`}>{fmtMoney(saldo, dMon)}</td>
+                      <td className="text-emerald-700">{fmtMoney(d.pagado || 0, dMon)}</td>
+                      <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, dMon)}</td>
                       <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                         {fmtDate(d.fechaVencimiento)}
                       </td>
@@ -124,7 +124,7 @@ export default function EstadoCuentaScreen() {
                             <tbody>
                               {(d.pagos || []).map((p) => (
                                 <tr key={p.id}>
-                                  <td className="py-0.5 font-mono text-green-700">{p.numero}</td>
+                                  <td className="py-0.5 font-mono text-emerald-700">{p.numero}</td>
                                   <td className="py-0.5">{p.fecha}</td>
                                   <td className="py-0.5">{p.metodo}</td>
                                   <td className="py-0.5 font-bold">{fmtMoney(p.monto, dMon)}</td>

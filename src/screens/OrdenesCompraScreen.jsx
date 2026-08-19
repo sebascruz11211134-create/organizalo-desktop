@@ -68,27 +68,27 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
               const c = proveedores.find(p => p.nombre === e.target.value);
               u("proveedor", e.target.value);
               if (c) u("cedulaProveedor", c.cedula || "");
-            }} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            }} className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
               <option value="">Seleccionar…</option>
               {proveedores.map(p => <option key={p.id}>{p.nombre}</option>)}
             </select>
             {!proveedores.length && <input value={form.proveedor} onChange={e=>u("proveedor",e.target.value)}
-              placeholder="Nombre del proveedor" className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>}
+              placeholder="Nombre del proveedor" className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>}
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula proveedor</label>
             <input value={form.cedulaProveedor||""} onChange={e=>u("cedulaProveedor",e.target.value)}
-              placeholder="3-000-000000" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>
+              placeholder="3-000-000000" className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha entrega esperada</label>
             <input type="date" value={form.fechaEntrega||""} onChange={e=>u("fechaEntrega",e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
             <select value={form.moneda||"CRC"} onChange={e=>u("moneda",e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
               <option value="CRC">₡ CRC</option>
               <option value="USD">$ USD</option>
             </select>
@@ -143,7 +143,7 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
         <div className="mb-4">
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas / condiciones</label>
           <textarea value={form.notas||""} onChange={e=>u("notas",e.target.value)} rows={2}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"/>
+            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm resize-none"/>
         </div>
 
         <div className="flex gap-3">

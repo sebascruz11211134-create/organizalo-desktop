@@ -227,7 +227,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
               onFocus={() => setShowDrop(true)}
               onBlur={() => setTimeout(() => setShowDrop(false), 150)}
               placeholder="Buscar producto…"
-              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
             />
             {showDrop && filtrados.length > 0 && (
               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-auto">
@@ -253,7 +253,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
                 type="number" min="0" step="any" value={stockFinal}
                 onChange={e => setStockFinal(e.target.value)}
                 placeholder="Ej: 50"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
             </div>
           ) : (
@@ -263,7 +263,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
                 type="number" min="0.01" step="any" value={cantidad}
                 onChange={e => setCantidad(e.target.value)}
                 placeholder="Ej: 10"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
               />
             </div>
           )}
@@ -272,7 +272,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase">Motivo</label>
             <select value={motivo} onChange={e => setMotivo(e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
               {MOTIVOS[tipo].map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -282,13 +282,13 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Nota (opcional)</label>
               <input value={nota} onChange={e => setNota(e.target.value)}
                 placeholder="Referencia, orden…"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             </div>
           </div>
 

@@ -195,7 +195,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowDrop(true);setProdSel(null);}}
               onFocus={()=>setShowDrop(true)} onBlur={()=>setTimeout(()=>setShowDrop(false),150)}
               placeholder="Buscar producto…"
-              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             {showDrop && filtrados.length>0 && (
               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-auto">
                 {filtrados.map(p=>(
@@ -214,20 +214,20 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
               <label className="text-xs font-bold text-slate-500 uppercase">Stock final correcto</label>
               {prodSel && <p className="text-[10px] text-slate-400">Stock actual: {prodSel.stock??"—"}</p>}
               <input type="number" min="0" step="any" value={stockFinal} onChange={e=>setStockFinal(e.target.value)} placeholder="Ej: 50"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
           ) : (
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Cantidad</label>
               <input type="number" min="0.01" step="any" value={cantidad} onChange={e=>setCantidad(e.target.value)} placeholder="Ej: 10"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             </div>
           )}
           {/* Motivo */}
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase">Motivo</label>
             <select value={motivo} onChange={e=>setMotivo(e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
               {MOTIVOS[tipo].map(m=><option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -236,12 +236,12 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
               <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Nota (opcional)</label>
               <input value={nota} onChange={e=>setNota(e.target.value)} placeholder="Referencia…"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
             </div>
           </div>
           <div className="flex gap-2 pt-1">
@@ -382,10 +382,10 @@ export default function InventarioScreen() {
                   return (
                     <tr key={p.id} className={p.activo===false?"opacity-40":""}>
                       <td className="text-xs font-mono text-slate-400">{p.codigoInterno||"—"}</td>
-                      <td className="font-semibold text-slate-900"><div className="flex items-center gap-2"><Package size={13} className="text-green-600 shrink-0"/>{p.nombre}</div></td>
+                      <td className="font-semibold text-slate-900"><div className="flex items-center gap-2"><Package size={13} className="text-emerald-600 shrink-0"/>{p.nombre}</div></td>
                       <td className="text-slate-500 text-xs">{p.categoria||"—"}</td>
                       <td className="text-xs font-mono text-slate-400">{p.codigoCabys||"—"}</td>
-                      <td className="text-green-700 font-semibold">{fmtMoney(p.precio,settings.moneda||"CRC")}</td>
+                      <td className="text-emerald-700 font-semibold">{fmtMoney(p.precio,settings.moneda||"CRC")}</td>
                       <td className="text-slate-500">{p.costo?fmtMoney(p.costo,settings.moneda||"CRC"):"—"}</td>
                       <td className={`font-bold ${bajo?"text-red-600":"text-slate-700"}`}>{p.stock??"—"}{bajo&&<span className="ml-1 text-xs text-red-500">⚠</span>}</td>
                       <td className="text-slate-400">{p.stockMin??0}</td>

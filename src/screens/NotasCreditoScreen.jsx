@@ -87,12 +87,12 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
                   onFocus={() => setShowCli(true)}
                   onBlur={() => setTimeout(() => setShowCli(false), 150)}
                   placeholder="Nombre o código CLI-XXXX…"
-                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
                 {showCli && filtCli.length > 0 && (
                   <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-36 overflow-auto">
                     {filtCli.map((c) => (
                       <button key={c.id} onMouseDown={() => { setBusqCli(c.nombre); u("cliente", c.nombre); setShowCli(false); }}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-0">
                         {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                         <span className="font-semibold">{c.nombre}</span>
                         <span className="text-slate-400 ml-2">{c.cedula}</span>
@@ -106,24 +106,24 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
               <span className="text-xs font-semibold text-slate-500 uppercase">Factura ref.</span>
               <input value={form.facturaRef} onChange={(e) => u("facturaRef", e.target.value)}
                 placeholder="FE-00001"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Fecha</span>
               <input type="date" value={form.fecha} onChange={(e) => u("fecha", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </label>
             <label className="block col-span-2">
               <span className="text-xs font-semibold text-slate-500 uppercase">Motivo *</span>
               <select value={form.motivo} onChange={(e) => u("motivo", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 {MOTIVOS.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Moneda</span>
               <select value={form.moneda} onChange={(e) => u("moneda", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 <option value="CRC">₡ CRC</option>
                 <option value="USD">$ USD</option>
               </select>
@@ -132,19 +132,19 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
               <span className="text-xs font-semibold text-slate-500 uppercase">Monto *</span>
               <input type="number" value={form.monto} onChange={(e) => u("monto", e.target.value)}
                 placeholder="0" min="0" step="any"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </label>
             <label className="block col-span-2">
               <span className="text-xs font-semibold text-slate-500 uppercase">Observaciones</span>
               <input value={form.notas} onChange={(e) => u("notas", e.target.value)}
                 placeholder="Detalles adicionales…"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </label>
           </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600">Crear nota</button>
+          <button onClick={guardar} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Crear nota</button>
         </div>
       </div>
     </div>

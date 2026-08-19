@@ -268,7 +268,7 @@ function ImportarExcel() {
             onClick={() => cambiarModulo(m.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors
               ${moduloId === m.id
-                ? "bg-brand-500 text-white border-brand-500"
+                ? "bg-emerald-600 text-white border-emerald-600"
                 : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
           >
             <m.icon size={14} />
@@ -342,7 +342,7 @@ function ImportarExcel() {
               </span>
             )}
             {validCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
                 <CheckCircle size={11} /> {validCount} válidas
               </span>
             )}
@@ -374,7 +374,7 @@ function ImportarExcel() {
                     <td>
                       {errors[i]
                         ? <span className="text-red-600 font-semibold">{errors[i]}</span>
-                        : <span className="text-green-700">✓</span>}
+                        : <span className="text-emerald-700">✓</span>}
                     </td>
                   </tr>
                 ))}
@@ -394,7 +394,7 @@ function ImportarExcel() {
             <button
               onClick={confirmar}
               disabled={loading || validCount === 0}
-              className="flex items-center gap-2 bg-brand-500 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
               Confirmar importación
@@ -405,10 +405,10 @@ function ImportarExcel() {
 
       {/* Resultado */}
       {resultado && (
-        <div className={`flex items-center gap-4 rounded-xl p-5 ${resultado._limpiado ? "bg-red-50 border border-red-200" : "bg-green-50 border border-green-200"}`}>
+        <div className={`flex items-center gap-4 rounded-xl p-5 ${resultado._limpiado ? "bg-red-50 border border-red-200" : "bg-emerald-50 border border-emerald-300"}`}>
           {resultado._limpiado
             ? <Trash2 size={24} className="text-red-500 shrink-0" />
-            : <CheckCircle size={24} className="text-green-600 shrink-0" />}
+            : <CheckCircle size={24} className="text-emerald-600 shrink-0" />}
           <div>
             {resultado._limpiado ? (
               <>
@@ -418,7 +418,7 @@ function ImportarExcel() {
             ) : (
               <>
                 <p className="font-semibold text-green-900">¡Importación exitosa!</p>
-                <p className="text-sm text-green-700 mt-0.5">
+                <p className="text-sm text-emerald-700 mt-0.5">
                   {resultado.nuevos} {modulo.label.toLowerCase()} importados.
                   {resultado.duplicados > 0 && ` ${resultado.duplicados} omitidos (ya existían).`}
                 </p>
@@ -511,23 +511,23 @@ function ImportarHacienda() {
             <span className="text-xs font-semibold text-slate-500 uppercase">Usuario ATV *</span>
             <input value={form.usuario} onChange={(e) => u("usuario", e.target.value)}
               placeholder="cédula o usuario"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Contraseña ATV *</span>
             <input type="password" value={form.password} onChange={(e) => u("password", e.target.value)}
               placeholder="••••••••"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Desde</span>
             <input type="date" value={form.desde} onChange={(e) => u("desde", e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Hasta</span>
             <input type="date" value={form.hasta} onChange={(e) => u("hasta", e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </label>
         </div>
 
@@ -540,7 +540,7 @@ function ImportarHacienda() {
         <button
           onClick={importar}
           disabled={loading}
-          className="flex items-center gap-2 bg-brand-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading
             ? <><Loader2 size={14} className="animate-spin" /> Conectando con Hacienda…</>
@@ -550,11 +550,11 @@ function ImportarHacienda() {
 
       {/* Resultado */}
       {resultado && (
-        <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-xl p-5">
-          <CheckCircle size={24} className="text-green-600 shrink-0" />
+        <div className="flex items-center gap-4 bg-emerald-50 border border-emerald-300 rounded-xl p-5">
+          <CheckCircle size={24} className="text-emerald-600 shrink-0" />
           <div>
             <p className="font-semibold text-green-900">¡Importación desde Hacienda exitosa!</p>
-            <p className="text-sm text-green-700 mt-0.5">
+            <p className="text-sm text-emerald-700 mt-0.5">
               {resultado.facturas} facturas · {resultado.contactos} clientes/proveedores importados.
             </p>
           </div>
@@ -591,7 +591,7 @@ export default function MigracionScreen() {
           {["Elegí el módulo", "Descargá la plantilla", "Pegá tus datos", "Subí y confirmá"].map((s, i) => (
             <React.Fragment key={s}>
               <span className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
                 {s}
               </span>
               {i < 3 && <ChevronRight size={12} className="text-slate-300" />}

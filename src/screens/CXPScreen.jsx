@@ -325,8 +325,8 @@ export default function CXPScreen() {
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{d.nombre}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-green-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
+                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                       {fmtDate(d.fechaVencimiento)}
                     </td>

@@ -165,7 +165,7 @@ export default function D104Screen() {
           {[
             ["Facturas emitidas",     facMes.length,                ""],
             ["IVA devengado (ventas)", fmtMoney(totalIvaDev,"CRC"), "text-slate-900 font-black"],
-            ["Crédito fiscal (compras)", fmtMoney(creditoFiscal,"CRC"), "text-green-700"],
+            ["Crédito fiscal (compras)", fmtMoney(creditoFiscal,"CRC"), "text-emerald-700"],
           ].map(([lbl,val,cls])=>(
             <div key={lbl} className="bg-white border border-slate-200 rounded-xl p-5">
               <p className="text-[11px] font-semibold text-slate-400 uppercase">{lbl}</p>
@@ -236,11 +236,11 @@ export default function D104Screen() {
                   <td className="font-semibold text-slate-900">{c.proveedor||c.nombre||"—"}</td>
                   <td className="text-slate-500">{fmtDate(c.fecha)}</td>
                   <td className="text-right">{fmtMoney(parseFloat(c.subtotal||0),"CRC")}</td>
-                  <td className="text-right font-semibold text-green-700">{fmtMoney(parseFloat(c.montoImpuesto||c.ivaTotal||0),"CRC")}</td>
+                  <td className="text-right font-semibold text-emerald-700">{fmtMoney(parseFloat(c.montoImpuesto||c.ivaTotal||0),"CRC")}</td>
                 </tr>
               ))}
               {compMes.length>0 && (
-                <tr className="bg-green-50 font-bold border-t-2 border-green-200">
+                <tr className="bg-green-50 font-bold border-t-2 border-emerald-300">
                   <td colSpan={3} className="text-green-800">Total crédito fiscal</td>
                   <td className="text-right text-green-800">{fmtMoney(creditoFiscal,"CRC")}</td>
                 </tr>
@@ -250,20 +250,20 @@ export default function D104Screen() {
         </div>
 
         {/* Resultado D-104 */}
-        <div className={`rounded-xl p-6 border-2 ${saldo>0 ? "border-red-300 bg-red-50" : "border-green-300 bg-green-50"}`}>
+        <div className={`rounded-xl p-6 border-2 ${saldo>0 ? "border-red-300 bg-red-50" : "border-emerald-300 bg-green-50"}`}>
           <div className="flex items-center gap-3">
             {saldo > 0
               ? <AlertTriangle size={24} className="text-red-600 shrink-0"/>
-              : <CheckCircle size={24} className="text-green-600 shrink-0"/>}
+              : <CheckCircle size={24} className="text-emerald-600 shrink-0"/>}
             <div>
-              <p className={`text-lg font-black ${saldo>0?"text-red-700":"text-green-700"}`}>
+              <p className={`text-lg font-black ${saldo>0?"text-red-700":"text-emerald-700"}`}>
                 {saldo > 0
                   ? `Impuesto a pagar: ${fmtMoney(saldo,"CRC")}`
                   : saldo < 0
                     ? `Saldo a favor: ${fmtMoney(Math.abs(saldo),"CRC")}`
                     : "Sin impuesto a pagar este período"}
               </p>
-              <p className={`text-sm mt-0.5 ${saldo>0?"text-red-600":"text-green-600"}`}>
+              <p className={`text-sm mt-0.5 ${saldo>0?"text-red-600":"text-emerald-600"}`}>
                 IVA devengado ({fmtMoney(totalIvaDev,"CRC")}) − Crédito fiscal ({fmtMoney(creditoFiscal,"CRC")})
               </p>
             </div>

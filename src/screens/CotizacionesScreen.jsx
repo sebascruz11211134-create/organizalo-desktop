@@ -9,7 +9,7 @@ const IVA_PCT = { "01":0,"02":1,"03":2,"04":4,"05":0,"06":4,"07":8,"08":13 };
 const ESTADOS = [
   { value:"borrador",  label:"Borrador",   color:"bg-slate-100 text-slate-600" },
   { value:"enviada",   label:"Enviada",    color:"bg-blue-100 text-blue-700" },
-  { value:"aceptada",  label:"Aceptada",   color:"bg-green-100 text-green-700" },
+  { value:"aceptada",  label:"Aceptada",   color:"bg-green-100 text-emerald-700" },
   { value:"rechazada", label:"Rechazada",  color:"bg-red-100 text-red-600" },
   { value:"vencida",   label:"Vencida",    color:"bg-amber-100 text-amber-700" },
 ];

@@ -217,7 +217,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
                           className="w-full border border-emerald-300 rounded px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
                         />
                       </td>
-                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-green-700"}`}>
+                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-emerald-700"}`}>
                         {fmtMoney(saldoPost, dmon)}
                       </td>
                     </tr>
@@ -237,7 +237,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
             </div>
             <div>
               <span className="text-slate-400">Total aplicado:</span>{" "}
-              <strong className="text-green-700">{fmtMoney(totalAplicado, mon)}</strong>
+              <strong className="text-emerald-700">{fmtMoney(totalAplicado, mon)}</strong>
             </div>
           </div>
           <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">
@@ -246,7 +246,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <button
             disabled={totalAplicado <= 0}
             onClick={guardar}
-            className="px-6 py-2 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="px-6 py-2 bg-emerald-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
             Guardar recibo
           </button>
         </div>
@@ -339,7 +339,7 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-emerald-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
         </div>
       </div>
     </div>
@@ -458,7 +458,7 @@ export default function CXCScreen() {
           <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
         </div>
       ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-green-100 text-xs text-slate-500">
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-emerald-300 text-xs text-slate-500">
           {totCRC > 0 && <span>Por cobrar: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
           {totUSD > 0 && <span><strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
           <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
@@ -498,8 +498,8 @@ export default function CXCScreen() {
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{d.nombre}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-green-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
+                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                       {fmtDate(d.fechaVencimiento)}
                     </td>
@@ -521,7 +521,7 @@ export default function CXCScreen() {
                             <tbody>
                               {(d.pagos || []).map((p) => (
                                 <tr key={p.id}>
-                                  <td className="py-0.5 font-mono text-green-700">{p.numero}</td>
+                                  <td className="py-0.5 font-mono text-emerald-700">{p.numero}</td>
                                   <td className="py-0.5">{p.fecha}</td>
                                   <td className="py-0.5">{p.metodo}</td>
                                   <td className="py-0.5 font-bold">{fmtMoney(p.monto, mon)}</td>

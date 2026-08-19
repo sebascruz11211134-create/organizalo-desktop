@@ -329,7 +329,7 @@ export default function ConfiguracionScreen() {
       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{label}</label>
       <input type={type} value={s[key] || ""} onChange={(e) => setS((p) => ({ ...p, [key]: e.target.value }))}
         placeholder={placeholder}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
     </div>
   );
 
@@ -416,7 +416,7 @@ export default function ConfiguracionScreen() {
             {["CRC", "USD"].map((m) => (
               <button key={m} onClick={() => setS((p) => ({ ...p, moneda: m }))}
                 className={`px-5 py-2 rounded-lg text-sm font-bold border-2 transition-colors
-                  ${s.moneda === m ? "border-green-700 bg-green-50 text-green-800" : "border-gray-200 text-slate-500 hover:border-gray-300"}`}>
+                  ${s.moneda === m ? "border-emerald-300 bg-green-50 text-green-800" : "border-gray-200 text-slate-500 hover:border-gray-300"}`}>
                 {m === "CRC" ? "₡ Colones" : "$ Dólares"}
               </button>
             ))}
@@ -425,7 +425,7 @@ export default function ConfiguracionScreen() {
 
         <button onClick={guardar}
           className={`mt-6 flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors
-            ${saved ? "bg-green-100 text-green-800" : "bg-green-700 text-white hover:bg-green-800"}`}>
+            ${saved ? "bg-green-100 text-green-800" : "bg-emerald-700 text-white hover:bg-green-800"}`}>
           <Save size={15} />
           {saved ? "¡Guardado!" : "Guardar configuración"}
         </button>
@@ -434,7 +434,7 @@ export default function ConfiguracionScreen() {
       {/* Certificado BCCR ─────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Shield size={16} className="text-green-700" />
+          <Shield size={16} className="text-emerald-700" />
           <h2 className="text-base font-bold text-slate-900">Facturación Electrónica</h2>
         </div>
         <p className="text-xs text-slate-500 mb-5">
@@ -444,15 +444,15 @@ export default function ConfiguracionScreen() {
 
         {/* Estado actual */}
         {certStatus?.configured ? (
-          <div className="mb-4 flex items-start justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+          <div className="mb-4 flex items-start justify-between bg-green-50 border border-emerald-300 rounded-lg px-4 py-3">
             <div className="flex items-center gap-2">
-              <CheckCircle size={16} className="text-green-600 shrink-0 mt-0.5" />
+              <CheckCircle size={16} className="text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-green-800">Certificado activo</p>
-                <p className="text-xs text-green-700">
+                <p className="text-xs text-emerald-700">
                   {certStatus.nombre || "—"} · Cédula {certStatus.cedula || "—"}
                 </p>
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-emerald-600">
                   Subido el {certStatus.subidoEn ? new Date(certStatus.subidoEn).toLocaleDateString("es-CR") : "—"}
                 </p>
               </div>
@@ -472,7 +472,7 @@ export default function ConfiguracionScreen() {
         {/* Mensaje de resultado */}
         {certMsg && (
           <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-            ${certMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+            ${certMsg.type === "ok" ? "bg-green-50 border border-emerald-300 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
             {certMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
             {certMsg.text}
           </div>
@@ -485,9 +485,9 @@ export default function ConfiguracionScreen() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Archivo .p12</label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-lg px-4 py-4 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors">
+              className="border-2 border-dashed border-gray-300 rounded-lg px-4 py-4 text-center cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-colors">
               {certFile ? (
-                <p className="text-sm text-green-700 font-medium">{certFile.name}</p>
+                <p className="text-sm text-emerald-700 font-medium">{certFile.name}</p>
               ) : (
                 <p className="text-sm text-slate-400">Click para seleccionar un archivo <span className="font-mono">.p12</span></p>
               )}
@@ -501,7 +501,7 @@ export default function ConfiguracionScreen() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña del certificado</label>
             <input type="password" value={certPass} onChange={(e) => setCertPass(e.target.value)}
               placeholder="Contraseña del .p12"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
 
           {/* Cédula del receptor */}
@@ -509,7 +509,7 @@ export default function ConfiguracionScreen() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula del receptor</label>
             <input type="text" value={certCedula} onChange={(e) => setCertCedula(e.target.value)}
               placeholder="3101000000"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
 
           {/* Nombre del receptor */}
@@ -517,12 +517,12 @@ export default function ConfiguracionScreen() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre del receptor</label>
             <input type="text" value={certNombre} onChange={(e) => setCertNombre(e.target.value)}
               placeholder="Mi Empresa S.A."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
           </div>
         </div>
 
         <button onClick={subirCert} disabled={certLoading}
-          className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+          className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
           <Upload size={14} />
           {certLoading ? "Guardando…" : certStatus?.configured ? "Reemplazar certificado" : "Guardar certificado"}
         </button>
@@ -537,11 +537,11 @@ export default function ConfiguracionScreen() {
 
           {/* Estado ATV */}
           {certStatus?.atvConfigurado ? (
-            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg">
-              <CheckCircle size={14} className="text-green-600 shrink-0" />
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-emerald-300 rounded-lg">
+              <CheckCircle size={14} className="text-emerald-600 shrink-0" />
               <div>
                 <p className="text-xs font-semibold text-green-800">ATV configurado</p>
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-emerald-600">
                   Usuario: <span className="font-mono">{certStatus.atvUsuario}</span>
                   {certStatus.atvActualizadoEn && ` · Actualizado el ${new Date(certStatus.atvActualizadoEn).toLocaleDateString("es-CR")}`}
                 </p>
@@ -557,7 +557,7 @@ export default function ConfiguracionScreen() {
           {/* Mensaje resultado ATV */}
           {atvMsg && (
             <div className={`mb-3 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm
-              ${atvMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+              ${atvMsg.type === "ok" ? "bg-green-50 border border-emerald-300 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
               {atvMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
               {atvMsg.text}
             </div>
@@ -568,19 +568,19 @@ export default function ConfiguracionScreen() {
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Usuario ATV</label>
               <input type="text" value={atvUsuario} onChange={e => setAtvUsuario(e.target.value)}
                 placeholder="usuario@empresa.com"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña ATV</label>
               <input type="password" value={atvPass} onChange={e => setAtvPass(e.target.value)}
                 placeholder="Contraseña del sistema ATV"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
           </div>
 
           <button onClick={subirATV} disabled={atvLoading || !certStatus?.configured}
             title={!certStatus?.configured ? "Primero subí el certificado .p12" : ""}
-            className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+            className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
             <Shield size={14} />
             {atvLoading ? "Guardando…" : certStatus?.atvConfigurado ? "Actualizar credenciales ATV" : "Guardar credenciales ATV"}
           </button>
@@ -591,12 +591,12 @@ export default function ConfiguracionScreen() {
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <MessageCircle size={16} className="text-green-600" />
+            <MessageCircle size={16} className="text-emerald-600" />
             <h2 className="text-base font-bold text-slate-900">WhatsApp Business</h2>
           </div>
           {/* Estado badge */}
           <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-            ${waEstado === "open" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+            ${waEstado === "open" ? "bg-green-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
             {waEstado === "open" ? <Wifi size={11} /> : <WifiOff size={11} />}
             {waEstado === "open" ? "Conectado" : waEstado || "Sin estado"}
           </span>
@@ -613,7 +613,7 @@ export default function ConfiguracionScreen() {
             <RefreshCw size={13} /> Actualizar estado
           </button>
           <button onClick={cargarQR} disabled={waLoading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">
             <QrCode size={13} /> {waLoading ? "Cargando…" : "Mostrar QR"}
           </button>
           <button onClick={reconectarWA} disabled={waLoading}
@@ -625,7 +625,7 @@ export default function ConfiguracionScreen() {
         {/* Mensaje de estado */}
         {waMsg && (
           <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-            ${waMsg.type === "ok"   ? "bg-green-50 border border-green-200 text-green-700"
+            ${waMsg.type === "ok"   ? "bg-green-50 border border-emerald-300 text-emerald-700"
             : waMsg.type === "info" ? "bg-blue-50 border border-blue-200 text-blue-700"
             :                         "bg-red-50 border border-red-200 text-red-700"}`}>
             {waMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
@@ -635,15 +635,15 @@ export default function ConfiguracionScreen() {
 
         {/* QR Code */}
         {waQR && (
-          <div className="mb-5 flex flex-col items-center gap-3 p-5 border-2 border-dashed border-green-300 rounded-xl bg-green-50">
+          <div className="mb-5 flex flex-col items-center gap-3 p-5 border-2 border-dashed border-emerald-300 rounded-xl bg-green-50">
             <p className="text-sm font-semibold text-green-800">Abrí WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo</p>
             <img
               src={waQR.src}
               alt="QR WhatsApp"
               className="w-52 h-52 rounded-lg border-4 border-white shadow-md"
             />
-            <p className="text-xs text-green-600">El QR expira en ~60 segundos. Si vence, presioná "Mostrar QR" de nuevo.</p>
-            <button onClick={cargarQR} className="text-xs text-green-700 underline">Regenerar QR</button>
+            <p className="text-xs text-emerald-600">El QR expira en ~60 segundos. Si vence, presioná "Mostrar QR" de nuevo.</p>
+            <button onClick={cargarQR} className="text-xs text-emerald-700 underline">Regenerar QR</button>
           </div>
         )}
 
@@ -655,16 +655,16 @@ export default function ConfiguracionScreen() {
               value={waTelTest}
               onChange={e => setWaTelTest(e.target.value)}
               placeholder="64693392"
-              className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-32 border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"
             />
             <input
               value={waMsgTest}
               onChange={e => setWaMsgTest(e.target.value)}
               placeholder="Mensaje de prueba..."
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"
             />
             <button onClick={enviarMsgTest} disabled={waSending || !waTelTest || !waMsgTest}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">
               {waSending ? "…" : "Enviar"}
             </button>
           </div>
@@ -688,7 +688,7 @@ export default function ConfiguracionScreen() {
 
         <div className="flex gap-3">
           <button onClick={handlePush}
-            className="flex items-center gap-2 px-4 py-2.5 bg-green-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800">
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800">
             <RefreshCw size={14} /> Subir mis datos
           </button>
           <button onClick={handlePull}
@@ -763,7 +763,7 @@ export default function ConfiguracionScreen() {
             {/* Mensaje */}
             {ntfyMsg && (
               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-                ${ntfyMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                ${ntfyMsg.type === "ok" ? "bg-green-50 border border-emerald-300 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
                 {ntfyMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                 {ntfyMsg.text}
               </div>
@@ -892,7 +892,7 @@ Ingresá en: ${window.location.origin}
                       </td>
                       <td className="py-2 pr-4">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.activo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                          u.activo ? "bg-green-100 text-emerald-700" : "bg-red-100 text-red-600"
                         }`}>{u.activo ? "Activo" : "Inactivo"}</span>
                       </td>
                       <td className="py-2 text-right">
@@ -974,7 +974,7 @@ Ingresá en: ${window.location.origin}
 
                 {usrMsg && (
                   <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-                    ${usrMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                    ${usrMsg.type === "ok" ? "bg-green-50 border border-emerald-300 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
                     {usrMsg.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
                     {usrMsg.text}
                   </div>

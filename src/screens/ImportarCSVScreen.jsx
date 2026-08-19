@@ -82,7 +82,7 @@ export default function ImportarCSVScreen() {
           <>
             <span className="text-xs text-slate-500">{filas.length} movimientos</span>
             <button onClick={importar} disabled={guardando}
-              className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600 disabled:opacity-60">
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60">
               {guardando?"Importando…":"Importar todo"}
             </button>
           </>
@@ -91,7 +91,7 @@ export default function ImportarCSVScreen() {
 
       {resultado && (
         <div className={`mx-6 mt-4 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold
-          ${resultado.ok?"bg-green-50 border border-green-200 text-green-700":"bg-red-50 border border-red-200 text-red-700"}`}>
+          ${resultado.ok?"bg-emerald-50 border border-emerald-300 text-emerald-700":"bg-red-50 border border-red-200 text-red-700"}`}>
           {resultado.ok ? <CheckCircle size={16}/> : <AlertCircle size={16}/>}
           {resultado.ok
             ? `✓ Importados: ${resultado.ingresos} recibos (ingresos) y ${resultado.gastos} compras (gastos)`
@@ -102,7 +102,7 @@ export default function ImportarCSVScreen() {
 
       {filas.length===0 ? (
         <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors
-          ${arrastrando?"border-brand-400 bg-brand-50":"border-slate-200 bg-slate-50"}`}
+          ${arrastrando?"border-emerald-400 bg-emerald-50":"border-slate-200 bg-slate-50"}`}
           onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
           onDragLeave={()=>setArrastrando(false)}
           onDrop={e=>{e.preventDefault();setArrastrando(false);cargarArchivo(e);}}>
@@ -111,7 +111,7 @@ export default function ImportarCSVScreen() {
             <p className="font-semibold text-slate-500 mb-1">Arrastrá tu CSV del banco aquí</p>
             <p className="text-sm text-slate-400">Exportá el estado de cuenta desde tu banco en formato CSV y arrástralo aquí. Se importarán como recibos (ingresos) o compras (gastos) automáticamente.</p>
             <p className="text-xs text-slate-300 mt-3">Columnas esperadas: Fecha · Descripción · Monto<br/>Separador: coma, punto y coma o tabulación</p>
-            <label className="mt-4 inline-flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600 cursor-pointer">
+            <label className="mt-4 inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 cursor-pointer">
               <Upload size={14}/> Seleccionar archivo
               <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarArchivo}/>
             </label>
@@ -135,13 +135,13 @@ export default function ImportarCSVScreen() {
                   <tr key={i} className="hover:bg-slate-50">
                     <td className="px-4 py-2 text-xs text-slate-500">{f.fecha}</td>
                     <td className="px-4 py-2 text-xs">{f.descripcion}</td>
-                    <td className={`px-4 py-2 text-right font-bold text-sm ${f.monto>=0?"text-green-700":"text-red-600"}`}>
+                    <td className={`px-4 py-2 text-right font-bold text-sm ${f.monto>=0?"text-emerald-700":"text-red-600"}`}>
                       {f.monto>=0?"+":""}{f.monto.toLocaleString("es-CR",{style:"currency",currency:"CRC"})}
                     </td>
                     <td className="px-4 py-2 text-center">
                       <button onClick={()=>toggleTipo(i)}
                         className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer transition-colors
-                          ${f.tipo==="ingreso"?"bg-green-100 text-green-700 hover:bg-green-200":"bg-red-100 text-red-600 hover:bg-red-200"}`}>
+                          ${f.tipo==="ingreso"?"bg-emerald-100 text-emerald-700 hover:bg-emerald-200":"bg-red-100 text-red-600 hover:bg-red-200"}`}>
                         {f.tipo==="ingreso"?"↑ Ingreso":"↓ Gasto"}
                       </button>
                     </td>

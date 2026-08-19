@@ -14,7 +14,7 @@ const MEDIOS = ["Efectivo","Transferencia","SINPE Móvil","Tarjeta","Cheque","Cr
 
 const ESTADOS = {
   pendiente:  { label:"Pendiente",   cls:"bg-amber-100 text-amber-700" },
-  pagada:     { label:"Pagada",      cls:"bg-green-100 text-green-700" },
+  pagada:     { label:"Pagada",      cls:"bg-green-100 text-emerald-700" },
   vencida:    { label:"Vencida",     cls:"bg-red-100 text-red-600" },
 };
 

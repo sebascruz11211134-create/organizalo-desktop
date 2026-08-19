@@ -95,7 +95,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
                 type="date"
                 value={form.fecha}
                 onChange={e => set("fecha", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
               />
             </div>
             {!form.todo_el_dia && (
@@ -105,7 +105,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
                   type="time"
                   value={form.hora}
                   onChange={e => set("hora", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                 />
               </div>
             )}
@@ -138,7 +138,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
             onChange={e => set("descripcion", e.target.value)}
             placeholder="Descripción (opcional)"
             rows={2}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30 resize-none"
+            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/30 resize-none"
           />
         </div>
 

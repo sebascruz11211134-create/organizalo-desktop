@@ -262,24 +262,24 @@ export default function AsistenciaScreen() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Empleado</label>
                 <select value={modal.empleadoId} onChange={e=>setModal({...modal, empleadoId:e.target.value})}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
                   {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
                 <input type="date" value={formFecha} onChange={e=>setFormFecha(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hora de entrada</label>
                 <input type="time" value={formHora} onChange={e=>setFormHora(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
                 <input value={formNotas} onChange={e=>setFormNotas(e.target.value)} placeholder="Opcional"
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
               </div>
             </div>
             <div className="flex gap-3 mt-5">

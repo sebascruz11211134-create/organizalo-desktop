@@ -10,7 +10,7 @@ const ESTADOS = {
   recibido:   { label:"Recibido",    cls:"bg-slate-100 text-slate-600" },
   diagnostico:{ label:"Diagnóstico", cls:"bg-blue-100 text-blue-700" },
   reparacion: { label:"Reparación",  cls:"bg-amber-100 text-amber-700" },
-  listo:      { label:"Listo",       cls:"bg-green-100 text-green-700" },
+  listo:      { label:"Listo",       cls:"bg-green-100 text-emerald-700" },
   entregado:  { label:"Entregado",   cls:"bg-slate-100 text-slate-500" },
 };
 
@@ -74,12 +74,12 @@ function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
               <input value={f.busq} onChange={e=>{setF(p=>({...p,busq:e.target.value,cliente:e.target.value}));setShowC(true);}}
                 onFocus={()=>setShowC(true)} onBlur={()=>setTimeout(()=>setShowC(false),150)}
                 placeholder="Nombre o CLI-XXXX…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
               {showC && filtrados.length>0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-28 overflow-auto">
                   {filtrados.map(c=>(
                     <button key={c.id} onMouseDown={()=>setF(p=>({...p,cliente:c.nombre,busq:c.nombre,telefono:c.telefono||""}))}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0">
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-0">
                       {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
                       <span className="text-slate-400 ml-1">{c.telefono}</span>
@@ -91,58 +91,58 @@ function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Teléfono</label>
               <input value={f.telefono} onChange={u("telefono")} placeholder="8888-8888"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </div>
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Equipo / vehículo / artículo</label>
             <input value={f.equipo} onChange={u("equipo")} placeholder="Marca, modelo, serie…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Problema reportado</label>
             <textarea value={f.problema} onChange={u("problema")} rows={2} placeholder="Qué falla el cliente reporta…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"/>
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Diagnóstico técnico</label>
             <textarea value={f.diagnostico} onChange={u("diagnostico")} rows={2} placeholder="Diagnóstico y trabajo a realizar…"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"/>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Técnico</label>
               <input value={f.tecnico} onChange={u("tecnico")} placeholder="Nombre…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Estado</label>
               <select value={f.estado} onChange={u("estado")}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Entrega estimada</label>
               <input type="date" value={f.fechaEntrega} onChange={u("fechaEntrega")}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Mano de obra (₡)</label>
               <input type="number" value={f.manoObra} onChange={u("manoObra")} min="0" placeholder="0"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-right"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Repuestos (₡)</label>
               <input type="number" value={f.repuestos} onChange={u("repuestos")} min="0" placeholder="0"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-right"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Total (₡)</label>
               <input type="number" value={f.total||((parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0))} onChange={u("total")} min="0"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right font-bold"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-right font-bold"/>
             </div>
           </div>
 
@@ -154,12 +154,12 @@ function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
                 onChange={e=>{setBusqMat(e.target.value);setShowMat(true);}}
                 onFocus={()=>setShowMat(true)} onBlur={()=>setTimeout(()=>setShowMat(false),150)}
                 placeholder="Buscar en catálogo de productos…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
               {showMat && prodsFilt.length > 0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
                   {prodsFilt.map(p=>(
                     <button key={p.id} onMouseDown={()=>agregarMaterial(p)}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b last:border-0 flex justify-between">
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b last:border-0 flex justify-between">
                       <span className="font-semibold">{p.nombre}</span>
                       <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
                     </button>
@@ -186,7 +186,7 @@ function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
           <button onClick={()=>onGuardar({ id:orden?.id||genId(), numero:orden?.numero||Date.now().toString().slice(-5), ...f, manoObra:parseFloat(f.manoObra)||0, repuestos:parseFloat(f.repuestos)||0, total:parseFloat(f.total)||(parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0), materiales, creadoEn:orden?.creadoEn||new Date().toISOString() })}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">
             <Check size={14}/> Guardar
           </button>
         </div>
@@ -257,7 +257,7 @@ export default function OrdenesTrabajoScreen() {
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Cliente o equipo…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
         </div>
         <select value={filtroEst} onChange={e=>setFiltroEst(e.target.value)}
           className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
@@ -267,7 +267,7 @@ export default function OrdenesTrabajoScreen() {
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-slate-400">{filtradas.length} órdenes</span>
           <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-700">
             <Plus size={14}/> Nueva OT
           </button>
         </div>
@@ -280,7 +280,7 @@ export default function OrdenesTrabajoScreen() {
         ) : (
           <div className="space-y-2">
             {filtradas.map(o=>(
-              <div key={o.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-brand-300 group">
+              <div key={o.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-emerald-300 group">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
                   <Wrench size={16} className="text-slate-500"/>
                 </div>

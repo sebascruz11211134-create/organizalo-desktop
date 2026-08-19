@@ -45,29 +45,29 @@ function ProyectoModal({ proyecto, onClose, onSave }) {
             <label key={key} className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
               <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </label>
           ))}
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Fecha inicio</span>
               <input type="date" value={form.fechaInicio||""} onChange={e=>u("fechaInicio",e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Fecha fin</span>
               <input type="date" value={form.fechaFin||""} onChange={e=>u("fechaFin",e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Presupuesto (₡)</span>
               <input type="number" min="0" value={form.presupuesto||""} onChange={e=>u("presupuesto",e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Estado</span>
               <select value={form.estado||"Activo"} onChange={e=>u("estado",e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 {ESTADOS.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </label>
@@ -75,12 +75,12 @@ function ProyectoModal({ proyecto, onClose, onSave }) {
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
             <textarea value={form.descripcion||""} onChange={e=>u("descripcion",e.target.value)} rows={2}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"/>
           </label>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600">Guardar</button>
+          <button onClick={guardar}  className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@ function AsignarModal({ proyecto, facturas, gastos, onClose, onSave }) {
         </div>
         <div className="flex gap-2 mb-3">
           {["facturas","gastos"].map(t=>(
-            <button key={t} onClick={()=>setTab(t)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab===t?"bg-brand-500 text-white":"bg-slate-100 text-slate-500"}`}>
+            <button key={t} onClick={()=>setTab(t)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${tab===t?"bg-emerald-600 text-white":"bg-slate-100 text-slate-500"}`}>
               {t==="facturas"?"Facturas":"Gastos"}
             </button>
           ))}
@@ -127,7 +127,7 @@ function AsignarModal({ proyecto, facturas, gastos, onClose, onSave }) {
               <label key={item.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors
                 ${yaAsig?"border-blue-200 bg-blue-50":sel?"border-slate-600 bg-slate-50":"border-slate-100 hover:border-slate-300"}`}>
                 <input type="checkbox" checked={sel||!!yaAsig} onChange={()=>!yaAsig&&toggle(item.id)} disabled={!!yaAsig}
-                  className="accent-brand-500"/>
+                  className="accent-emerald-600"/>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-slate-800 truncate">{item.nombreReceptor||item.descripcion||"Sin nombre"}</p>
                   <p className="text-xs text-slate-400">{fmtDate(item.fechaEmision||item.fecha)} · {fmtMoney(item.totalGeneral||item.monto,"CRC")}</p>
@@ -140,7 +140,7 @@ function AsignarModal({ proyecto, facturas, gastos, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-4 border-t border-slate-100 pt-4">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600">Asignar seleccionados</button>
+          <button onClick={guardar}  className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Asignar seleccionados</button>
         </div>
       </div>
     </div>
@@ -185,7 +185,7 @@ export default function ProyectosScreen() {
   const toggleExp = (id) => setExpandido(p=>({...p,[id]:!p[id]}));
 
   const estadoColor = {
-    "Activo":"text-green-700 bg-green-50", "Completado":"text-blue-700 bg-blue-50",
+    "Activo":"text-emerald-700 bg-emerald-50", "Completado":"text-blue-700 bg-blue-50",
     "Pausado":"text-yellow-700 bg-yellow-50", "Cancelado":"text-red-600 bg-red-50",
   };
 
@@ -196,7 +196,7 @@ export default function ProyectosScreen() {
           <h1 className="text-lg font-bold text-slate-900">Proyectos / Centros de costo</h1>
           <p className="text-sm text-slate-500">Asigná facturas y gastos a proyectos y mirá el P&L.</p>
         </div>
-        <button onClick={()=>setModal({type:"nuevo"})} className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
+        <button onClick={()=>setModal({type:"nuevo"})} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
           <Plus size={14}/> Nuevo proyecto
         </button>
       </div>
@@ -233,7 +233,7 @@ export default function ProyectosScreen() {
                 <div className="flex gap-5 shrink-0">
                   <div className="text-right">
                     <p className="text-[10px] font-semibold text-slate-400 uppercase">Ingresos</p>
-                    <p className="text-sm font-semibold text-green-700">{fmtMoney(ingresos,"CRC")}</p>
+                    <p className="text-sm font-semibold text-emerald-700">{fmtMoney(ingresos,"CRC")}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-semibold text-slate-400 uppercase">Costos</p>
@@ -276,7 +276,7 @@ export default function ProyectosScreen() {
                       {facturas.filter(f=>asig[f.id]==="facturas").slice(0,5).map(f=>(
                         <div key={f.id} className="flex justify-between text-xs text-slate-600 py-0.5">
                           <span className="truncate max-w-[140px]">{f.nombreReceptor||"Sin nombre"}</span>
-                          <span className="font-semibold text-green-700">{fmtMoney(f.totalGeneral,"CRC")}</span>
+                          <span className="font-semibold text-emerald-700">{fmtMoney(f.totalGeneral,"CRC")}</span>
                         </div>
                       ))}
                     </div>

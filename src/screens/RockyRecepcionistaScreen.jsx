@@ -284,7 +284,7 @@ export default function RockyRecepcionistaScreen() {
                   value={config.numeroTwilio}
                   onChange={e => set("numeroTwilio", e.target.value)}
                   placeholder="+1 (555) 000-0000"
-                  className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
+                  className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
                 />
                 <a
                   href="https://www.twilio.com/console/phone-numbers/incoming"
@@ -330,11 +330,11 @@ export default function RockyRecepcionistaScreen() {
                   <div className="flex items-center gap-3">
                     <input type="time" value={config.horaInicio}
                       onChange={e => set("horaInicio", e.target.value)}
-                      className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
+                      className="border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
                     <span className="text-slate-400 text-sm">a</span>
                     <input type="time" value={config.horaFin}
                       onChange={e => set("horaFin", e.target.value)}
-                      className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
+                      className="border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
                   </div>
                 </div>
               )}
@@ -349,7 +349,7 @@ export default function RockyRecepcionistaScreen() {
                 onChange={e => set("bienvenida", e.target.value)}
                 placeholder={`Ej: "Gracias por llamar. Soy Rocky, ¿en qué te puedo ayudar?"`}
                 rows={3}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 resize-none"
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 resize-none"
               />
             </div>
 

@@ -43,26 +43,26 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Nombre *</label>
               <input value={f.nombre} onChange={u("nombre")} placeholder="Nombre del producto o servicio"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Descripción</label>
               <textarea value={f.descripcion} onChange={u("descripcion")} rows={2}
                 placeholder="Descripción detallada…"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Categoría</label>
                 <select value={f.categoria} onChange={u("categoria")}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                   {CATEGORIAS.map(c=><option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Unidad de medida</label>
                 <select value={f.unidad} onChange={u("unidad")}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                   {UNIDADES.map(u=><option key={u}>{u}</option>)}
                 </select>
               </div>
@@ -76,17 +76,17 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Cód. interno</label>
                 <input value={f.codigoInterno} onChange={u("codigoInterno")} placeholder="SKU-001"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Código barras</label>
                 <input value={f.codigoBarras} onChange={u("codigoBarras")} placeholder="7XXXXXXXXXX"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">CABYS</label>
                 <input value={f.codigoCabys} onChange={u("codigoCabys")} placeholder="Hacienda"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400" />
               </div>
             </div>
           </div>
@@ -98,17 +98,17 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Precio venta *</label>
                 <input type="number" value={f.precio} onChange={u("precio")} min="0" step="any" placeholder="0"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-right" />
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Precio compra</label>
                 <input type="number" value={f.precioCompra} onChange={u("precioCompra")} min="0" step="any" placeholder="0"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-right" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-right" />
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">% IVA</label>
                 <select value={f.pctIVA} onChange={e=>setF(p=>({...p,pctIVA:Number(e.target.value)}))}
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                   <option value={0}>0% Exento</option>
                   <option value={4}>4%</option>
                   <option value={8}>8%</option>
@@ -117,7 +117,7 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
               </div>
             </div>
             {margen && (
-              <p className="text-xs text-green-600 font-semibold">Margen: {margen}% · Precio con IVA: {fmtMoney(parseFloat(f.precio)*(1+f.pctIVA/100),"CRC")}</p>
+              <p className="text-xs text-emerald-600 font-semibold">Margen: {margen}% · Precio con IVA: {fmtMoney(parseFloat(f.precio)*(1+f.pctIVA/100),"CRC")}</p>
             )}
           </div>
 
@@ -128,12 +128,12 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Stock actual</label>
                 <input type="number" value={f.stock} onChange={u("stock")} min="0" placeholder="—"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-center" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-center" />
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Stock mínimo</label>
                 <input type="number" value={f.stockMin} onChange={u("stockMin")} min="0" placeholder="—"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 text-center" />
+                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 text-center" />
               </div>
               <div className="flex items-end pb-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -148,7 +148,7 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
           <button onClick={()=>onGuardar({ id:prod?.id||genId(), ...f, precio:parseFloat(f.precio)||0, precioCompra:parseFloat(f.precioCompra)||0, stock:f.stock!==""?Number(f.stock):null, stockMin:f.stockMin!==""?Number(f.stockMin):null })}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">
             <Check size={14}/> Guardar producto
           </button>
         </div>
@@ -202,7 +202,7 @@ export default function CatalogoScreen() {
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar producto, código…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-400 w-56" />
+            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-400 w-56" />
         </div>
         <select value={catFiltro} onChange={e=>setCatFiltro(e.target.value)}
           className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
@@ -217,13 +217,13 @@ export default function CatalogoScreen() {
           <div className="flex border border-slate-200 rounded-lg overflow-hidden">
             {["grid","tabla"].map(v=>(
               <button key={v} onClick={()=>setVista(v)}
-                className={`px-2.5 py-1 text-xs font-semibold transition-colors ${vista===v?"bg-brand-500 text-white":"text-slate-500 hover:bg-slate-50"}`}>
+                className={`px-2.5 py-1 text-xs font-semibold transition-colors ${vista===v?"bg-emerald-600 text-white":"text-slate-500 hover:bg-slate-50"}`}>
                 {v==="grid"?"⊞":"☰"}
               </button>
             ))}
           </div>
           <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-700">
             <Plus size={14}/> Nuevo producto
           </button>
         </div>
@@ -239,13 +239,13 @@ export default function CatalogoScreen() {
         ) : vista==="grid" ? (
           <div className="grid grid-cols-4 gap-4">
             {filtrados.map(p => (
-              <div key={p.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:border-brand-300 hover:shadow-sm group transition-all">
-                <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center mb-3">
-                  <span className="text-brand-600 font-black text-xl">{(p.nombre||"?").charAt(0)}</span>
+              <div key={p.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:border-emerald-300 hover:shadow-sm group transition-all">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mb-3">
+                  <span className="text-emerald-700 font-black text-xl">{(p.nombre||"?").charAt(0)}</span>
                 </div>
                 <p className="font-bold text-sm text-slate-800 truncate">{p.nombre}</p>
                 <p className="text-xs text-slate-400 truncate mb-2">{p.categoria} {p.codigoInterno && `· ${p.codigoInterno}`}</p>
-                <p className="text-base font-black text-green-700">{fmtMoney(p.precio||0,"CRC")}</p>
+                <p className="text-base font-black text-emerald-700">{fmtMoney(p.precio||0,"CRC")}</p>
                 {p.stock!=null && (
                   <p className={`text-[10px] font-semibold mt-0.5 ${p.stockMin!=null&&p.stock<=p.stockMin?"text-red-500":"text-slate-400"}`}>
                     Stock: {p.stock} {p.stockMin!=null&&p.stock<=p.stockMin?"⚠️":""}
@@ -277,7 +277,7 @@ export default function CatalogoScreen() {
                   <td className="px-4 py-2.5 font-semibold">{p.nombre}</td>
                   <td className="px-4 py-2.5 text-slate-500">{p.categoria||"—"}</td>
                   <td className="px-4 py-2.5 text-slate-400 text-xs">{p.codigoInterno||p.codigoBarras||"—"}</td>
-                  <td className="px-4 py-2.5 text-right font-bold text-green-700">{fmtMoney(p.precio||0,"CRC")}</td>
+                  <td className="px-4 py-2.5 text-right font-bold text-emerald-700">{fmtMoney(p.precio||0,"CRC")}</td>
                   <td className="px-4 py-2.5 text-center text-slate-500">{p.pctIVA||13}%</td>
                   <td className={`px-4 py-2.5 text-center font-semibold ${p.stock!=null&&p.stockMin!=null&&p.stock<=p.stockMin?"text-red-500":"text-slate-600"}`}>
                     {p.stock!=null?p.stock:"—"}

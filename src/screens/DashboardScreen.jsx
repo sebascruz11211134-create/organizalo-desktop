@@ -179,7 +179,7 @@ function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert
 function EstadoBadge({ estado }) {
   const map = {
     pendiente: "bg-amber-100 text-amber-700",
-    pagada:    "bg-green-100 text-green-700",
+    pagada:    "bg-green-100 text-emerald-700",
     vencida:   "bg-red-100 text-red-700",
     enviada:   "bg-blue-100 text-blue-700",
   };

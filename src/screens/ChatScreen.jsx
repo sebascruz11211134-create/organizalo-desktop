@@ -54,7 +54,7 @@ function Burbuja({ msg, esPropio }) {
         <span className="text-xs text-slate-500 mb-0.5 ml-1">{msg.userNombre || msg.user_nombre}</span>
       )}
       <div className={`max-w-xs lg:max-w-md px-3 py-2 rounded-2xl text-sm ${
-        esPropio ? "bg-brand-500 text-white rounded-br-sm" : "bg-slate-100 text-slate-800 rounded-bl-sm"
+        esPropio ? "bg-emerald-600 text-white rounded-br-sm" : "bg-slate-100 text-slate-800 rounded-bl-sm"
       }`}>
         {msg.texto}
       </div>
@@ -101,12 +101,12 @@ function InviteModal({ onClose, authToken }) {
               <label className="text-xs font-semibold text-slate-500 uppercase">Correo electrónico</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="colaborador@empresa.com"
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase">Rol</label>
               <select value={rol} onChange={e => setRol(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                 <option value="colaborador">Colaborador</option>
                 <option value="contador">Contador</option>
                 <option value="vendedor">Vendedor</option>
@@ -117,20 +117,20 @@ function InviteModal({ onClose, authToken }) {
             <div className="flex gap-3 pt-2">
               <button onClick={onClose} className="flex-1 border border-slate-200 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
               <button onClick={invitar} disabled={loading}
-                className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-60">
+                className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-60">
                 {loading ? "Generando…" : "Generar invitación"}
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="bg-green-50 border border-emerald-300 rounded-xl p-4">
               <p className="text-sm text-green-800 font-semibold mb-2">✅ Invitación generada</p>
-              <p className="text-xs text-green-700 mb-3">Comparte este link con {email}. Expira en 7 días.</p>
-              <div className="bg-white border border-green-200 rounded-lg px-3 py-2 text-xs text-slate-600 break-all">{link}</div>
+              <p className="text-xs text-emerald-700 mb-3">Comparte este link con {email}. Expira en 7 días.</p>
+              <div className="bg-white border border-emerald-300 rounded-lg px-3 py-2 text-xs text-slate-600 break-all">{link}</div>
             </div>
             <button onClick={copiar}
-              className="w-full flex items-center justify-center gap-2 bg-brand-500 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-brand-600">
+              className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-emerald-700">
               {copiado ? <><Check size={14}/> ¡Copiado!</> : <><Copy size={14}/> Copiar link</>}
             </button>
             <button onClick={onClose} className="w-full text-sm text-slate-400 hover:text-slate-600">Cerrar</button>
@@ -272,7 +272,7 @@ export default function ChatScreen() {
 
         {/* Usuario actual */}
         <div className="px-4 py-3 border-t border-slate-700 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">
             {(user.nombre || "U")[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -352,7 +352,7 @@ export default function ChatScreen() {
             <button
               onClick={enviar}
               disabled={!texto.trim() || enviando}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
             >
               <Send size={14}/>
             </button>

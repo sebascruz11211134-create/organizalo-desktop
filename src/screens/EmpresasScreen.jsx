@@ -61,14 +61,14 @@ function EmpresaModal({ empresa, onClose, onSave }) {
               <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
               {type==="select" ? (
                 <select value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
                   {key==="tipoCedula" && TIPOS_CEDULA.map(t=><option key={t} value={t}>{t}</option>)}
                   {key==="regimen"    && REGIMENES.map(t=><option key={t} value={t}>{t}</option>)}
                   {key==="moneda"     && ["CRC","USD"].map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
               ) : (
                 <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"/>
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
               )}
             </label>
           ))}
@@ -76,7 +76,7 @@ function EmpresaModal({ empresa, onClose, onSave }) {
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600">Guardar</button>
+          <button onClick={guardar} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -133,7 +133,7 @@ export default function EmpresasScreen() {
             </p>
           </div>
           <button onClick={()=>setModal({})}
-            className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-600">
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
             <Plus size={14}/> Nueva empresa
           </button>
         </div>
@@ -166,7 +166,7 @@ export default function EmpresasScreen() {
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-slate-900 truncate">{e.nombre}</p>
                       {esActiva && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-green-50 px-2 py-0.5 rounded-full">
                           <Check size={10}/> Activa
                         </span>
                       )}

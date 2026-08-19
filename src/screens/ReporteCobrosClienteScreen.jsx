@@ -52,7 +52,7 @@ function buildResumen(facturas, debts) {
 }
 
 const ESTADO_BADGE = {
-  pagada:    "bg-green-100 text-green-700",
+  pagada:    "bg-green-100 text-emerald-700",
   parcial:   "bg-amber-100 text-amber-700",
   pendiente: "bg-red-100 text-red-700",
 };
@@ -221,7 +221,7 @@ export default function ReporteCobrosClienteScreen() {
                 <span className="text-xs font-semibold text-emerald-700 ml-3 shrink-0">
                   Cobrado: {fmtMoney(res.totalPagado, moneda)}
                 </span>
-                <span className={`text-xs font-bold ml-3 shrink-0 ${res.totalSaldo > 0 ? "text-red-600" : "text-green-700"}`}>
+                <span className={`text-xs font-bold ml-3 shrink-0 ${res.totalSaldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
                   Saldo: {fmtMoney(res.totalSaldo, moneda)}
                 </span>
               </button>
@@ -255,7 +255,7 @@ export default function ReporteCobrosClienteScreen() {
                           <td className="px-3 py-2 text-right text-emerald-700">
                             {fmtMoney(f.pagado, f.moneda || moneda)}
                           </td>
-                          <td className={`px-3 py-2 text-right font-bold ${f.saldo > 0 ? "text-red-600" : "text-green-700"}`}>
+                          <td className={`px-3 py-2 text-right font-bold ${f.saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
                             {fmtMoney(f.saldo, f.moneda || moneda)}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -271,7 +271,7 @@ export default function ReporteCobrosClienteScreen() {
                         <td colSpan={3} className="px-4 py-2 text-xs text-slate-500">Subtotal</td>
                         <td className="px-3 py-2 text-right text-xs">{fmtMoney(res.totalFacturado, moneda)}</td>
                         <td className="px-3 py-2 text-right text-xs text-emerald-700">{fmtMoney(res.totalPagado, moneda)}</td>
-                        <td className={`px-3 py-2 text-right text-xs ${res.totalSaldo > 0 ? "text-red-600" : "text-green-700"}`}>
+                        <td className={`px-3 py-2 text-right text-xs ${res.totalSaldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
                           {fmtMoney(res.totalSaldo, moneda)}
                         </td>
                         <td/>
