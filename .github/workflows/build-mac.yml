@@ -44,6 +44,8 @@ jobs:
 
       - name: Instalar dependencias
         run: npm install --legacy-peer-deps
+        env:
+          npm_config_electron_skip_binary_download: false
 
       - name: Crear y pushear git tag de versión
         run: |
