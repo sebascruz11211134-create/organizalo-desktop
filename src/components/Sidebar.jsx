@@ -267,7 +267,6 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
     : NAV.filter(item => SIEMPRE_VISIBLES.has(item.id) || modulosHabilitados.includes(item.id));
 
   return (
-    <>
     <aside
       className={`
         hidden md:flex flex-col shrink-0 transition-all duration-200 overflow-hidden
