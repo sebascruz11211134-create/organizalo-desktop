@@ -200,7 +200,8 @@ function ContactoModal({ contacto, onClose, onSave }) {
               </p>
             </div>
           </div>
-        <div className="flex gap-3 mt-4">
+        </div>
+        <div className="flex gap-3 mt-4 px-5 pb-5">
           <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
           <button onClick={guardar} className="flex-1 py-2.5 bg-emerald-600 rounded text-sm font-semibold text-white hover:bg-emerald-700">Guardar</button>
         </div>
