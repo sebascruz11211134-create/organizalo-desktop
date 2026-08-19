@@ -107,14 +107,16 @@ export default function ChatWidget() {
     return () => document.head.removeChild(style);
   }, []);
 
-  // ── Auth desde localStorage ───────────────────────────────────────────────
+  // ── Auth desde localStorage — soporta JSON y plain string ────────────────
   useEffect(() => {
-    try {
-      const rawToken = localStorage.getItem("@finanzia/authToken");
-      const rawUser  = localStorage.getItem("@finanzia/authUser");
-      if (rawToken) setAuthToken(JSON.parse(rawToken));
-      if (rawUser)  setUser(JSON.parse(rawUser));
-    } catch {}
+    function safeParse(raw) {
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return raw; }  // fallback: valor crudo
+    }
+    const token = safeParse(localStorage.getItem("@finanzia/authToken"));
+    const usr   = safeParse(localStorage.getItem("@finanzia/authUser"));
+    if (token) setAuthToken(token);
+    if (usr)   setUser(typeof usr === "object" ? usr : {});
   }, []);
 
   // ── Polling mensajes ──────────────────────────────────────────────────────
