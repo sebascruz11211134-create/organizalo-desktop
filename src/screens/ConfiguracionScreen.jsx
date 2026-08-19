@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode, Bell } from "lucide-react";
+import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode, Bell, Users, Plus, Copy, Eye, EyeOff, UserX, RefreshCcw } from "lucide-react";
 import db from "../utils/db";
 import { pushSync, pullSync } from "../utils/sync";
-import { getToken } from "../utils/auth";
+import { getToken, getUser } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
 
@@ -43,12 +43,75 @@ export default function ConfiguracionScreen() {
   const [atvLoading,    setAtvLoading]    = useState(false);
   const [atvMsg,        setAtvMsg]        = useState(null);  // { type: "ok"|"err", text }
 
+  // ── Gestión de usuarios de empresa ────────────────────────────────────────
+  const meUser = getUser();
+  const esAdmin = meUser && ["admin", "superadmin"].includes(meUser.rol);
+  const [equipo,       setEquipo]       = useState([]);
+  const [equipoLoad,   setEquipoLoad]   = useState(false);
+  const [showNuevoUsr, setShowNuevoUsr] = useState(false);
+  const [nuevoNombre,  setNuevoNombre]  = useState("");
+  const [nuevoUser,    setNuevoUser]    = useState("");
+  const [nuevoPass,    setNuevoPass]    = useState("");
+  const [nuevoRol,     setNuevoRol]     = useState("colaborador");
+  const [usrMsg,       setUsrMsg]       = useState(null);
+  const [usrLoading,   setUsrLoading]   = useState(false);
+  const [credencial,   setCredencial]   = useState(null); // { nombre, username, password } — se muestra tras crear
+  const [showPass,     setShowPass]     = useState(false);
+
+  function genPassword() {
+    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#";
+    return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  }
+
+  async function cargarEquipo() {
+    setEquipoLoad(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/auth/team`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setEquipo(data.members || []);
+    } catch { setEquipo([]); }
+    setEquipoLoad(false);
+  }
+
+  async function crearUsuario() {
+    if (!nuevoNombre.trim() || !nuevoUser.trim() || !nuevoPass.trim()) {
+      setUsrMsg({ type: "err", text: "Completá todos los campos." }); return;
+    }
+    setUsrLoading(true); setUsrMsg(null);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/auth/create-user`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ nombre: nuevoNombre, username: nuevoUser, password: nuevoPass, rol: nuevoRol }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setUsrMsg({ type: "err", text: data.error || "Error al crear el usuario." }); return; }
+      setCredencial({ nombre: nuevoNombre.trim(), username: data.user.username, password: nuevoPass });
+      setNuevoNombre(""); setNuevoUser(""); setNuevoPass(""); setNuevoRol("colaborador");
+      setShowNuevoUsr(false);
+      cargarEquipo();
+    } catch { setUsrMsg({ type: "err", text: "Error de conexión." }); }
+    setUsrLoading(false);
+  }
+
+  async function eliminarUsuario(id, nombre) {
+    if (!confirm(`¿Eliminar al usuario "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      const token = await getToken();
+      await fetch(`${BACKEND}/api/auth/delete-user/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      cargarEquipo();
+    } catch {}
+  }
+
   useEffect(() => {
     db.getSettings().then((st) => setS((prev) => ({ ...prev, ...st })));
     cargarCertStatus();
     cargarWaEstado();
     cargarNtfyUserConfig();
     cargarNtfyPrefs();
+    if (esAdmin) cargarEquipo();
   }, []);
 
   // ── WhatsApp helpers ──────────────────────────────────────────────────────
@@ -706,6 +769,199 @@ export default function ConfiguracionScreen() {
           </button>
         )}
       </div>
+
+      {/* ── Sección: Usuarios de la empresa (solo admin) ─────────────────── */}
+      {esAdmin && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users size={18} className="text-slate-600" />
+              <h3 className="font-semibold text-slate-800">Usuarios de tu empresa</h3>
+            </div>
+            <button
+              onClick={() => { setShowNuevoUsr(true); setUsrMsg(null); setNuevoPass(genPassword()); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors">
+              <Plus size={13} /> Nuevo usuario
+            </button>
+          </div>
+
+          {/* Credencial recién creada */}
+          {credencial && (
+            <div className="mb-4 border border-emerald-200 bg-emerald-50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle size={15} className="text-emerald-600" />
+                <span className="text-sm font-semibold text-emerald-800">Usuario creado — guardá estas credenciales</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                <div className="bg-white rounded-lg border border-emerald-200 px-3 py-2">
+                  <p className="text-xs text-slate-500 mb-0.5">Nombre</p>
+                  <p className="font-medium text-slate-800">{credencial.nombre}</p>
+                </div>
+                <div className="bg-white rounded-lg border border-emerald-200 px-3 py-2">
+                  <p className="text-xs text-slate-500 mb-0.5">Usuario</p>
+                  <p className="font-mono font-medium text-slate-800">{credencial.username}</p>
+                </div>
+                <div className="col-span-2 bg-white rounded-lg border border-emerald-200 px-3 py-2">
+                  <p className="text-xs text-slate-500 mb-0.5">Contraseña</p>
+                  <p className="font-mono font-bold text-slate-800 tracking-wider">{credencial.password}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigator.clipboard?.writeText(`Usuario: ${credencial.username}\nContraseña: ${credencial.password}`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-emerald-400 text-emerald-700 text-xs font-medium rounded-lg hover:bg-emerald-100 transition-colors">
+                  <Copy size={12} /> Copiar credenciales
+                </button>
+                <button
+                  onClick={() => {
+                    const w = window.open("", "_blank");
+                    w.document.write(`<pre style="font-family:monospace;font-size:16px;padding:24px">
+Organízalo.AI — Credenciales de acceso
+
+Nombre:     ${credencial.nombre}
+Usuario:    ${credencial.username}
+Contraseña: ${credencial.password}
+
+Ingresá en: ${window.location.origin}
+                    </pre>`);
+                    w.print();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100 transition-colors">
+                  🖨 Imprimir
+                </button>
+                <button onClick={() => setCredencial(null)}
+                  className="ml-auto text-xs text-slate-400 hover:text-slate-600">Cerrar</button>
+              </div>
+            </div>
+          )}
+
+          {/* Tabla de equipo */}
+          {equipoLoad ? (
+            <p className="text-sm text-slate-400 text-center py-4">Cargando equipo…</p>
+          ) : equipo.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-4">No hay otros usuarios en tu empresa todavía.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs font-semibold text-slate-500 uppercase border-b border-gray-100">
+                    <th className="pb-2 pr-4">Nombre</th>
+                    <th className="pb-2 pr-4">Usuario</th>
+                    <th className="pb-2 pr-4">Rol</th>
+                    <th className="pb-2 pr-4">Estado</th>
+                    <th className="pb-2"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {equipo.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50">
+                      <td className="py-2 pr-4 font-medium text-slate-800">{u.nombre}</td>
+                      <td className="py-2 pr-4 font-mono text-slate-600 text-xs">{u.username || "—"}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          u.rol === "admin" ? "bg-purple-100 text-purple-700" :
+                          u.rol === "contador" ? "bg-blue-100 text-blue-700" :
+                          u.rol === "vendedor" ? "bg-amber-100 text-amber-700" :
+                          "bg-gray-100 text-slate-600"
+                        }`}>{u.rol}</span>
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          u.activo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                        }`}>{u.activo ? "Activo" : "Inactivo"}</span>
+                      </td>
+                      <td className="py-2 text-right">
+                        <button onClick={() => eliminarUsuario(u.id, u.nombre)}
+                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                          <UserX size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <button onClick={cargarEquipo} className="mt-3 flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600">
+            <RefreshCcw size={11} /> Actualizar lista
+          </button>
+
+          {/* Modal: Nuevo usuario */}
+          {showNuevoUsr && (
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                <h4 className="font-semibold text-slate-800 text-lg mb-4">Crear nuevo usuario</h4>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre completo</label>
+                    <input value={nuevoNombre} onChange={e => setNuevoNombre(e.target.value)}
+                      placeholder="Ej: María González"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Nombre de usuario</label>
+                    <input value={nuevoUser} onChange={e => setNuevoUser(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                      placeholder="Ej: maria.gonzalez"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Contraseña</label>
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <input
+                          type={showPass ? "text" : "password"}
+                          value={nuevoPass}
+                          onChange={e => setNuevoPass(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300 pr-9" />
+                        <button type="button" onClick={() => setShowPass(p => !p)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                          {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                      <button type="button" onClick={() => setNuevoPass(genPassword())}
+                        title="Generar contraseña"
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-slate-500 hover:bg-slate-50 text-xs font-medium">
+                        <RefreshCcw size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">Rol</label>
+                    <select value={nuevoRol} onChange={e => setNuevoRol(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                      <option value="colaborador">Colaborador</option>
+                      <option value="vendedor">Vendedor</option>
+                      <option value="contador">Contador</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+
+                {usrMsg && (
+                  <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                    ${usrMsg.type === "ok" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                    {usrMsg.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+                    {usrMsg.text}
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-5">
+                  <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }}
+                    className="flex-1 px-4 py-2 border border-gray-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
+                    Cancelar
+                  </button>
+                  <button onClick={crearUsuario} disabled={usrLoading}
+                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                    {usrLoading ? "Creando…" : "Crear usuario"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
