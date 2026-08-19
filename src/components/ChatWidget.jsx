@@ -1,8 +1,9 @@
 /**
  * ChatWidget — Burbuja de chat flotante arrastrable.
- * Usa Pointer Events + setPointerCapture para drag confiable.
- * Click sin mover = abrir/cerrar panel.
- * Posición persiste en localStorage.
+ * • Drag con PointerEvents + setPointerCapture
+ * • Tres pelotitas animadas cuando alguien escribe
+ * • Palomitas ✓ / ✓✓ de leído
+ * • Posición persiste en localStorage
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
@@ -24,11 +25,46 @@ function loadPos() {
     const raw = localStorage.getItem(POS_KEY);
     if (raw) {
       const p = JSON.parse(raw);
-      // Validar que esté dentro de pantalla
       if (p.x > 0 && p.y > 0 && p.x < window.innerWidth && p.y < window.innerHeight) return p;
     }
   } catch {}
   return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
+}
+
+// ── Tres pelotitas animadas ───────────────────────────────────────────────────
+function TypingDots({ writers }) {
+  if (!writers?.length) return null;
+  const label = writers.length === 1
+    ? `${writers[0]} está escribiendo`
+    : `${writers.join(", ")} están escribiendo`;
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-2">
+      <div className="flex items-center gap-0.5">
+        {[0, 1, 2].map(i => (
+          <span key={i} style={{
+            display: "inline-block",
+            width: 6, height: 6,
+            borderRadius: "50%",
+            background: "#94a3b8",
+            animation: `chatBounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+          }} />
+        ))}
+      </div>
+      <span className="text-[10px] text-slate-400 italic">{label}</span>
+    </div>
+  );
+}
+
+// ── Palomitas de leído ────────────────────────────────────────────────────────
+function Checkmarks({ leido }) {
+  return (
+    <span style={{ fontSize: 10, marginLeft: 2, lineHeight: 1 }}>
+      {leido
+        ? <span style={{ color: "#10b981" }}>✓✓</span>   /* leído — verde */
+        : <span style={{ color: "rgba(255,255,255,0.6)" }}>✓</span>  /* enviado — gris */
+      }
+    </span>
+  );
 }
 
 export default function ChatWidget() {
@@ -44,17 +80,32 @@ export default function ChatWidget() {
   const [prevLen,     setPrevLen]     = useState(0);
   const [pos,         setPos]         = useState(loadPos);
   const [isDragging,  setIsDragging]  = useState(false);
+  const [writers,     setWriters]     = useState([]);   // quién está escribiendo
+  const [lecturas,    setLecturas]    = useState([]);   // IDs de usuarios que leyeron
 
-  const posRef     = useRef(pos);          // siempre actualizado sin stale closure
-  const dragStart  = useRef(null);         // { mx, my, ox, oy }
-  const movedRef   = useRef(false);
-  const bottomRef  = useRef(null);
-  const inputRef   = useRef(null);
-  const fallosRef  = useRef(0);
-  const cortadoRef = useRef(false);
+  const posRef      = useRef(pos);
+  const dragStart   = useRef(null);
+  const movedRef    = useRef(false);
+  const bottomRef   = useRef(null);
+  const inputRef    = useRef(null);
+  const fallosRef   = useRef(0);
+  const cortadoRef  = useRef(false);
+  const typingTimer = useRef(null);  // debounce para enviar "estoy escribiendo"
 
-  // Mantener posRef sincronizado
   useEffect(() => { posRef.current = pos; }, [pos]);
+
+  // ── CSS de animación para las pelotitas ───────────────────────────────────
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes chatBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+        30%            { transform: translateY(-5px); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   // ── Auth desde localStorage ───────────────────────────────────────────────
   useEffect(() => {
@@ -87,41 +138,66 @@ export default function ChatWidget() {
     }
   }, [authToken, abierto]);
 
-  useEffect(() => {
-    cargarMensajes(canalActivo);
-    const iv = setInterval(() => cargarMensajes(canalActivo), 5000);
-    return () => clearInterval(iv);
-  }, [canalActivo, cargarMensajes]);
+  // ── Polling typing ────────────────────────────────────────────────────────
+  const cargarTyping = useCallback(async (canal) => {
+    if (!authToken || !abierto) return;
+    try {
+      const res = await api.get(`/api/chat/typing/${canal}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      setWriters(res.data.writers || []);
+    } catch {}
+  }, [authToken, abierto]);
+
+  // ── Polling lecturas ──────────────────────────────────────────────────────
+  const cargarLecturas = useCallback(async (canal) => {
+    if (!authToken) return;
+    try {
+      const res = await api.get(`/api/chat/mensajes/${canal}/lecturas`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      setLecturas(res.data.lecturas || []);
+    } catch {}
+  }, [authToken]);
 
   useEffect(() => {
-    if (abierto) {
+    cargarMensajes(canalActivo);
+    cargarLecturas(canalActivo);
+    const iv1 = setInterval(() => cargarMensajes(canalActivo), 5000);
+    const iv2 = setInterval(() => cargarTyping(canalActivo), 2000);
+    const iv3 = setInterval(() => cargarLecturas(canalActivo), 6000);
+    return () => { clearInterval(iv1); clearInterval(iv2); clearInterval(iv3); };
+  }, [canalActivo, cargarMensajes, cargarTyping, cargarLecturas]);
+
+  // Al abrir panel → marcar como leído
+  useEffect(() => {
+    if (abierto && authToken) {
       setNoLeidos(0);
       fallosRef.current = 0;
       cortadoRef.current = false;
+      api.post(`/api/chat/mensajes/${canalActivo}/leer`, {}, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }).catch(() => {});
+      cargarLecturas(canalActivo);
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         inputRef.current?.focus();
       }, 80);
     }
-  }, [abierto]);
+  }, [abierto, authToken, canalActivo, cargarLecturas]);
 
   useEffect(() => {
     if (abierto) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, abierto]);
 
-  // ── Drag con Pointer Events + setPointerCapture ───────────────────────────
+  // ── Drag ─────────────────────────────────────────────────────────────────
   const onPointerDown = (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);   // ← toda la magia aquí
+    e.currentTarget.setPointerCapture(e.pointerId);
     movedRef.current = false;
     setIsDragging(true);
-    dragStart.current = {
-      mx: e.clientX,
-      my: e.clientY,
-      ox: posRef.current.x,
-      oy: posRef.current.y,
-    };
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: posRef.current.x, oy: posRef.current.y };
   };
 
   const onPointerMove = (e) => {
@@ -129,19 +205,18 @@ export default function ChatWidget() {
     const dx = e.clientX - dragStart.current.mx;
     const dy = e.clientY - dragStart.current.my;
     if (Math.abs(dx) > 4 || Math.abs(dy) > 4) movedRef.current = true;
-    const BUBBLE = 26;
-    const nx = Math.max(BUBBLE, Math.min(window.innerWidth  - BUBBLE, dragStart.current.ox + dx));
-    const ny = Math.max(BUBBLE, Math.min(window.innerHeight - BUBBLE, dragStart.current.oy + dy));
+    const nx = Math.max(26, Math.min(window.innerWidth  - 26, dragStart.current.ox + dx));
+    const ny = Math.max(26, Math.min(window.innerHeight - 26, dragStart.current.oy + dy));
     posRef.current = { x: nx, y: ny };
     setPos({ x: nx, y: ny });
   };
 
-  const onPointerUp = (e) => {
+  const onPointerUp = () => {
     if (!dragStart.current) return;
     dragStart.current = null;
     setIsDragging(false);
     try { localStorage.setItem(POS_KEY, JSON.stringify(posRef.current)); } catch {}
-    if (!movedRef.current) setAbierto(a => !a);   // click sin drag → toggle
+    if (!movedRef.current) setAbierto(a => !a);
   };
 
   // ── Enviar mensaje ────────────────────────────────────────────────────────
@@ -150,6 +225,7 @@ export default function ChatWidget() {
     setEnviando(true);
     const textoEnviar = texto.trim();
     setTexto("");
+    clearTimeout(typingTimer.current);
     try {
       const res = await api.post(
         `/api/chat/mensajes/${canalActivo}`,
@@ -165,56 +241,55 @@ export default function ChatWidget() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
   };
 
+  // ── Notificar "estoy escribiendo" con debounce ────────────────────────────
+  const onTextoChange = (e) => {
+    setTexto(e.target.value);
+    if (!authToken) return;
+    clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => {
+      api.post(`/api/chat/typing/${canalActivo}`, {}, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }).catch(() => {});
+    }, 300);
+  };
+
   const cambiarCanal = (id) => {
     setCanalActivo(id);
     setShowCanales(false);
     setMensajes([]);
     setPrevLen(0);
+    setWriters([]);
   };
+
+  // ── Calcular si un mensaje está leído ────────────────────────────────────
+  // Un mensaje propio está "leído" si algún OTRO usuario tiene una entrada en lecturas
+  // con leido_en posterior a creadoEn del mensaje
+  const otrosLeyeron = lecturas.filter(l => l.user_id !== user.id && l.user_id !== "bot-soporte");
 
   const location = useLocation();
   if (!authToken) return null;
   if (location.pathname === "/chat") return null;
 
-  // El panel se abre hacia arriba y hacia el lado que tenga más espacio
   const abrirDerecha = pos.x < window.innerWidth / 2;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        left: pos.x - 26,
-        top:  pos.y - 26,
-        width: 52,
-        height: 52,
-        zIndex: 9999,
-      }}
-    >
-      {/* ── Panel de mensajes ────────────────────────────────────────────── */}
+    <div style={{ position: "fixed", left: pos.x - 26, top: pos.y - 26, width: 52, height: 52, zIndex: 9999 }}>
+
+      {/* ── Panel ─────────────────────────────────────────────────────────── */}
       {abierto && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            position: "absolute",
-            bottom: 60,
-            ...(abrirDerecha ? { left: 0 } : { right: 0 }),
-            width: 320,
-            height: 420,
-            display: "flex",
-            flexDirection: "column",
-            borderRadius: 16,
-            overflow: "hidden",
-            boxShadow: "0 8px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1)",
-            background: "#fff",
-            border: "1px solid rgba(0,0,0,0.08)",
-          }}
-        >
+        <div onClick={e => e.stopPropagation()} style={{
+          position: "absolute", bottom: 60,
+          ...(abrirDerecha ? { left: 0 } : { right: 0 }),
+          width: 320, display: "flex", flexDirection: "column",
+          borderRadius: 16, overflow: "hidden",
+          boxShadow: "0 8px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1)",
+          background: "#fff", border: "1px solid rgba(0,0,0,0.08)",
+          maxHeight: "70vh",
+        }}>
           {/* Header */}
           <div className="bg-slate-900 px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <button
-              onClick={() => setShowCanales(s => !s)}
-              className="flex items-center gap-1.5 text-white hover:text-slate-300 transition-colors"
-            >
+            <button onClick={() => setShowCanales(s => !s)}
+              className="flex items-center gap-1.5 text-white hover:text-slate-300 transition-colors">
               <Hash size={12} className="text-slate-400" />
               <span className="text-sm font-semibold">
                 {CANALES.find(c => c.id === canalActivo)?.nombre || "General"}
@@ -226,7 +301,7 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          {/* Selector canales */}
+          {/* Canales */}
           {showCanales && (
             <div className="bg-slate-800 flex-shrink-0 border-b border-slate-700">
               {CANALES.map(c => (
@@ -241,9 +316,9 @@ export default function ChatWidget() {
           )}
 
           {/* Mensajes */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 bg-slate-50" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto px-3 py-3 bg-slate-50" style={{ minHeight: 0, maxHeight: 340 }}>
             {mensajes.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
+              <div className="h-full flex items-center justify-center" style={{ minHeight: 100 }}>
                 <p className="text-slate-400 text-xs text-center leading-relaxed">
                   Sin mensajes en #{canalActivo}.<br />Sé el primero en escribir.
                 </p>
@@ -255,6 +330,10 @@ export default function ChatWidget() {
                   try { return new Date(msg.creadoEn || msg.creado_en).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" }); }
                   catch { return ""; }
                 })();
+                // Leído si algún otro leyó DESPUÉS de que se envió el mensaje
+                const msgTime = new Date(msg.creadoEn || msg.creado_en).getTime();
+                const leido = esPropio && otrosLeyeron.some(l => new Date(l.leido_en).getTime() > msgTime);
+
                 return (
                   <div key={msg.id} className={`flex flex-col mb-2 ${esPropio ? "items-end" : "items-start"}`}>
                     {!esPropio && (
@@ -264,6 +343,7 @@ export default function ChatWidget() {
                       esPropio ? "bg-emerald-500 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
                     }`}>
                       {msg.texto}
+                      {esPropio && <Checkmarks leido={leido} />}
                     </div>
                     <span className="text-[9px] text-slate-400 mt-0.5 mx-1">{hora}</span>
                   </div>
@@ -273,13 +353,16 @@ export default function ChatWidget() {
             <div ref={bottomRef} />
           </div>
 
+          {/* Typing indicator */}
+          <TypingDots writers={writers} />
+
           {/* Input */}
           <div className="px-3 py-2.5 border-t border-slate-100 bg-white flex-shrink-0">
             <div className="flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
               <textarea
                 ref={inputRef}
                 value={texto}
-                onChange={e => setTexto(e.target.value)}
+                onChange={onTextoChange}
                 onKeyDown={onKeyDown}
                 placeholder={`Mensaje en #${canalActivo}…`}
                 rows={1}
@@ -302,22 +385,13 @@ export default function ChatWidget() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          width: 52, height: 52, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
           cursor: isDragging ? "grabbing" : "grab",
-          background: abierto
-            ? "#334155"
-            : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+          background: abierto ? "#334155" : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
           boxShadow: "0 4px 20px rgba(16,185,129,0.4), 0 2px 6px rgba(0,0,0,0.15)",
-          color: "#fff",
-          userSelect: "none",
-          touchAction: "none",            // necesario para touch drag
-          position: "relative",
-          transition: isDragging ? "none" : "background 0.2s",
+          color: "#fff", userSelect: "none", touchAction: "none",
+          position: "relative", transition: isDragging ? "none" : "background 0.2s",
         }}
         title="Chat interno — arrastra para mover"
       >
@@ -327,8 +401,7 @@ export default function ChatWidget() {
         {!abierto && noLeidos > 0 && (
           <span style={{
             position: "absolute", top: -4, right: -4,
-            width: 18, height: 18,
-            background: "#ef4444", color: "#fff",
+            width: 18, height: 18, background: "#ef4444", color: "#fff",
             borderRadius: "50%", fontSize: 10, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
