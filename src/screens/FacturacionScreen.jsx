@@ -624,257 +624,301 @@ export default function FacturacionScreen() {
     );
   }
 
+  // ── Vendedor / lista precio (nuevos campos) ──────────────────────────────
+  // Estos estados se declaran aquí para no modificar la zona de state arriba
+  // (ya existe activeTab arriba)
+
   return (
     <div className="flex flex-col h-full">
-      {/* Tab bar — móvil + iPad (< 1280px) */}
-      <div className="xl:hidden flex shrink-0 bg-white border-b border-gray-200">
-        <button onClick={() => setActiveTab("encabezado")}
-          className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === "encabezado" ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-400"}`}>
-          Encabezado
+
+      {/* ── TOOLBAR OSCURO ──────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
+        <button onClick={handleGuardar} disabled={sending}
+          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Save size={13}/> Guardar
         </button>
-        <button onClick={() => setActiveTab("lineas")}
-          className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === "lineas" ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-400"}`}>
-          Líneas ({lineas.length})
+        <button onClick={handleEnviar} disabled={sending || totalFact === 0}
+          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          {sending ? <span className="animate-spin text-xs">⏳</span> : <Send size={13}/>}
+          {sending ? "Enviando…" : "Emitir"}
         </button>
+        <button onClick={resetForm}
+          className="flex items-center gap-1.5 border border-slate-500 text-slate-300 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13}/> Nueva
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1"/>
+        {/* Totales en toolbar — siempre visibles */}
+        <div className="flex items-center gap-3 text-xs">
+          {totalDesc > 0 && <span className="text-red-300">Desc: −{fmtMoney(totalDesc, moneda)}</span>}
+          <span className="text-slate-300">IVA: {fmtMoney(totalIVA, moneda)}</span>
+          <span className="text-white font-black text-sm">{fmtMoney(totalFact, moneda)}</span>
+        </div>
+        {/* Badge situación fiscal (si está disponible) */}
+        {situacionFiscal && (
+          <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI"
+              ? "bg-red-500 text-white" : "bg-green-500 text-white"}`}>
+            {situacionFiscal.moroso === "SI" ? "⚠ Moroso" : situacionFiscal.omiso === "SI" ? "⚠ Omiso" : "✓ Al día"}
+          </span>
+        )}
       </div>
 
-      {/* Encabezado — desktop: siempre; móvil: solo si tab activo */}
-      <div className={`bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 overflow-y-auto md:overflow-visible ${activeTab === "encabezado" ? "" : "hidden"} xl:block`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-          {/* Fila 1: Tipo doc / Fecha / Moneda */}
-          <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-            <label className="col-span-2 md:flex-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Tipo de documento</span>
-              <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-                {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-            </label>
-            <label className="md:w-36">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Fecha emisión</span>
-              <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-            </label>
-            <label className="md:w-24">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Moneda</span>
-              <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-                <option value="CRC">₡ CRC</option>
-                <option value="USD">$ USD</option>
-              </select>
-            </label>
-          </div>
-          {/* Fila 1 col 2: Condición pago / Medio / Plazo */}
-          <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
-            <label className="col-span-2 md:flex-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Condición de pago</span>
-              <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-                {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </label>
-            <label className="md:flex-1">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Medio de pago</span>
-              <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-                {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </label>
-            {condPago === "02" && (
-              <label className="md:w-24">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Plazo (días)</span>
-                <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)}
-                  placeholder="30" min="1"
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
-              </label>
-            )}
-          </div>
-          {/* Fila 2: Receptor */}
-          <div className="md:col-span-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Receptor</span>
-            <div className="grid grid-cols-2 gap-3 mt-1 md:flex md:flex-wrap">
-              {/* Nombre con autocomplete */}
-              <div className="col-span-2 relative md:flex-1">
+      {/* ── TAB BAR — solo móvil/iPad ────────────────────────────────────── */}
+      <div className="xl:hidden flex shrink-0 bg-white border-b border-gray-200">
+        {["encabezado","lineas"].map((t) => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors capitalize
+              ${activeTab === t ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-400"}`}>
+            {t === "lineas" ? `Líneas (${lineas.length})` : "Encabezado"}
+          </button>
+        ))}
+      </div>
+
+      {/* ── BODY — 3 columnas en desktop, tabs en móvil ─────────────────── */}
+      <div className="flex-1 flex overflow-hidden">
+
+        {/* ═══ PANEL IZQUIERDO: Encabezado (desktop fijo, móvil tab) ════════ */}
+        <div className={`
+          xl:flex xl:flex-col xl:w-72 xl:shrink-0 xl:border-r xl:border-slate-200 xl:bg-slate-50 xl:overflow-y-auto
+          ${activeTab === "encabezado" ? "flex flex-col flex-1 overflow-y-auto bg-white" : "hidden xl:flex"}
+        `}>
+          <div className="px-3 py-3 space-y-3">
+
+            {/* Cliente */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente</label>
+              <div className="relative">
                 <input value={busqCliente}
                   onChange={(e) => { setBusqCliente(e.target.value); setCliente((p) => ({ ...p, nombre: e.target.value })); setShowClientes(true); }}
                   onFocus={() => setShowClientes(true)}
                   onBlur={() => setTimeout(() => setShowClientes(false), 150)}
-                  placeholder="Nombre / razón social (o Consumidor Final)"
-                  className="w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                  placeholder="Nombre, código CLI-XXXX…"
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white"/>
                 {showClientes && clientesFiltrados.length > 0 && (
-                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-36 overflow-auto">
+                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
                     {clientesFiltrados.map((c) => (
                       <button key={c.id} onMouseDown={() => {
                         setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01", dias_credito: c.dias_credito || 0 });
-                        setBusqCliente(c.nombre);
-                        setShowClientes(false);
-                        // Auto-setear plazo de crédito del cliente
+                        setBusqCliente(c.nombre); setShowClientes(false);
                         if (c.dias_credito > 0) { setCondPago("02"); setPlazo(String(c.dias_credito)); }
-                      }}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-green-50 border-b border-gray-50 last:border-0">
-                        {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                      }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-0">
+                        {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
                         <span className="font-semibold">{c.nombre}</span>
-                        <span className="text-slate-400 ml-2">{c.cedula}</span>
-                        {c.dias_credito > 0 && <span className="ml-2 text-[10px] text-emerald-600 font-semibold">{c.dias_credito}d crédito</span>}
+                        <span className="text-slate-400 ml-1.5 text-[10px]">{c.cedula}</span>
+                        {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-emerald-600 font-semibold">{c.dias_credito}d</span>}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              {/* Tipo cédula */}
-              <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
-                className="w-full md:w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                <option value="01">01 - Física</option>
-                <option value="02">02 - Jurídica</option>
-                <option value="03">03 - DIMEX</option>
-                <option value="04">04 - NITE</option>
-              </select>
-              {/* Cédula + botón buscar + badge fiscal */}
-              <div className="flex flex-col gap-0.5">
-                <div className="flex">
-                  <input
-                    value={cliente.cedula}
-                    onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
-                    onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
-                    placeholder="Número de cédula"
-                    className="flex-1 min-w-0 border border-slate-200 rounded-l-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 border-r-0"
-                  />
-                  <button
-                    type="button"
-                    onClick={buscarPorCedula}
-                    title="Buscar por cédula en Hacienda"
-                    disabled={buscandoCedula || !cliente.cedula.trim()}
-                    className="flex items-center justify-center w-9 border border-slate-200 rounded-r-md bg-slate-50 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-600 text-slate-500 transition-colors disabled:opacity-40"
-                  >
-                    {buscandoCedula ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
-                  </button>
-                </div>
-
-                {/* Badge situación fiscal Hacienda */}
-                {situacionFiscal && (
-                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit
-                    ${situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI"
-                      ? "bg-red-100 text-red-700 border border-red-200"
-                      : "bg-green-100 text-green-700 border border-green-200"}`}>
-                    <span>{situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI" ? "⚠️" : "✓"}</span>
-                    <span>
-                      {situacionFiscal.moroso === "SI" && situacionFiscal.omiso === "SI" ? "Moroso + Omiso" :
-                       situacionFiscal.moroso === "SI" ? "Moroso" :
-                       situacionFiscal.omiso  === "SI" ? "Omiso" :
-                       "Al día · Hacienda"}
-                    </span>
-                  </div>
-                )}
-
-                {cedulaError && <p className="text-[10px] text-red-500 leading-none">{cedulaError}</p>}
-              </div>
-              {/* Email */}
-              <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
-                placeholder="correo@empresa.com"
-                className="col-span-2 w-full md:flex-1 md:min-w-[10rem] border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Líneas de factura — desktop: siempre; móvil: solo si tab activo */}
-      <div className={`flex-1 overflow-auto ${activeTab === "lineas" ? "" : "hidden"} xl:block`}>
-        {/* ── Móvil + iPad: tarjetas apiladas ── */}
-        <div className="block xl:hidden px-3 py-2 space-y-3">
-          {lineas.map((l, i) => (
-            <LineaCard key={l.id} linea={l} idx={i} productos={productos}
-              onChange={(v) => updateLinea(i, v)}
-              onDelete={() => deleteLinea(i)} />
-          ))}
-          <button onClick={agregarLinea}
-            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-green-300 text-green-700 text-sm font-semibold py-3 rounded-xl hover:bg-green-50">
-            <Plus size={15} /> Agregar línea
-          </button>
-        </div>
-        {/* ── Desktop (≥1024px): tabla con scroll horizontal ── */}
-        <div className="hidden xl:block overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 780 }}>
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-3 py-2 text-xs font-bold text-slate-500 uppercase min-w-[180px]">Descripción</th>
-                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">CABYS</th>
-                <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Cant.</th>
-                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">Unid.</th>
-                <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">P. Unit.</th>
-                <th className="text-center px-2 py-2 text-xs font-bold text-slate-500 uppercase">Desc. %</th>
-                <th className="text-left px-2 py-2 text-xs font-bold text-slate-500 uppercase">IVA</th>
-                <th className="text-right px-2 py-2 text-xs font-bold text-slate-500 uppercase">Mto. IVA</th>
-                <th className="text-right px-3 py-2 text-xs font-bold text-slate-500 uppercase">Total</th>
-                <th className="w-6"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {lineas.map((l, i) => (
-                <LineaRow key={l.id} linea={l} productos={productos}
-                  onChange={(v) => updateLinea(i, v)}
-                  onDelete={() => deleteLinea(i)} />
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-2">
-            <button onClick={agregarLinea}
-              className="flex items-center gap-2 text-green-700 text-sm font-semibold hover:text-green-900">
-              <Plus size={15} /> Agregar línea
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Notas + Totales + Botones */}
-      <div className="bg-white border-t border-gray-200 px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 md:gap-8">
-        {/* Notas + Proyecto */}
-        <div className="flex-1 space-y-2">
-          <label className="text-xs font-semibold text-slate-500 uppercase">Observaciones</label>
-          <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
-            rows={2} placeholder="Condiciones, referencias, notas adicionales…"
-            className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500" />
-          {proyectos.length > 0 && (
+            {/* Cédula */}
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Imputar a proyecto</label>
-              <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
-                <option value="">— Sin proyecto —</option>
-                {proyectos.filter(p => p.estado === "Activo").map(p => (
-                  <option key={p.id} value={p.id}>{p.nombre}{p.codigo ? ` (${p.codigo})` : ""}</option>
-                ))}
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cédula / ID</label>
+              <div className="flex gap-1">
+                <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
+                  className="w-20 border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                  <option value="01">Física</option><option value="02">Jurídica</option>
+                  <option value="03">DIMEX</option><option value="04">NITE</option>
+                </select>
+                <input value={cliente.cedula}
+                  onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
+                  placeholder="Número…"
+                  className="flex-1 border border-slate-200 rounded-l px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                <button onClick={buscarPorCedula} disabled={buscandoCedula || !cliente.cedula.trim()}
+                  className="flex items-center justify-center w-8 border border-slate-200 rounded-r bg-slate-100 hover:bg-emerald-50 text-slate-500 disabled:opacity-40">
+                  {buscandoCedula ? <Loader2 size={12} className="animate-spin"/> : <Search size={12}/>}
+                </button>
+              </div>
+              {cedulaError && <p className="text-[10px] text-red-500 mt-0.5">{cedulaError}</p>}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Correo</label>
+              <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
+                placeholder="cliente@empresa.com"
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+            </div>
+
+            <div className="border-t border-slate-200"/>
+
+            {/* Tipo de documento */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de documento</label>
+              <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
-          )}
-        </div>
-        {/* Totales */}
-        <div className="w-full md:w-72 space-y-1">
-          <div className="flex justify-between text-sm text-slate-600">
-            <span>Subtotal</span><span>{fmtMoney(subtotal, moneda)}</span>
-          </div>
-          {totalDesc > 0 && (
-            <div className="flex justify-between text-sm text-red-500">
-              <span>Descuentos</span><span>− {fmtMoney(totalDesc, moneda)}</span>
+
+            {/* Fecha + Moneda en fila */}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              </div>
+              <div className="w-20">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Moneda</label>
+                <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
+                  className="w-full border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                  <option value="CRC">₡ CRC</option><option value="USD">$ USD</option>
+                </select>
+              </div>
             </div>
-          )}
-          <div className="flex justify-between text-sm text-slate-600">
-            <span>IVA total</span><span>{fmtMoney(totalIVA, moneda)}</span>
-          </div>
-          <div className="flex justify-between text-lg font-black text-slate-900 border-t border-gray-200 pt-2 mt-2">
-            <span>TOTAL</span><span className="text-green-700">{fmtMoney(totalFact, moneda)}</span>
-          </div>
-          <div className="flex gap-2 pt-3">
-            <button onClick={handleGuardar} disabled={sending}
-              className="flex items-center gap-1.5 flex-1 justify-center border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 disabled:opacity-50">
-              <Save size={14} /> Guardar
-            </button>
-            <button onClick={handleEnviar} disabled={sending || totalFact === 0}
-              className="flex items-center gap-1.5 flex-1 justify-center bg-brand-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-600 disabled:opacity-50">
-              {sending ? <span className="animate-spin">⏳</span> : <Send size={14} />}
-              {sending ? "Enviando…" : "Emitir"}
-            </button>
+
+            {/* Condición + Medio pago */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condición de pago</label>
+              <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            {condPago === "02" && (
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Plazo (días)</label>
+                <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)} placeholder="30" min="1"
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medio de pago</label>
+              <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+
+            <div className="border-t border-slate-200"/>
+
+            {/* Vendedor */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendedor / Agente</label>
+              <input value={cliente.vendedor || ""} onChange={(e) => setCliente((p) => ({ ...p, vendedor: e.target.value }))}
+                placeholder="Nombre del vendedor…"
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+            </div>
+
+            {/* Lista de precio */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Lista de precio</label>
+              <select value={cliente.listaPrecio || "normal"} onChange={(e) => setCliente((p) => ({ ...p, listaPrecio: e.target.value }))}
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                <option value="normal">Normal</option>
+                <option value="especial">Especial</option>
+                <option value="superespecial">Superespecial</option>
+                <option value="mayorista">Mayorista</option>
+              </select>
+            </div>
+
+            {/* Proyecto */}
+            {proyectos.length > 0 && (
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proyecto</label>
+                <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                  <option value="">— Sin proyecto —</option>
+                  {proyectos.filter(p => p.estado === "Activo").map(p => (
+                    <option key={p.id} value={p.id}>{p.nombre}{p.codigo ? ` (${p.codigo})` : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+
+        {/* ═══ PANEL CENTRAL: Líneas ══════════════════════════════════════════ */}
+        <div className={`flex-1 overflow-auto flex flex-col ${activeTab === "lineas" ? "" : "hidden xl:flex"}`}>
+          {/* Móvil: tarjetas */}
+          <div className="block xl:hidden px-3 py-2 space-y-3 flex-1">
+            {lineas.map((l, i) => (
+              <LineaCard key={l.id} linea={l} idx={i} productos={productos}
+                onChange={(v) => updateLinea(i, v)} onDelete={() => deleteLinea(i)} />
+            ))}
+            <button onClick={agregarLinea}
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-green-300 text-green-700 text-sm font-semibold py-3 rounded-xl hover:bg-green-50">
+              <Plus size={15}/> Agregar línea
+            </button>
+          </div>
+          {/* Desktop: tabla */}
+          <div className="hidden xl:flex xl:flex-col flex-1">
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-sm" style={{ minWidth: 720 }}>
+                <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 z-10">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase min-w-[200px]">Descripción</th>
+                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">CABYS</th>
+                    <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Cant.</th>
+                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-20">Unid.</th>
+                    <th className="text-right px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-24">P. Unit.</th>
+                    <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Desc %</th>
+                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">IVA</th>
+                    <th className="text-right px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-24">Mto. IVA</th>
+                    <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">Total</th>
+                    <th className="w-6"/>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {lineas.map((l, i) => (
+                    <LineaRow key={l.id} linea={l} productos={productos}
+                      onChange={(v) => updateLinea(i, v)} onDelete={() => deleteLinea(i)} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-slate-100 px-4 py-2">
+              <button onClick={agregarLinea}
+                className="flex items-center gap-2 text-emerald-700 text-sm font-semibold hover:text-emerald-900">
+                <Plus size={14}/> Agregar línea
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ PANEL DERECHO: Totales + Notas (solo desktop) ════════════════ */}
+        <div className="hidden xl:flex xl:flex-col xl:w-56 xl:shrink-0 xl:border-l xl:border-slate-200 xl:bg-white xl:overflow-y-auto">
+          <div className="px-4 py-4 space-y-2">
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Resumen</p>
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>Subtotal</span><span>{fmtMoney(subtotal, moneda)}</span>
+            </div>
+            {totalDesc > 0 && (
+              <div className="flex justify-between text-xs text-red-500">
+                <span>Descuentos</span><span>− {fmtMoney(totalDesc, moneda)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>IVA</span><span>{fmtMoney(totalIVA, moneda)}</span>
+            </div>
+            <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2 mt-1">
+              <span>TOTAL</span><span className="text-emerald-700">{fmtMoney(totalFact, moneda)}</span>
+            </div>
+
+            <div className="border-t border-slate-100 pt-3">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+              <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
+                rows={4} placeholder="Notas, condiciones…"
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+            </div>
+
+            {/* QR SINPE mini */}
+            <div className="border-t border-slate-100 pt-3 flex flex-col items-center gap-1">
+              <p className="text-[10px] text-slate-400">SINPE Móvil</p>
+              <SinpeQR
+                telefono={settings?.sinpe || settings?.telefono || ""}
+                monto={totalFact}
+                descripcion="Factura"
+                size={90}
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>{/* fin body */}
     </div>
   );
 }
