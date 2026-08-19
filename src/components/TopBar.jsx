@@ -27,13 +27,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
     <header className="drag-region flex items-center justify-between h-11 px-4 bg-white border-b border-slate-200 shrink-0">
       {/* Hamburger en móvil | Espacio semáforos macOS en desktop */}
       <div className="flex items-center">
-        <button
-          onClick={onMobileMenu}
-          className="lg:hidden no-drag p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 mr-2"
-          aria-label="Abrir menú"
-        >
-          <Menu size={18} />
-        </button>
+        {/* Hamburger — hidden: bottom tab bar handles mobile nav */}
         <div className="hidden lg:block w-[70px]" />
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
-import { AlarmClock, X } from "lucide-react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { AlarmClock, X, LayoutDashboard, Receipt, Package, DollarSign, Settings, MoreHorizontal } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import LoginScreen from "./screens/LoginScreen";
@@ -152,10 +152,58 @@ function TrialBanner({ plan }) {
   );
 }
 
+// ── Bottom Tab Bar (solo móvil, < 768px) ─────────────────────────────────────
+function BottomTabBar() {
+  const navigate  = useNavigate();
+  const location  = useLocation();
+
+  const tabs = [
+    { path: "/",             icon: LayoutDashboard, label: "Inicio"     },
+    { path: "/facturacion",  icon: Receipt,         label: "Facturar"   },
+    { path: "/inventario",   icon: Package,         label: "Inventario" },
+    { path: "/cxc",          icon: DollarSign,      label: "Cobrar"     },
+    { path: "/configuracion",icon: Settings,        label: "Más"        },
+  ];
+
+  return (
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      {tabs.map(tab => {
+        const active =
+          tab.path === "/"
+            ? location.pathname === "/"
+            : location.pathname.startsWith(tab.path);
+        return (
+          <button
+            key={tab.path}
+            onClick={() => navigate(tab.path)}
+            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors
+              ${active ? "text-emerald-600" : "text-slate-400"}`}
+          >
+            <tab.icon size={20} className={active ? "text-emerald-600" : "text-slate-400"} />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [collapsed,          setCollapsed]          = useState(false);
   const [mobileMenuOpen,     setMobileMenuOpen]     = useState(false);
+  // Tablet detection (md range: 768–1023px) → sidebar always icon-only
+  const [isTablet, setIsTablet] = useState(
+    typeof window !== "undefined" && window.innerWidth >= 768 && window.innerWidth < 1024
+  );
+  useEffect(() => {
+    const handler = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
   const [syncStatus,         setSyncStatus]         = useState("idle");
   const [authState,          setAuthState]          = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
   const [user,               setUser]               = useState(null);
@@ -300,7 +348,7 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
-          collapsed={collapsed}
+          collapsed={collapsed || isTablet}
           onToggle={() => setCollapsed((c) => !c)}
           userEmail={user?.email}
           modulosHabilitados={modulosHabilitados}
@@ -318,7 +366,7 @@ export default function App() {
             onMobileMenu={() => setMobileMenuOpen((o) => !o)}
           />
 
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto pb-16 md:pb-0">
             <Suspense fallback={<ScreenFallback />}>
               <Routes>
                 <Route path="/"                   element={<DashboardScreen />} />
@@ -386,6 +434,9 @@ export default function App() {
       <Suspense fallback={null}>
         <ChatWidget />
       </Suspense>
+
+      {/* Bottom tab bar — solo móvil */}
+      <BottomTabBar />
 
       {/* Onboarding wizard — solo la primera vez */}
       {showOnboarding && (

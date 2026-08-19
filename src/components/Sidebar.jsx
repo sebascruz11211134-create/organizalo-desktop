@@ -268,18 +268,9 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
 
   return (
     <>
-      {/* Overlay móvil */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onMobileClose}
-        />
-      )}
     <aside
       className={`
-        fixed lg:relative inset-y-0 left-0 z-50
-        flex flex-col shrink-0 transition-all duration-200 overflow-hidden
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
+        hidden md:flex flex-col shrink-0 transition-all duration-200 overflow-hidden
         ${collapsed ? "w-14" : "w-56"}
       `}
       style={{
@@ -420,6 +411,5 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
           : <PanelLeftClose size={14} />}
       </button>
     </aside>
-    </>
   );
 }

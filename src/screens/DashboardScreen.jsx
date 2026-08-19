@@ -421,7 +421,7 @@ export default function DashboardScreen() {
         </div>
 
         {/* ── KPI Row ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5 kpi-grid">
           <KpiCard
             label="Ventas hoy"
             value={fmtMoney(kpis.ventasHoy, "CRC")}
@@ -516,38 +516,69 @@ export default function DashboardScreen() {
                   <button onClick={() => navigate("/facturacion")} className="text-emerald-600 font-semibold mt-1">Crear primera factura →</button>
                 </div>
               ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
-                      <th className="text-left px-5 py-2.5">N°</th>
-                      <th className="text-left px-3 py-2.5">Cliente</th>
-                      <th className="text-left px-3 py-2.5">Fecha</th>
-                      <th className="text-right px-3 py-2.5">Total</th>
-                      <th className="text-center px-4 py-2.5">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {recentFacturas.map((f, i) => (
-                      <tr key={f.id || i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 font-mono text-[10px] text-slate-500">
-                          {f.numFactura || f.consecutivo || `#${String(i + 1).padStart(4, "0")}`}
-                        </td>
-                        <td className="px-3 py-3 font-medium text-slate-700 truncate max-w-[140px]">
-                          {f.clienteNombre || f.cliente || "—"}
-                        </td>
-                        <td className="px-3 py-3 text-slate-400">
-                          {(f.fecha || f.fechaEmision || "").slice(0, 10)}
-                        </td>
-                        <td className="px-3 py-3 text-right font-bold text-slate-800">
-                          {fmtMoney(f.totalGeneral || f.total || 0, f.moneda || "CRC")}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <EstadoBadge estado={f.estado || "enviada"} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <>
+                  {/* Tabla — visible en md+ */}
+                  <div className="hidden md:block">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-[10px] font-bold text-slate-400 uppercase bg-slate-50">
+                          <th className="text-left px-5 py-2.5">N°</th>
+                          <th className="text-left px-3 py-2.5">Cliente</th>
+                          <th className="text-left px-3 py-2.5">Fecha</th>
+                          <th className="text-right px-3 py-2.5">Total</th>
+                          <th className="text-center px-4 py-2.5">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {recentFacturas.map((f, i) => (
+                          <tr key={f.id || i} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-5 py-3 font-mono text-[10px] text-slate-500">
+                              {f.numFactura || f.consecutivo || `#${String(i + 1).padStart(4, "0")}`}
+                            </td>
+                            <td className="px-3 py-3 font-medium text-slate-700 truncate max-w-[140px]">
+                              {f.clienteNombre || f.cliente || "—"}
+                            </td>
+                            <td className="px-3 py-3 text-slate-400">
+                              {(f.fecha || f.fechaEmision || "").slice(0, 10)}
+                            </td>
+                            <td className="px-3 py-3 text-right font-bold text-slate-800">
+                              {fmtMoney(f.totalGeneral || f.total || 0, f.moneda || "CRC")}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <EstadoBadge estado={f.estado || "enviada"} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Cards — visible solo en móvil (< md) */}
+                  <div className="md:hidden divide-y divide-slate-50">
+                    {recentFacturas.map((f, i) => {
+                      const nombre = f.clienteNombre || f.cliente || "—";
+                      const initials = typeof nombre === "string"
+                        ? nombre.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
+                        : "?";
+                      return (
+                        <div key={f.id || i} className="flex items-center gap-3 px-4 py-3">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 text-[11px] font-bold text-emerald-700">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-semibold text-slate-800 truncate">{nombre}</p>
+                            <p className="text-[10px] text-slate-400">
+                              {(f.fecha || f.fechaEmision || "").slice(0, 10)} · {f.numFactura || f.consecutivo || `#${String(i + 1).padStart(4, "0")}`}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[12px] font-bold text-slate-800">{fmtMoney(f.totalGeneral || f.total || 0, f.moneda || "CRC")}</p>
+                            <EstadoBadge estado={f.estado || "enviada"} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </div>

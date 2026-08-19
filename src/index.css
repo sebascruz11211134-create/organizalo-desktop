@@ -121,9 +121,12 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   .py-4 { padding-top:  0.75rem!important; padding-bottom:0.75rem!important; }
 
   /* 2b. Grids colapsan a 1 columna */
-  .grid-cols-2 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-2:not(.kpi-grid) { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
   .grid-cols-3 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
   .grid-cols-4 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* KPI grid — mantener 2 columnas en móvil */
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 
   /* col-span-2/3 en grid de 1 col → span 1 */
   .col-span-2 { grid-column: span 1 / span 1 !important; }
