@@ -108,6 +108,18 @@ export default function ConfiguracionScreen() {
     } catch {}
   }
 
+  async function cambiarRol(id, rol) {
+    try {
+      const token = await getToken();
+      await fetch(`${BACKEND}/api/auth/update-user/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rol }),
+      });
+      cargarEquipo();
+    } catch {}
+  }
+
   useEffect(() => {
     db.getSettings().then((st) => setS((prev) => ({ ...prev, ...st })));
     cargarCertStatus();
@@ -861,12 +873,22 @@ Ingresá en: ${window.location.origin}
                       <td className="py-2 pr-4 font-medium text-slate-800">{u.nombre}</td>
                       <td className="py-2 pr-4 font-mono text-slate-600 text-xs">{u.username || "—"}</td>
                       <td className="py-2 pr-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.rol === "admin" ? "bg-purple-100 text-purple-700" :
-                          u.rol === "contador" ? "bg-blue-100 text-blue-700" :
-                          u.rol === "vendedor" ? "bg-amber-100 text-amber-700" :
-                          "bg-gray-100 text-slate-600"
-                        }`}>{u.rol}</span>
+                        {u.id === meUser?.id ? (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            u.rol === "admin" ? "bg-purple-100 text-purple-700" :
+                            u.rol === "contador" ? "bg-blue-100 text-blue-700" :
+                            u.rol === "vendedor" ? "bg-amber-100 text-amber-700" :
+                            "bg-gray-100 text-slate-600"
+                          }`}>{u.rol}</span>
+                        ) : (
+                          <select value={u.rol} onChange={e => cambiarRol(u.id, e.target.value)}
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                            <option value="colaborador">colaborador</option>
+                            <option value="vendedor">vendedor</option>
+                            <option value="contador">contador</option>
+                            <option value="admin">admin</option>
+                          </select>
+                        )}
                       </td>
                       <td className="py-2 pr-4">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
