@@ -35,14 +35,14 @@ export default function ChatWidget() {
   const fallosRef   = useRef(0);      // circuit breaker: fallos consecutivos
   const cortadoRef  = useRef(false);  // true = polling detenido
 
-  // ── Cargar token y usuario async (store.get es IPC, no síncrono) ──────────
+  // ── Cargar token y usuario desde localStorage (web) ──────────────────────
   useEffect(() => {
-    (async () => {
-      const token = await window.electronAPI?.store?.get("@finanzia/authToken");
-      const usr   = await window.electronAPI?.store?.get("@finanzia/authUser");
-      if (token) setAuthToken(token);
-      if (usr)   setUser(usr);
-    })();
+    try {
+      const rawToken = localStorage.getItem("@finanzia/authToken");
+      const rawUser  = localStorage.getItem("@finanzia/authUser");
+      if (rawToken) setAuthToken(JSON.parse(rawToken));
+      if (rawUser)  setUser(JSON.parse(rawUser));
+    } catch {}
   }, []);
 
   // ── Cargar mensajes del canal activo ──────────────────────────────────────
