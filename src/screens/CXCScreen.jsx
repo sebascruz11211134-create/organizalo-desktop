@@ -20,100 +20,235 @@ const ESTADO = (d) => {
   return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
 };
 
-function PagoModal({ deuda, onClose, onSave, settings, token }) {
-  const [monto,  setMonto]  = useState("");
-  const [metodo, setMetodo] = useState("Transferencia");
-  const [fecha,  setFecha]  = useState(hoy());
-  const [notas,  setNotas]  = useState("");
+/**
+ * ReciboCXCModal — estilo BOS
+ * Seleccionás el cliente → salen todas sus facturas pendientes en la grilla
+ * → ingresás el monto aplicado por factura → guardás un solo recibo.
+ */
+function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, settings, token }) {
+  const [cliente,  setCliente]  = useState(clienteInicial?.nombre || "");
+  const [metodo,   setMetodo]   = useState("Transferencia");
+  const [fecha,    setFecha]    = useState(hoy());
+  const [notas,    setNotas]    = useState("");
+  const [aplicado, setAplicado] = useState({}); // { cxcId: monto }
 
-  const saldo = Math.max(0, deuda.total - (deuda.pagado || 0));
-  const mon   = deuda.moneda || settings.moneda || "CRC";
+  const mon = settings.moneda || "CRC";
+
+  // Facturas pendientes del cliente seleccionado
+  const pendientes = allDebts.filter(d =>
+    d.tipo !== "pagar" &&
+    d.estado !== "anulada" &&
+    d.nombre?.toLowerCase() === cliente.toLowerCase() &&
+    Math.max(0, d.total - (d.pagado || 0)) > 0
+  );
+
+  const totalAplicado = Object.values(aplicado).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+
+  const setLinea = (id, val) => setAplicado(p => ({ ...p, [id]: val }));
+
+  // Cuando cambia el cliente, resetear aplicados
+  const handleClienteChange = (nombre) => {
+    setCliente(nombre);
+    setAplicado({});
+  };
 
   const guardar = async () => {
-    const m = parseFloat(monto);
-    if (!m || m <= 0) return;
-    const todos = await db.getDebts();
-    const num   = `RC-${String(Date.now()).slice(-5)}`;
-    const pago  = { id: genId(), numero: num, fecha, monto: m, metodo, notas, creadoEn: new Date().toISOString() };
-    const upd   = todos.map((x) =>
-      x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + m, pagos: [...(x.pagos || []), pago] }
-    );
-    await db.setDebts(upd);
+    if (!cliente.trim()) return;
+    const lineas = pendientes
+      .map(d => ({ deuda: d, monto: parseFloat(aplicado[d.id]) || 0 }))
+      .filter(l => l.monto > 0);
+    if (lineas.length === 0) return;
 
-    // Guardar recibo en RecibosScreen
-    const recibos = await db.getRecibos();
-    await db.setRecibos([{
-      id: genId(), numero: num, fecha, monto: m, metodo,
-      concepto: `Cobro CXC — ${deuda.nombre}${deuda.facturaRef ? ` (${deuda.facturaRef})` : ""}`,
-      cliente: deuda.nombre, notas,
-      creadoEn: new Date().toISOString(),
-    }, ...recibos]);
+    const todos  = await db.getDebts();
+    const num    = `RC-${String(Date.now()).slice(-5)}`;
+    const recibosAct = await db.getRecibos();
+    const asientosAct = await db.getAsientos();
 
-    // Asiento contable de cobro: Db Caja/Efectivo / Cr CxC
+    // Actualizar cada deuda y generar los recibos individuales
+    let updatedDebts = [...todos];
+    const nuevosRecibos = [];
+    let totalRecibo = 0;
+
+    for (const { deuda, monto } of lineas) {
+      const pago = { id: genId(), numero: num, fecha, monto, metodo, notas, creadoEn: new Date().toISOString() };
+      updatedDebts = updatedDebts.map(x =>
+        x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + monto, pagos: [...(x.pagos || []), pago] }
+      );
+      nuevosRecibos.push({
+        id: genId(), numero: num, fecha, monto, metodo,
+        concepto: `Cobro CXC — ${deuda.nombre}${deuda.facturaRef ? ` (${deuda.facturaRef})` : ""}`,
+        cliente: deuda.nombre, notas,
+        facturaRef: deuda.facturaRef || null,
+        cxcId: deuda.id,
+        moneda: deuda.moneda || mon,
+        creadoEn: new Date().toISOString(),
+      });
+      totalRecibo += monto;
+
+      // Cancelar evento si queda saldado
+      const nuevoPagado = (deuda.pagado || 0) + monto;
+      if (nuevoPagado >= deuda.total - 0.01 && token) {
+        cancelarEventoCalendario({ token, tituloMatch: `Cobro: ${deuda.nombre}`, fecha: deuda.fechaVencimiento }).catch(()=>{});
+        cancelarEventoCalendario({ token, tituloMatch: `Cobro próximo: ${deuda.nombre}` }).catch(()=>{});
+      }
+    }
+
+    await db.setDebts(updatedDebts);
+    await db.setRecibos([...nuevosRecibos, ...recibosAct]);
+
+    // Asiento contable de cobro total
     try {
-      const asientos = await db.getAsientos();
-      const numAJ = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
-      await db.setAsientos([...asientos, {
+      const numAJ = `AJ-${String(asientosAct.length + 1).padStart(5, "0")}`;
+      await db.setAsientos([...asientosAct, {
         id: genId(), numero: numAJ, estado: "confirmado", autoGenerado: true,
-        descripcion: `Cobro CXC — ${deuda.nombre} (${num})`,
-        fecha, totalDebe: m, totalHaber: m,
+        descripcion: `Cobro CXC — ${cliente} (${num})`,
+        fecha, totalDebe: totalRecibo, totalHaber: totalRecibo,
         lineas: [
-          { cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",       debe: m, haber: 0 },
-          { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar",    debe: 0, haber: m },
+          { cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: totalRecibo, haber: 0 },
+          { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: 0, haber: totalRecibo },
         ],
         creadoEn: new Date().toISOString(),
       }]);
     } catch (e) { console.warn("[CXC] asiento:", e.message); }
 
-    // Si queda saldada → eliminar eventos de calendario relacionados
-    const nuevoPagado = (deuda.pagado || 0) + m;
-    if (nuevoPagado >= deuda.total - 0.01 && token) {
-      await cancelarEventoCalendario({ token, tituloMatch: `Cobro: ${deuda.nombre}`, fecha: deuda.fechaVencimiento });
-      await cancelarEventoCalendario({ token, tituloMatch: `Cobro próximo: ${deuda.nombre}` });
-    }
-
     onSave();
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-slate-900 mb-1">Registrar pago</h3>
-        <p className="text-sm text-slate-500 mb-5">{deuda.nombre} — Saldo: <strong>{fmtMoney(saldo, mon)}</strong></p>
+  const METODOS = ["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque","Otro"];
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto ({mon})</label>
-            <input type="number" value={monto} onChange={(e) => setMonto(e.target.value)}
-              placeholder="0" max={saldo}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+  // Clientes únicos para el autocomplete
+  const clientesUnicos = [...new Set(allDebts.filter(d => d.tipo !== "pagar" && d.estado !== "anulada").map(d => d.nombre).filter(Boolean))].sort();
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 bg-slate-700 rounded-t-xl">
+          <h3 className="text-white font-bold text-sm">Recibo CXC</h3>
+          <button onClick={onClose} className="text-slate-300 hover:text-white text-lg leading-none">✕</button>
+        </div>
+
+        {/* Campos del recibo */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50">
+          {/* Cliente */}
+          <div className="col-span-2">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente *</label>
+            <input
+              list="cxc-clientes"
+              value={cliente}
+              onChange={e => handleClienteChange(e.target.value)}
+              placeholder="Nombre del cliente…"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <datalist id="cxc-clientes">
+              {clientesUnicos.map(c => <option key={c} value={c}/>)}
+            </datalist>
           </div>
+          {/* Fecha */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Método</label>
-            <select value={metodo} onChange={(e) => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-              {["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque","Otro"].map((m) => (
-                <option key={m}>{m}</option>
-              ))}
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
+            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+          </div>
+          {/* Método */}
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método</label>
+            <select value={metodo} onChange={e => setMetodo(e.target.value)}
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+              {METODOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas (opcional)</label>
-            <input type="text" value={notas} onChange={(e) => setNotas(e.target.value)}
-              placeholder="Referencia, comprobante…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+          {/* Notas */}
+          <div className="col-span-2 md:col-span-4">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observación</label>
+            <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="N° de transferencia, comprobante…"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar pago</button>
+        {/* Grilla de facturas — estilo BOS */}
+        <div className="flex-1 overflow-auto">
+          {cliente.trim() === "" ? (
+            <p className="text-center text-slate-400 py-12 text-sm">Ingresá el nombre del cliente para ver sus facturas pendientes</p>
+          ) : pendientes.length === 0 ? (
+            <p className="text-center text-slate-400 py-12 text-sm">Este cliente no tiene facturas pendientes</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-slate-100 border-b border-slate-200">
+                <tr className="text-slate-500 text-[10px] uppercase tracking-wide">
+                  <th className="px-3 py-2 text-left font-semibold">Fact / Ref</th>
+                  <th className="px-3 py-2 text-left font-semibold">Fecha</th>
+                  <th className="px-3 py-2 text-left font-semibold">Vence</th>
+                  <th className="px-3 py-2 text-right font-semibold">Saldo Ant.</th>
+                  <th className="px-3 py-2 text-center font-semibold w-32">Aplicado</th>
+                  <th className="px-3 py-2 text-right font-semibold">Saldo Post.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {pendientes.map(d => {
+                  const saldoAnt  = Math.max(0, d.total - (d.pagado || 0));
+                  const aplic     = parseFloat(aplicado[d.id]) || 0;
+                  const saldoPost = Math.max(0, saldoAnt - aplic);
+                  const vencida   = d.fechaVencimiento && d.fechaVencimiento < hoy();
+                  const dmon      = d.moneda || mon;
+
+                  return (
+                    <tr key={d.id} className={aplic > 0 ? "bg-green-50" : vencida ? "bg-red-50/40" : ""}>
+                      <td className="px-3 py-2 font-mono font-bold text-slate-700">
+                        {d.facturaRef || d.notas || "—"}
+                      </td>
+                      <td className="px-3 py-2 text-slate-400">{fmtDate(d.creadoEn?.slice(0,10))}</td>
+                      <td className={`px-3 py-2 ${vencida ? "text-red-600 font-semibold" : "text-slate-400"}`}>
+                        {fmtDate(d.fechaVencimiento)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold text-slate-700">
+                        {fmtMoney(saldoAnt, dmon)}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max={saldoAnt}
+                          value={aplicado[d.id] ?? ""}
+                          onChange={e => setLinea(d.id, e.target.value)}
+                          placeholder="0"
+                          className="w-full border border-emerald-300 rounded px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                        />
+                      </td>
+                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-green-700"}`}>
+                        {fmtMoney(saldoPost, dmon)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Footer con totales + guardar */}
+        <div className="flex items-center gap-4 px-5 py-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
+          <div className="flex-1 flex gap-6 text-xs">
+            <div>
+              <span className="text-slate-400">Saldo total cliente:</span>{" "}
+              <strong className="text-red-600">{fmtMoney(pendientes.reduce((s,d) => s + Math.max(0, d.total-(d.pagado||0)), 0), mon)}</strong>
+            </div>
+            <div>
+              <span className="text-slate-400">Total aplicado:</span>{" "}
+              <strong className="text-green-700">{fmtMoney(totalAplicado, mon)}</strong>
+            </div>
+          </div>
+          <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">
+            Cancelar
+          </button>
+          <button
+            disabled={totalAplicado <= 0}
+            onClick={guardar}
+            className="px-6 py-2 bg-green-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            Guardar recibo
+          </button>
         </div>
       </div>
     </div>
@@ -279,10 +414,9 @@ export default function CXCScreen() {
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
         <button
-          disabled={!sel || Math.max(0, sel.total - (sel.pagado||0)) <= 0}
-          onClick={() => setModal({ deuda: sel })}
-          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Pagar
+          onClick={() => setModal({ tipo: "recibo", clienteInicial: sel || null })}
+          className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          <Plus size={13} /> Recibo CXC
         </button>
         <button
           disabled={!sel || sel.estado === "anulada"}
@@ -415,7 +549,16 @@ export default function CXCScreen() {
 
       {/* Modales */}
       {modal === "nueva" && <NuevaCXCModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
-      {modal?.deuda && <PagoModal deuda={modal.deuda} settings={settings} token={token} onClose={() => setModal(null)} onSave={cargar} />}
+      {modal?.tipo === "recibo" && (
+        <ReciboCXCModal
+          clienteInicial={modal.clienteInicial}
+          allDebts={debts}
+          settings={settings}
+          token={token}
+          onClose={() => setModal(null)}
+          onSave={cargar}
+        />
+      )}
     </div>
   );
 }
