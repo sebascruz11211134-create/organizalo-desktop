@@ -1,14 +1,13 @@
 /**
- * ChatWidget — Burbuja de chat flotante siempre visible.
- * Se monta en App.jsx encima de cualquier pantalla.
- * Click en la burbuja → panel expandido con mensajes + input.
+ * ChatWidget — Burbuja de chat flotante arrastrable.
+ * - Drag para reposicionarla donde no estorbe.
+ * - Posición persiste en localStorage.
+ * - Click (sin arrastrar) abre/cierra el panel.
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageSquare, X, Send, ChevronDown, Hash } from "lucide-react";
+import { MessageSquare, X, Send, ChevronDown, Hash, GripVertical } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
-
-import { BACKEND } from "../utils/config";
 
 const CANALES = [
   { id: "general",      emoji: "💬", nombre: "General" },
@@ -17,6 +16,17 @@ const CANALES = [
   { id: "inventario",   emoji: "📦", nombre: "Inventario" },
   { id: "soporte",      emoji: "🛟", nombre: "Soporte" },
 ];
+
+const POS_KEY = "@finanzia/chatWidgetPos";
+const DEFAULT_POS = { x: window.innerWidth - 80, y: window.innerHeight - 80 };
+
+function loadPos() {
+  try {
+    const raw = localStorage.getItem(POS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return DEFAULT_POS;
+}
 
 export default function ChatWidget() {
   const [abierto,      setAbierto]      = useState(false);
@@ -30,12 +40,18 @@ export default function ChatWidget() {
   const [showCanales,  setShowCanales]  = useState(false);
   const [prevLen,      setPrevLen]      = useState(0);
 
-  const bottomRef   = useRef(null);
-  const inputRef    = useRef(null);
-  const fallosRef   = useRef(0);      // circuit breaker: fallos consecutivos
-  const cortadoRef  = useRef(false);  // true = polling detenido
+  // ── Drag state ────────────────────────────────────────────────────────────
+  const [pos,       setPos]       = useState(loadPos);
+  const dragging    = useRef(false);
+  const dragStart   = useRef({ mx: 0, my: 0, ox: 0, oy: 0 });
+  const moved       = useRef(false);   // detectar si fue drag real vs click
 
-  // ── Cargar token y usuario desde localStorage (web) ──────────────────────
+  const bottomRef = useRef(null);
+  const inputRef  = useRef(null);
+  const fallosRef = useRef(0);
+  const cortadoRef = useRef(false);
+
+  // ── Auth desde localStorage ───────────────────────────────────────────────
   useEffect(() => {
     try {
       const rawToken = localStorage.getItem("@finanzia/authToken");
@@ -45,19 +61,16 @@ export default function ChatWidget() {
     } catch {}
   }, []);
 
-  // ── Cargar mensajes del canal activo ──────────────────────────────────────
+  // ── Polling mensajes ──────────────────────────────────────────────────────
   const cargarMensajes = useCallback(async (canal) => {
-    if (!authToken) return;
-    if (cortadoRef.current) return;   // circuit breaker abierto
+    if (!authToken || cortadoRef.current) return;
     try {
-      const res = await api.get(
-        `/api/chat/mensajes/${canal}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
-      fallosRef.current = 0;  // éxito → resetear contador
+      const res = await api.get(`/api/chat/mensajes/${canal}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      fallosRef.current = 0;
       const nuevos = res.data.mensajes || [];
       setMensajes(nuevos);
-      // Contar no leídos solo si el panel está cerrado
       setPrevLen(prev => {
         const diff = nuevos.length - prev;
         if (!abierto && diff > 0) setNoLeidos(n => n + diff);
@@ -65,21 +78,16 @@ export default function ChatWidget() {
       });
     } catch {
       fallosRef.current += 1;
-      if (fallosRef.current >= 3) {
-        cortadoRef.current = true;  // cortar polling tras 3 fallos seguidos
-      }
+      if (fallosRef.current >= 3) cortadoRef.current = true;
     }
   }, [authToken, abierto]);
 
-  // Polling cada 5 s
   useEffect(() => {
     cargarMensajes(canalActivo);
     const iv = setInterval(() => cargarMensajes(canalActivo), 5000);
     return () => clearInterval(iv);
   }, [canalActivo, cargarMensajes]);
 
-  // Al abrir → limpiar badge, scroll al fondo, focus en input
-  // También resetea el circuit breaker para reintentar polling
   useEffect(() => {
     if (abierto) {
       setNoLeidos(0);
@@ -92,10 +100,46 @@ export default function ChatWidget() {
     }
   }, [abierto]);
 
-  // Scroll al fondo cuando llegan mensajes nuevos (y panel abierto)
   useEffect(() => {
     if (abierto) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensajes, abierto]);
+
+  // ── Drag handlers ─────────────────────────────────────────────────────────
+  const onMouseDown = useCallback((e) => {
+    // Solo botón izquierdo, no en el panel
+    if (e.button !== 0) return;
+    e.preventDefault();
+    dragging.current = true;
+    moved.current = false;
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
+
+    const onMove = (ev) => {
+      if (!dragging.current) return;
+      const dx = ev.clientX - dragStart.current.mx;
+      const dy = ev.clientY - dragStart.current.my;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
+      const BUBBLE = 52;
+      const nx = Math.max(BUBBLE / 2, Math.min(window.innerWidth  - BUBBLE / 2, dragStart.current.ox + dx));
+      const ny = Math.max(BUBBLE / 2, Math.min(window.innerHeight - BUBBLE / 2, dragStart.current.oy + dy));
+      setPos({ x: nx, y: ny });
+    };
+
+    const onUp = () => {
+      dragging.current = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      // Guardar posición final
+      setPos(p => {
+        try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch {}
+        return p;
+      });
+      // Si no se movió → toggle panel
+      if (!moved.current) setAbierto(a => !a);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [pos]);
 
   // ── Enviar mensaje ────────────────────────────────────────────────────────
   const enviar = async () => {
@@ -126,20 +170,37 @@ export default function ChatWidget() {
   };
 
   const location = useLocation();
-
-  // No mostrar en pantalla de chat (estorba) ni sin token
   if (!authToken) return null;
   if (location.pathname === "/chat") return null;
 
-  return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2 pointer-events-none">
+  // El panel se abre hacia arriba/izquierda según la posición de la burbuja
+  const panelRight = pos.x < window.innerWidth / 2 ? "auto" : 0;
+  const panelLeft  = pos.x < window.innerWidth / 2 ? 0 : "auto";
 
-      {/* ── Panel de chat ──────────────────────────────────────────────────── */}
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: pos.x - 26,
+        top: pos.y - 26,
+        zIndex: 9999,
+        userSelect: "none",
+      }}
+    >
+      {/* ── Panel de chat ────────────────────────────────────────────────── */}
       {abierto && (
         <div
-          className="pointer-events-auto w-80 flex flex-col rounded-2xl overflow-hidden"
+          className="absolute"
           style={{
+            bottom: 60,
+            right: panelRight,
+            left: panelLeft,
+            width: 320,
             height: 420,
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: 16,
+            overflow: "hidden",
             boxShadow: "0 8px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.1)",
             background: "#fff",
             border: "1px solid rgba(0,0,0,0.08)",
@@ -155,69 +216,49 @@ export default function ChatWidget() {
               <span className="text-sm font-semibold">
                 {CANALES.find(c => c.id === canalActivo)?.nombre || "General"}
               </span>
-              <ChevronDown
-                size={12}
-                className={`text-slate-400 transition-transform ${showCanales ? "rotate-180" : ""}`}
-              />
+              <ChevronDown size={12} className={`text-slate-400 transition-transform ${showCanales ? "rotate-180" : ""}`} />
             </button>
-            <button
-              onClick={() => setAbierto(false)}
-              className="text-slate-400 hover:text-white transition-colors p-0.5"
-            >
+            <button onClick={() => setAbierto(false)} className="text-slate-400 hover:text-white transition-colors p-0.5">
               <X size={14} />
             </button>
           </div>
 
-          {/* Selector de canales (desplegable dentro del panel) */}
+          {/* Canales */}
           {showCanales && (
             <div className="bg-slate-800 flex-shrink-0 border-b border-slate-700">
               {CANALES.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => cambiarCanal(c.id)}
-                  className={`w-full flex items-center gap-2.5 px-4 py-2 text-xs transition-colors
-                    ${canalActivo === c.id
-                      ? "bg-slate-700 text-white"
-                      : "text-slate-400 hover:bg-slate-700 hover:text-white"
-                    }`}
-                >
-                  <span>{c.emoji}</span>
-                  <span>{c.nombre}</span>
+                <button key={c.id} onClick={() => cambiarCanal(c.id)}
+                  className={`w-full flex items-center gap-2.5 px-4 py-2 text-xs transition-colors ${
+                    canalActivo === c.id ? "bg-slate-700 text-white" : "text-slate-400 hover:bg-slate-700 hover:text-white"
+                  }`}>
+                  <span>{c.emoji}</span><span>{c.nombre}</span>
                 </button>
               ))}
             </div>
           )}
 
-          {/* Área de mensajes */}
+          {/* Mensajes */}
           <div className="flex-1 overflow-y-auto px-3 py-3 bg-slate-50" style={{ minHeight: 0 }}>
             {mensajes.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <p className="text-slate-400 text-xs text-center leading-relaxed">
-                  Sin mensajes en #{canalActivo}.<br />
-                  Sé el primero en escribir.
+                  Sin mensajes en #{canalActivo}.<br />Sé el primero en escribir.
                 </p>
               </div>
             ) : (
               mensajes.map(msg => {
                 const esPropio = msg.userId === user.id || msg.user_id === user.id;
                 const hora = (() => {
-                  try {
-                    return new Date(msg.creadoEn || msg.creado_en).toLocaleTimeString("es-CR", {
-                      hour: "2-digit", minute: "2-digit",
-                    });
-                  } catch { return ""; }
+                  try { return new Date(msg.creadoEn || msg.creado_en).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" }); }
+                  catch { return ""; }
                 })();
                 return (
                   <div key={msg.id} className={`flex flex-col mb-2 ${esPropio ? "items-end" : "items-start"}`}>
                     {!esPropio && (
-                      <span className="text-[9px] text-slate-500 mb-0.5 ml-1">
-                        {msg.userNombre || msg.user_nombre}
-                      </span>
+                      <span className="text-[9px] text-slate-500 mb-0.5 ml-1">{msg.userNombre || msg.user_nombre}</span>
                     )}
                     <div className={`max-w-[88%] px-2.5 py-1.5 rounded-2xl text-xs leading-snug ${
-                      esPropio
-                        ? "bg-emerald-500 text-white rounded-br-sm"
-                        : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
+                      esPropio ? "bg-emerald-500 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
                     }`}>
                       {msg.texto}
                     </div>
@@ -242,11 +283,8 @@ export default function ChatWidget() {
                 className="flex-1 bg-transparent text-xs text-slate-800 placeholder-slate-400 resize-none focus:outline-none"
                 style={{ lineHeight: "1.5", maxHeight: 56 }}
               />
-              <button
-                onClick={enviar}
-                disabled={!texto.trim() || enviando}
-                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={enviar} disabled={!texto.trim() || enviando}
+                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <Send size={10} />
               </button>
             </div>
@@ -255,28 +293,28 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* ── Burbuja ────────────────────────────────────────────────────────── */}
+      {/* ── Burbuja arrastrable ───────────────────────────────────────────── */}
       <button
-        onClick={() => setAbierto(a => !a)}
-        className="pointer-events-auto relative flex items-center justify-center rounded-full text-white transition-all hover:scale-105 active:scale-95"
+        onMouseDown={onMouseDown}
+        className="relative flex items-center justify-center rounded-full text-white select-none"
         style={{
           width: 52,
           height: 52,
+          cursor: dragging.current ? "grabbing" : "grab",
           background: abierto
-            ? "#334155"   /* slate-700 cuando está abierto */
+            ? "#334155"
             : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
           boxShadow: "0 4px 20px rgba(16,185,129,0.4), 0 2px 6px rgba(0,0,0,0.15)",
+          transition: "background 0.2s",
         }}
-        title="Chat interno"
+        title="Chat interno — arrastra para mover"
       >
         {abierto ? <X size={20} /> : <MessageSquare size={20} />}
 
-        {/* Badge de no leídos */}
+        {/* Badge no leídos */}
         {!abierto && noLeidos > 0 && (
-          <span
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center"
-            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }}
-          >
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center"
+            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
             {noLeidos > 9 ? "9+" : noLeidos}
           </span>
         )}
