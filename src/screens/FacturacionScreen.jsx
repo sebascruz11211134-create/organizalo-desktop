@@ -626,23 +626,23 @@ export default function FacturacionScreen() {
   return (
     <div className="flex flex-col h-full">
       {/* Encabezado */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 overflow-y-auto md:overflow-visible max-h-[45vh] md:max-h-none">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
           {/* Fila 1: Tipo doc / Fecha / Moneda */}
-          <div className="flex flex-wrap gap-3">
-            <label className="flex-1">
+          <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
+            <label className="col-span-2 md:flex-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Tipo de documento</span>
               <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
                 className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
                 {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </label>
-            <label className="w-36">
+            <label className="md:w-36">
               <span className="text-xs font-semibold text-slate-500 uppercase">Fecha emisión</span>
               <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
                 className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
             </label>
-            <label className="w-24">
+            <label className="md:w-24">
               <span className="text-xs font-semibold text-slate-500 uppercase">Moneda</span>
               <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
                 className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
@@ -652,15 +652,15 @@ export default function FacturacionScreen() {
             </label>
           </div>
           {/* Fila 1 col 2: Condición pago / Medio / Plazo */}
-          <div className="flex flex-wrap gap-3">
-            <label className="flex-1">
+          <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap">
+            <label className="col-span-2 md:flex-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Condición de pago</span>
               <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
                 className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
                 {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </label>
-            <label className="flex-1">
+            <label className="md:flex-1">
               <span className="text-xs font-semibold text-slate-500 uppercase">Medio de pago</span>
               <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
                 className="mt-1 w-full border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400">
@@ -668,7 +668,7 @@ export default function FacturacionScreen() {
               </select>
             </label>
             {condPago === "02" && (
-              <label className="w-24">
+              <label className="md:w-24">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Plazo (días)</span>
                 <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)}
                   placeholder="30" min="1"
@@ -679,9 +679,9 @@ export default function FacturacionScreen() {
           {/* Fila 2: Receptor */}
           <div className="md:col-span-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">Receptor</span>
-            <div className="flex flex-wrap gap-3 mt-1">
+            <div className="grid grid-cols-2 gap-3 mt-1 md:flex md:flex-wrap">
               {/* Nombre con autocomplete */}
-              <div className="relative flex-1">
+              <div className="col-span-2 relative md:flex-1">
                 <input value={busqCliente}
                   onChange={(e) => { setBusqCliente(e.target.value); setCliente((p) => ({ ...p, nombre: e.target.value })); setShowClientes(true); }}
                   onFocus={() => setShowClientes(true)}
@@ -710,7 +710,7 @@ export default function FacturacionScreen() {
               </div>
               {/* Tipo cédula */}
               <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
-                className="w-full sm:w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                className="w-full md:w-36 border border-slate-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <option value="01">01 - Física</option>
                 <option value="02">02 - Jurídica</option>
                 <option value="03">03 - DIMEX</option>
@@ -724,7 +724,7 @@ export default function FacturacionScreen() {
                     onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
                     onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
                     placeholder="Número de cédula"
-                    className="w-36 border border-slate-200 rounded-l-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 border-r-0"
+                    className="flex-1 min-w-0 border border-slate-200 rounded-l-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400 border-r-0"
                   />
                   <button
                     type="button"
@@ -758,7 +758,7 @@ export default function FacturacionScreen() {
               {/* Email */}
               <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
                 placeholder="correo@empresa.com"
-                className="flex-1 min-w-[10rem] border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
+                className="col-span-2 w-full md:flex-1 md:min-w-[10rem] border border-slate-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand-400" />
             </div>
           </div>
         </div>
