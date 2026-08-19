@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, FileText, Send, Copy, ChevronDown, Search, X, Check } from "lucide-react";
 import db from "../utils/db";
@@ -109,7 +110,7 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
                     className={`cursor-pointer transition-colors ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"hover:bg-slate-50"}`}>
                     <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{c.numero}</td>
                     <td className="px-3 py-2.5 font-semibold text-slate-800">{c.cliente?.nombre || "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(c.fecha)}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-slate-400">Por: {c.creadoPor}</div>}</td>
                     <td className="px-3 py-2.5 text-xs text-slate-500">{c.validez ? `${c.validez} días` : "—"}</td>
                     <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total||totCalc,"CRC")}</td>
                     <td className="px-3 py-2.5">{BADGE(c.estado)}</td>
@@ -149,7 +150,7 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
 
   const guardar = () => {
     const num = cotizacion?.numero || `COT-${Date.now().toString().slice(-5)}`;
-    onGuardar({ id: cotizacion?.id || genId(), numero:num, cliente, estado, fecha, validez, notas, lineas:lineasCalc, subtotal, totalIVA, total, creadoEn: cotizacion?.creadoEn || new Date().toISOString() });
+    onGuardar({ id: cotizacion?.id || genId(), numero:num, cliente, estado, fecha, validez, notas, lineas:lineasCalc, subtotal, totalIVA, total, creadoEn: cotizacion?.creadoEn || new Date().toISOString(), creadoPor: cotizacion?.creadoPor || getAutorSync() });
   };
 
   const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400";
@@ -341,7 +342,7 @@ export default function CotizacionesScreen() {
   };
 
   const duplicar = async (cot) => {
-    const nueva = { ...cot, id:genId(), numero:`COT-${Date.now().toString().slice(-5)}`, estado:"borrador", creadoEn:new Date().toISOString() };
+    const nueva = { ...cot, id:genId(), numero:`COT-${Date.now().toString().slice(-5)}`, estado:"borrador", creadoEn:new Date().toISOString(), creadoPor:getAutorSync() };
     const all   = await db.getCotizaciones();
     await db.setCotizaciones([...all, nueva]);
     cargar();
@@ -366,7 +367,7 @@ export default function CotizacionesScreen() {
       cliente: cot.cliente, lineas: cot.lineas,
       subtotal: cot.subtotal, totalDescuento: 0, totalIVA: cot.totalIVA, total: cot.total,
       notas: cot.notas, estado: "guardada",
-      creadoEn: new Date().toISOString(), origenCotizacion: cot.numero,
+      creadoEn: new Date().toISOString(), creadoPor: getAutorSync(), origenCotizacion: cot.numero,
     };
     await db.setFacturas([...facturas, factura]);
     // Marcar cotización como aceptada

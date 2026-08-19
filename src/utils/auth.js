@@ -147,6 +147,23 @@ export async function getUser() {
   return storeGet(USER_KEY);
 }
 
+/** Devuelve el nombre del usuario activo de forma síncrona (solo web, no Electron).
+ *  Útil para estampar creadoPor al guardar documentos. */
+export function getCurrentUserSync() {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    const u = JSON.parse(raw);
+    return u;
+  } catch { return null; }
+}
+
+/** Devuelve solo el nombre display del usuario activo (síncrono). */
+export function getAutorSync() {
+  const u = getCurrentUserSync();
+  return u?.nombre || u?.username || u?.email || "Sistema";
+}
+
 export async function isAuthenticated() {
   const token = await getToken();
   return typeof token === "string" && token.length > 10;

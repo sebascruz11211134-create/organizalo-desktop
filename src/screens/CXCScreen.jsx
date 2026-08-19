@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 /**
  * CXCScreen — Cuentas por Cobrar (desktop)
  * Tabla con todas las CXC, modal de pago, historial de recibos.
@@ -70,7 +71,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
     let totalRecibo = 0;
 
     for (const { deuda, monto } of lineas) {
-      const pago = { id: genId(), numero: num, fecha, monto, metodo, notas, creadoEn: new Date().toISOString() };
+      const pago = { id: genId(), numero: num, fecha, monto, metodo, notas, creadoEn: new Date().toISOString(), creadoPor: getAutorSync() };
       updatedDebts = updatedDebts.map(x =>
         x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + monto, pagos: [...(x.pagos || []), pago] }
       );
@@ -81,7 +82,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
         facturaRef: deuda.facturaRef || null,
         cxcId: deuda.id,
         moneda: deuda.moneda || mon,
-        creadoEn: new Date().toISOString(),
+        creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
       });
       totalRecibo += monto;
 
@@ -107,7 +108,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           { cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: totalRecibo, haber: 0 },
           { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: 0, haber: totalRecibo },
         ],
-        creadoEn: new Date().toISOString(),
+        creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
       }]);
     } catch (e) { console.warn("[CXC] asiento:", e.message); }
 
@@ -199,7 +200,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
                       <td className="px-3 py-2 font-mono font-bold text-slate-700">
                         {d.facturaRef || d.notas || "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-400">{fmtDate(d.creadoEn?.slice(0,10))}</td>
+                      <td className="px-3 py-2 text-slate-400"><div>{fmtDate(d.creadoEn?.slice(0,10))}</div>{d.creadoPor && <div className="text-[10px]">Por: {d.creadoPor}</div>}</td>
                       <td className={`px-3 py-2 ${vencida ? "text-red-600 font-semibold" : "text-slate-400"}`}>
                         {fmtDate(d.fechaVencimiento)}
                       </td>
@@ -268,7 +269,7 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
     const nueva = {
       id: genId(), tipo: "cobrar", nombre: nombre.trim(), total: parseFloat(total),
       pagado: 0, pagos: [], moneda, fechaVencimiento: vence || null,
-      notas: notas.trim(), creadoEn: new Date().toISOString(),
+      notas: notas.trim(), creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
     };
     await db.setDebts([nueva, ...todos]);
 

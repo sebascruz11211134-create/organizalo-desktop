@@ -209,7 +209,7 @@ export default function FacturasHistorialScreen() {
                   >
                     <td className={`font-mono text-xs font-bold ${esAnulada ? "line-through text-slate-400" : "text-emerald-700"}`}>{f.numero}</td>
                     <td className="text-slate-400 text-xs">{f.tipoDoc || "01"}</td>
-                    <td className="text-slate-500">{fmtDate(f.fecha)}</td>
+                    <td className="text-slate-500"><div>{fmtDate(f.fecha)}</div>{f.creadoPor && <div className="text-[10px] text-slate-400">Por: {f.creadoPor}</div>}</td>
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{f.cliente?.nombre || "—"}</td>
                     <td className="text-slate-400 text-xs font-mono">{f.cliente?.cedula || "—"}</td>
                     <td className="text-slate-500">{f.moneda}</td>

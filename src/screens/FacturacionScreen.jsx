@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 /**
  * FacturacionScreen — Factura electrónica Hacienda v4.4 (desktop)
  *
@@ -416,7 +417,7 @@ export default function FacturacionScreen() {
         id: genId(), numero: num, estado: "confirmado", autoGenerado: true,
         descripcion: `Factura ${factura.numero} — ${factura.cliente?.nombre || "Consumidor Final"}`,
         fecha: factura.fecha, totalDebe, totalHaber, lineas,
-        facturaRef: factura.numero, creadoEn: new Date().toISOString(),
+        facturaRef: factura.numero, creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
       }]);
     } catch (e) {
       console.warn("[Facturacion] No se pudo crear asiento:", e.message);
@@ -469,7 +470,7 @@ export default function FacturacionScreen() {
       notas,
       proyectoId: proyectoId || null,
       estado: "borrador",
-      creadoEn: new Date().toISOString(),
+      creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
     };
   };
 

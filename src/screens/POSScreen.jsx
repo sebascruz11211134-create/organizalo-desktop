@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Plus, Minus, Trash2, CreditCard, Printer, RotateCcw } from "lucide-react";
 import db from "../utils/db";
@@ -65,7 +66,7 @@ export default function POSScreen() {
       lineas: carrito.map(x=>({ descripcion:x.nombre, cantidad:x.cant, precioUnit:x.precio||0, pctIVA:x.pctIVA||13, codigoIVA:"08", total:(x.precio||0)*x.cant*(1+(x.pctIVA||13)/100) })),
       subtotal, totalIVA:iva, total,
       medioPagoLabel: medio, estado:"aceptada",
-      creadoEn: new Date().toISOString(),
+      creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
     };
     await db.setFacturas([...facturas, factura]);
 

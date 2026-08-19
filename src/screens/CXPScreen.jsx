@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 /**
  * CXPScreen — Cuentas por Pagar (desktop)
  * Idéntico a CXCScreen pero filtra tipo === "pagar"
@@ -32,7 +33,7 @@ function NuevaCXPModal({ onClose, onSave, settings }) {
     const nueva = {
       id: genId(), tipo: "pagar", nombre: nombre.trim(), total: parseFloat(total),
       pagado: 0, pagos: [], moneda, fechaVencimiento: vence || null,
-      notas: notas.trim(), creadoEn: new Date().toISOString(),
+      notas: notas.trim(), creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
     };
     await db.setDebts([nueva, ...todos]);
 
@@ -123,7 +124,7 @@ function PagoCXPModal({ deuda, settings, token, onClose, onSave }) {
     const m = parseFloat(monto);
     if (!m || m <= 0) return;
     const todos = await db.getDebts();
-    const pago  = { id: genId(), fecha, monto: m, metodo, notas, creadoEn: new Date().toISOString() };
+    const pago  = { id: genId(), fecha, monto: m, metodo, notas, creadoEn: new Date().toISOString(), creadoPor: getAutorSync() };
     const upd   = todos.map((x) =>
       x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + m, pagos: [...(x.pagos || []), pago] }
     );
@@ -328,7 +329,7 @@ export default function CXPScreen() {
                     <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
                     <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                      {fmtDate(d.fechaVencimiento)}
+                      <div>{fmtDate(d.fechaVencimiento)}</div>{d.creadoPor && <div className="text-[10px] text-slate-400">Por: {d.creadoPor}</div>}
                     </td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
                   </tr>

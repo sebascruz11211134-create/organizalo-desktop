@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
@@ -78,7 +79,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
       let totalRecibo = 0;
 
       for (const { deuda, monto: m } of lineas) {
-        const pago = { id: genId(), numero: num, fecha, monto: m, metodo, notas: concepto, creadoEn: new Date().toISOString() };
+        const pago = { id: genId(), numero: num, fecha, monto: m, metodo, notas: concepto, creadoEn: new Date().toISOString(), creadoPor: getAutorSync() };
         updatedDebts = updatedDebts.map(x =>
           x.id !== deuda.id ? x : { ...x, pagado: (x.pagado || 0) + m, pagos: [...(x.pagos || []), pago] }
         );
@@ -91,7 +92,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
           cxcId: deuda.id,
           moneda: deuda.moneda || mon,
           esAdelanto: false,
-          creadoEn: new Date().toISOString(),
+          creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
         });
         totalRecibo += m;
 
@@ -116,7 +117,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
             { cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: totalRecibo, haber: 0 },
             { cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: 0, haber: totalRecibo },
           ],
-          creadoEn: new Date().toISOString(),
+          creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
         }]);
       } catch (e) { console.warn("[Recibo] asiento:", e.message); }
 
@@ -131,7 +132,7 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
         esAdelanto,
         facturaId:     esAdelanto ? null : (facturaId || null),
         facturaNumero: esAdelanto ? null : (factSel?.numero || null),
-        creadoEn: new Date().toISOString(),
+        creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
       };
       await db.setRecibos([nuevo, ...todosRecibos]);
     }
@@ -423,7 +424,7 @@ export default function RecibosScreen() {
                   className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulado ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                   onClick={() => setSelected(isSel ? null : r.id)}>
                   <td className={`font-mono font-bold ${esAnulado ? "line-through text-slate-400" : "text-emerald-700"}`}>#{r.numero}</td>
-                  <td>{fmtDate(r.fecha)}</td>
+                  <td><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-slate-400">Por: {r.creadoPor}</div>}</td>
                   <td className={`font-medium ${esAnulado ? "line-through text-slate-400" : ""}`}>{r.clienteNombre || r.cliente || "Consumidor Final"}</td>
                   <td>
                     {r.esAdelanto

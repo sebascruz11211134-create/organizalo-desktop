@@ -1,3 +1,4 @@
+import { getAutorSync } from "../utils/auth";
 /**
  * ComprasScreen — Facturas de proveedor / compras
  * Registra gastos con crédito fiscal de IVA.
@@ -92,6 +93,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
       proyectoId: proyectoId || null,
       lineas: INVENTARIABLE.includes(categoria) ? lineas : [],
       creadoEn: compra?.creadoEn || new Date().toISOString(),
+      creadoPor: compra?.creadoPor || getAutorSync(),
     });
   };
 
@@ -357,7 +359,7 @@ export default function ComprasScreen() {
               id: genId(), numero: numAJ, estado: "confirmado", autoGenerado: true,
               descripcion: `Compra ${c.numFactura || ""} — ${c.proveedor || "Proveedor"}`,
               fecha: c.fecha, totalDebe, totalHaber, lineas,
-              creadoEn: new Date().toISOString(),
+              creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
             }]);
           }
         }
@@ -488,7 +490,7 @@ export default function ComprasScreen() {
                   <td className="px-4 py-2.5 font-semibold text-slate-800">{c.proveedor || "—"}</td>
                   <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{c.numFactura || "—"}</td>
                   <td className="px-3 py-2.5 text-xs text-slate-500">{c.categoria}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(c.fecha)}</td>
+                  <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-slate-400">Por: {c.creadoPor}</div>}</td>
                   <td className={`px-3 py-2.5 text-xs ${c.estado==="vencida"?"text-red-500 font-semibold":"text-slate-500"}`}>
                     {c.fechaVence ? fmtDate(c.fechaVence) : "—"}
                   </td>
