@@ -319,16 +319,16 @@ a:focus-visible {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
   textarea,
   select {
-    background-color: rgba(250,204,21,0.10) !important;
-    border-color:     #334155 !important;
+    background-color: rgba(250,204,21,0.18) !important;
+    border-color:     #4a4010 !important;
     color:            #f1f5f9 !important;
   }
   input::placeholder,
-  textarea::placeholder { color: #94a3b8 !important; }
+  textarea::placeholder { color: #a89a3a !important; }
 
   /* ── Componentes utilitarios ──────────────────────────────────────────────── */
   .input-base {
-    background-color: rgba(250,204,21,0.10);
+    background-color: rgba(250,204,21,0.18);
     border-color:     #334155;
     color:            #f1f5f9;
   }
