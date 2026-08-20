@@ -320,7 +320,7 @@ a:focus-visible {
   textarea,
   select {
     background-color: #1e293b !important;
-    border-color:     #334155 !important;
+    border-color:     #FACC15 !important;
     color:            #f1f5f9 !important;
   }
   input::placeholder,
@@ -329,7 +329,7 @@ a:focus-visible {
   /* ── Componentes utilitarios ──────────────────────────────────────────────── */
   .input-base {
     background-color: #1e293b;
-    border-color:     #334155;
+    border-color:     #FACC15;
     color:            #f1f5f9;
   }
   .input-base::placeholder { color: #94a3b8; }
