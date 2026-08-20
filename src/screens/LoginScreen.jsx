@@ -126,7 +126,7 @@ function UserDropdown({ users, value, onChange }) {
 
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-white/20 overflow-hidden z-20"
-          style={{ background: "rgba(4,120,87,0.95)", backdropFilter: "blur(12px)" }}>
+          style={{ background: "rgba(17,24,39,0.98)", backdropFilter: "blur(12px)" }}>
           {users.map(u => (
             <button
               key={u.identifier}
@@ -383,13 +383,13 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div
       className="login-screen flex flex-col h-screen overflow-hidden font-sans select-none relative"
-      style={{ background: "linear-gradient(135deg, #047857 0%, #059669 40%, #10b981 75%, #34d399 100%)" }}
+      style={{ background: "linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)" }}
     >
       {/* Círculos decorativos */}
       <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full pointer-events-none"
-        style={{ background: "rgba(255,255,255,0.07)" }} />
+        style={{ background: "rgba(250,204,21,0.08)" }} />
       <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: "rgba(255,255,255,0.06)" }} />
+        style={{ background: "rgba(250,204,21,0.06)" }} />
 
       {/* Drag region — espacio para semáforos macOS */}
       <div className="drag-region h-9 shrink-0" />

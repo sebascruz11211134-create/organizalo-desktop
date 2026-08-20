@@ -392,19 +392,19 @@ a:focus-visible {
 }
 /* ── Fin dark mode ────────────────────────────────────────────────────────── */
 
-/* ── Login screen — fondo fijo verde, inmune al dark mode ─────────────────
+/* ── Login screen — fondo fijo oscuro, inmune al dark mode ─────────────────
    Estos estilos están FUERA del bloque @media para ganar en especificidad
    (el selector .login-screen input supera al input del dark mode)
    ────────────────────────────────────────────────────────────────────────── */
 .login-screen input {
-  background-color: rgba(255,255,255,0.12) !important;
-  border-color:     rgba(255,255,255,0.25) !important;
+  background-color: rgba(255,255,255,0.08) !important;
+  border-color:     rgba(255,255,255,0.18) !important;
   color:            white !important;
 }
-.login-screen input::placeholder { color: rgba(255,255,255,0.45) !important; }
+.login-screen input::placeholder { color: rgba(255,255,255,0.35) !important; }
 .login-screen .login-btn-primary {
-  background-color: white !important;
-  color:            #065f46 !important;
+  background-color: #FACC15 !important;
+  color:            #111827 !important;
 }
-.login-screen .login-btn-primary:hover  { background-color: #ecfdf5 !important; }
-.login-screen .login-btn-primary:active { background-color: #d1fae5 !important; }
+.login-screen .login-btn-primary:hover  { background-color: #fde047 !important; }
+.login-screen .login-btn-primary:active { background-color: #eab308 !important; }
