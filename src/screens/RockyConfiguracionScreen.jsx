@@ -46,6 +46,7 @@ const DEFAULT_CONFIG = {
   horarioInicio: "",
   horarioFin: "",
   mensajeFueraHorario: "",
+  mensajeBienvenida: "",
 };
 
 export default function RockyConfiguracionScreen() {
@@ -215,6 +216,24 @@ export default function RockyConfiguracionScreen() {
           onChange={e => setConfig(c => ({ ...c, nombreEmpresa: e.target.value }))}
           placeholder="Ej: Pizzería Don Mario"
           className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
+        />
+      </div>
+
+      {/* Mensaje de bienvenida */}
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1">
+          Mensaje de bienvenida
+          <span className="ml-2 text-xs font-normal text-slate-400">(opcional — para clientes nuevos)</span>
+        </label>
+        <p className="text-xs text-slate-400 mb-2">
+          Se envía automáticamente la primera vez que alguien te escribe por WhatsApp. Rocky responde justo después.
+        </p>
+        <textarea
+          rows={2}
+          value={config.mensajeBienvenida || ""}
+          onChange={e => setConfig(c => ({ ...c, mensajeBienvenida: e.target.value }))}
+          placeholder="Ej: ¡Hola! 👋 Gracias por contactarnos. Soy Rocky, tu asistente virtual. ¿En qué te puedo ayudar?"
+          className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-yellow-400 resize-none"
         />
       </div>
 
