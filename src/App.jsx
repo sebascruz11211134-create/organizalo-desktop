@@ -52,6 +52,7 @@ const PortalClienteScreen   = lazy(() => import("./screens/PortalClienteScreen")
 const RecordatoriosScreen   = lazy(() => import("./screens/RecordatoriosScreen"));
 const AsistenteScreen            = lazy(() => import("./screens/AsistenteScreen"));
 const RockyRecepcionistaScreen   = lazy(() => import("./screens/RockyRecepcionistaScreen"));
+const WhatsAppScreen             = lazy(() => import("./screens/WhatsAppScreen"));
 const CalendarioScreen           = lazy(() => import("./screens/CalendarioScreen"));
 const CRMClientesScreen          = lazy(() => import("./screens/CRMClientesScreen"));
 const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
@@ -424,6 +425,7 @@ export default function App() {
                 <Route path="/rocky-asistente"     element={<AsistenteScreen />} />
                 <Route path="/rocky-recepcionista" element={<RockyRecepcionistaScreen />} />
                 <Route path="/rocky-config"        element={<RockyRecepcionistaScreen />} />
+                <Route path="/whatsapp"            element={<WhatsAppScreen />} />
                 <Route path="/chat"                element={<ChatScreen />} />
                 <Route path="/configuracion"       element={<ConfiguracionScreen />} />
                 <Route path="/calendario"          element={<CalendarioScreen />} />

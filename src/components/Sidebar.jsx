@@ -8,7 +8,7 @@ import {
   Sparkles, Layers, PanelLeftClose, PanelLeftOpen, DatabaseZap,
   BookOpen, Calculator, Building2, Shield, FileCheck,
   Wallet, Wrench, Target, Globe, Bell, PieChart, MessageSquare, Inbox,
-  CalendarDays, UserSearch, Bot, Phone,
+  CalendarDays, UserSearch, Bot, Phone, MessageCircle,
 } from "lucide-react";
 import { SUPERADMIN_EMAIL } from "../screens/AdminScreen";
 
@@ -153,6 +153,7 @@ const NAV = [
     children: [
       { label: "Asistente",      path: "/rocky-asistente",     icon: Bot },
       { label: "Recepcionista",  path: "/rocky-recepcionista", icon: Phone },
+      { label: "WhatsApp",       path: "/whatsapp",            icon: MessageCircle },
       { label: "Configuración",  path: "/rocky-config",        icon: Settings },
     ],
   },
