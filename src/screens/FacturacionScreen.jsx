@@ -345,7 +345,7 @@ export default function FacturacionScreen() {
       if (data?.nombre) {
         const tipo = data.tipoIdentificacion || (cedula.length === 9 ? "01" : cedula.length === 10 ? "02" : "03");
         if (!local) {
-          setCliente((p) => ({ ...p, nombre: data.nombre, tipo }));
+          setCliente((p) => ({ ...p, nombre: data.nombre, tipo, email: "" }));
           setBusqCliente(data.nombre);
         }
         // Guardar situación fiscal
