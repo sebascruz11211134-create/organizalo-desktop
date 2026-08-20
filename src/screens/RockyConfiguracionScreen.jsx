@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from "react";
 import {
   Sparkles, Save, UtensilsCrossed, CalendarCheck, Building2,
-  CheckCircle2, AlertCircle, MessageCircle, Info,
+  CheckCircle2, AlertCircle, MessageCircle, Info, Clock,
 } from "lucide-react";
 import { getToken } from "../utils/auth";
 import { BACKEND } from "../utils/config";
@@ -43,6 +43,9 @@ const DEFAULT_CONFIG = {
   tipoNegocio: "general",
   instrucciones: "",
   nombreEmpresa: "",
+  horarioInicio: "",
+  horarioFin: "",
+  mensajeFueraHorario: "",
 };
 
 export default function RockyConfiguracionScreen() {
@@ -215,10 +218,52 @@ export default function RockyConfiguracionScreen() {
         />
       </div>
 
+      {/* Horario de atención */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Clock size={16} className="text-slate-500" />
+          <span className="text-sm font-semibold text-slate-700">Horario de atención</span>
+          <span className="text-xs text-slate-400">(opcional)</span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Si definís un horario, Rocky solo responderá dentro de ese rango. Fuera del horario enviará el mensaje automático de abajo.
+        </p>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-xs text-slate-500 mb-1">Hora inicio</label>
+            <input
+              type="time"
+              value={config.horarioInicio || ""}
+              onChange={e => setConfig(c => ({ ...c, horarioInicio: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs text-slate-500 mb-1">Hora fin</label>
+            <input
+              type="time"
+              value={config.horarioFin || ""}
+              onChange={e => setConfig(c => ({ ...c, horarioFin: e.target.value }))}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-slate-500 mb-1">Mensaje fuera de horario</label>
+          <textarea
+            rows={2}
+            value={config.mensajeFueraHorario || ""}
+            onChange={e => setConfig(c => ({ ...c, mensajeFueraHorario: e.target.value }))}
+            placeholder="Ej: Gracias por escribirnos 🙏 Nuestro horario es de 8am a 6pm. Te contactamos pronto."
+            className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-700 focus:outline-none focus:border-yellow-400 resize-none"
+          />
+        </div>
+      </div>
+
       {/* Tip */}
       <div className="flex gap-2 text-xs text-slate-400">
         <Info size={14} className="shrink-0 mt-0.5" />
-        <p>Rocky responde máximo 3 oraciones por mensaje. Si el cliente quiere hacer un pedido o cita, le avisa que un asesor lo contactará pronto.</p>
+        <p>Rocky recuerda los últimos mensajes de cada conversación y responde con contexto. Máximo 3 oraciones por mensaje.</p>
       </div>
 
       {/* Guardar */}
