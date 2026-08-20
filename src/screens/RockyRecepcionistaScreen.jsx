@@ -36,8 +36,8 @@ const TIPOS_NEGOCIO = [
     label: "General",
     icon: Building2,
     desc: "Rocky responde preguntas frecuentes y registra mensajes.",
-    color: "text-amber-500",
-    activeBg: "bg-amber-50 border-amber-300",
+    color: "text-yellow-500",
+    activeBg: "bg-yellow-50 border-yellow-300",
   },
 ];
 
@@ -65,10 +65,10 @@ function LlamadaCard({ llamada }) {
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-        ${exitosa ? "bg-amber-100" : "bg-amber-50"}`}>
+        ${exitosa ? "bg-yellow-100" : "bg-yellow-50"}`}>
         {exitosa
-          ? <CheckCircle2 size={15} className="text-amber-600" />
-          : <XCircle size={15} className="text-amber-500" />}
+          ? <CheckCircle2 size={15} className="text-yellow-600" />
+          : <XCircle size={15} className="text-yellow-500" />}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -77,14 +77,14 @@ function LlamadaCard({ llamada }) {
         </div>
         <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{llamada.resumen || llamada.pregunta}</p>
         {llamada.accion && llamada.accion !== "NINGUNA" && (
-          <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+          <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200">
             <ChevronRight size={10} />
             {llamada.accion === "PEDIDO" ? "Pedido creado" : llamada.accion === "CITA" ? "Cita agendada" : llamada.accion}
           </span>
         )}
       </div>
       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0
-        ${exitosa ? "bg-amber-100 text-amber-700" : "bg-amber-100 text-amber-700"}`}>
+        ${exitosa ? "bg-yellow-100 text-yellow-700" : "bg-yellow-100 text-yellow-700"}`}>
         {exitosa ? "OK" : llamada.resultado || "N/D"}
       </span>
     </div>
@@ -199,11 +199,11 @@ export default function RockyRecepcionistaScreen() {
         <label className="flex items-center gap-2 cursor-pointer">
           <div
             onClick={() => set("activo", !config.activo)}
-            className={`relative w-10 h-6 rounded-full transition-colors ${config.activo ? "bg-amber-500" : "bg-slate-300"}`}
+            className={`relative w-10 h-6 rounded-full transition-colors ${config.activo ? "bg-yellow-500" : "bg-slate-300"}`}
           >
             <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${config.activo ? "translate-x-5" : "translate-x-1"}`} />
           </div>
-          <span className={`text-xs font-medium ${config.activo ? "text-amber-700" : "text-slate-500"}`}>
+          <span className={`text-xs font-medium ${config.activo ? "text-yellow-700" : "text-slate-500"}`}>
             {config.activo ? "Activo" : "Inactivo"}
           </span>
         </label>
@@ -212,7 +212,7 @@ export default function RockyRecepcionistaScreen() {
           onClick={guardar}
           disabled={guardando}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado ? "bg-amber-500 text-white" : "bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"}`}
+            ${guardado ? "bg-yellow-500 text-white" : "bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"}`}
         >
           {guardado ? <><CheckCircle2 size={14} /> Guardado</> : guardando ? "Guardando…" : "Guardar"}
         </button>
@@ -387,7 +387,7 @@ export default function RockyRecepcionistaScreen() {
             <div className="grid grid-cols-4 gap-3 mb-5">
               {[
                 { label: "Total llamadas", value: totalLlamadas, color: "text-slate-700" },
-                { label: "Completadas",    value: completadas,   color: "text-amber-600" },
+                { label: "Completadas",    value: completadas,   color: "text-yellow-600" },
                 { label: "Pedidos",        value: pedidosCreados,color: "text-orange-600" },
                 { label: "Citas",          value: citasCreadas,  color: "text-blue-600" },
               ].map(s => (
@@ -476,11 +476,11 @@ export default function RockyRecepcionistaScreen() {
               </ol>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
-              <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex gap-3">
+              <AlertCircle size={15} className="text-yellow-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-semibold text-amber-800">Emails de confirmación</p>
-                <p className="text-xs text-amber-700 mt-0.5">
+                <p className="text-xs font-semibold text-yellow-800">Emails de confirmación</p>
+                <p className="text-xs text-yellow-700 mt-0.5">
                   Para que Rocky envíe emails necesitás una cuenta gratuita en{" "}
                   <a href="https://resend.com" target="_blank" rel="noreferrer" className="underline">resend.com</a>
                   {" "}y agregar la API key en el servidor (RESEND_API_KEY en .env.vps).

@@ -74,19 +74,19 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Fecha *</span>
             <input type="date" value={form.fecha} onChange={e=>u("fecha",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Referencia</span>
             <input value={form.referencia} onChange={e=>u("referencia",e.target.value)}
               placeholder="Ej: Fact-00123, Cheque 001"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </label>
           <label className="block col-span-1">
             <span className="text-xs font-semibold text-slate-500 uppercase">Descripción *</span>
             <input value={form.descripcion} onChange={e=>u("descripcion",e.target.value)}
               placeholder="Registro de venta, pago de planilla…"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </label>
         </div>
 
@@ -98,7 +98,7 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
           {form.lineas.map((l,i) => (
             <div key={i} className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-2 border-b border-slate-100 last:border-b-0 items-center">
               <select value={l.cuentaCodigo} onChange={e=>selCuenta(i,e.target.value)}
-                className="border border-slate-200 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="border border-slate-200 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 <option value="">— Seleccionar cuenta —</option>
                 {detalleCuentas.map(c=>(
                   <option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nombre}</option>
@@ -116,10 +116,10 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
           {/* Totales */}
           <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-2.5 bg-slate-50 border-t-2 border-slate-200 items-center">
             <span className="text-xs font-bold text-slate-700">TOTALES</span>
-            <span className={`text-xs font-bold text-right ${balanceado?"text-amber-700":"text-red-600"}`}>
+            <span className={`text-xs font-bold text-right ${balanceado?"text-yellow-700":"text-red-600"}`}>
               {fmtMoney(totalDebe,"CRC")}
             </span>
-            <span className={`text-xs font-bold text-right ${balanceado?"text-amber-700":"text-red-600"}`}>
+            <span className={`text-xs font-bold text-right ${balanceado?"text-yellow-700":"text-red-600"}`}>
               {fmtMoney(totalHaber,"CRC")}
             </span>
             <span className="text-xs">{balanceado?"✓":""}</span>
@@ -139,7 +139,7 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
           <div className="flex gap-3">
             <button onClick={onClose} className="border border-gray-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
             <button onClick={guardar} disabled={!balanceado}
-              className="bg-amber-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50">
+              className="bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50">
               Guardar asiento
             </button>
           </div>
@@ -224,7 +224,7 @@ export default function AsientosScreen() {
       {/* Toolbar oscuro estilo TecApro */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={()=>setModal({})}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Plus size={13}/> Nuevo asiento
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
@@ -258,7 +258,7 @@ export default function AsientosScreen() {
           <span>Total debe: <strong className="text-slate-700">{fmtMoney(totDebe,"CRC")}</strong></span>
           <span>Total haber: <strong className="text-slate-700">{fmtMoney(totHaber,"CRC")}</strong></span>
           {Math.abs(totDebe-totHaber)<0.01 && visibles.length>0 &&
-            <span className="text-amber-600 font-semibold">✓ Balanceado</span>}
+            <span className="text-yellow-600 font-semibold">✓ Balanceado</span>}
           <span className="ml-auto">clic en fila para seleccionar</span>
         </div>
       )}

@@ -82,7 +82,7 @@ function LibroVentas({ mes, settings }) {
         )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
@@ -102,16 +102,16 @@ function LibroVentas({ mes, settings }) {
                 <td>{f.clienteNombre||f.cliente?.nombre||"—"}</td>
                 <td className="text-slate-500 text-xs">{f.clienteCedula||f.cliente?.cedula||"—"}</td>
                 <td className="text-right">{fmtMoney(f.subtotal||f.total||0,settings)}</td>
-                <td className="text-right text-amber-600">{fmtMoney(f.iva||f.impuesto||0,settings)}</td>
+                <td className="text-right text-yellow-600">{fmtMoney(f.iva||f.impuesto||0,settings)}</td>
                 <td className="text-right font-semibold">{fmtMoney(f.total||0,settings)}</td>
               </tr>
             ))}
           </tbody>
           {facturas.length > 0 && (
-            <tfoot><tr className="bg-amber-50 font-semibold">
+            <tfoot><tr className="bg-yellow-50 font-semibold">
               <td colSpan={5} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalGravado,settings)}</td>
-              <td className="px-4 py-2 text-right text-amber-600">{fmtMoney(totalIVA,settings)}</td>
+              <td className="px-4 py-2 text-right text-yellow-600">{fmtMoney(totalIVA,settings)}</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalNeto,settings)}</td>
             </tr></tfoot>
           )}
@@ -163,7 +163,7 @@ function LibroCompras({ mes, settings }) {
         )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
@@ -183,16 +183,16 @@ function LibroCompras({ mes, settings }) {
                 <td>{c.proveedor||"—"}</td>
                 <td className="text-slate-500 text-xs">{c.cedulaProveedor||"—"}</td>
                 <td className="text-right">{fmtMoney(c.subtotal||c.total||0,settings)}</td>
-                <td className="text-right text-amber-600">{fmtMoney(c.ivaCreditoFiscal||c.iva||0,settings)}</td>
+                <td className="text-right text-yellow-600">{fmtMoney(c.ivaCreditoFiscal||c.iva||0,settings)}</td>
                 <td className="text-right font-semibold">{fmtMoney(c.total||0,settings)}</td>
               </tr>
             ))}
           </tbody>
           {compras.length > 0 && (
-            <tfoot><tr className="bg-amber-50 font-semibold">
+            <tfoot><tr className="bg-yellow-50 font-semibold">
               <td colSpan={5} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalGravado,settings)}</td>
-              <td className="px-4 py-2 text-right text-amber-600">{fmtMoney(totalIVAcred,settings)}</td>
+              <td className="px-4 py-2 text-right text-yellow-600">{fmtMoney(totalIVAcred,settings)}</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalNeto,settings)}</td>
             </tr></tfoot>
           )}
@@ -249,7 +249,7 @@ function LibroDiario({ mes, settings }) {
         }} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
@@ -273,7 +273,7 @@ function LibroDiario({ mes, settings }) {
             ))}
           </tbody>
           {asientos.length > 0 && (
-            <tfoot><tr className="bg-amber-50 font-semibold">
+            <tfoot><tr className="bg-yellow-50 font-semibold">
               <td colSpan={4} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
               <td className="px-4 py-2 text-right text-blue-700">{fmtMoney(totalDebe,settings)}</td>
               <td className="px-4 py-2 text-right text-rose-700">{fmtMoney(totalHaber,settings)}</td>
@@ -339,7 +339,7 @@ function LibroMayor({ mes, settings }) {
         )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
@@ -384,7 +384,7 @@ export default function LibrosLegalesScreen() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <BookOpen size={14} className="text-amber-400"/>
+        <BookOpen size={14} className="text-yellow-400"/>
         <span className="text-white text-xs font-semibold">Libros Legales</span>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
         <label className="text-slate-300 text-xs">Período:</label>
@@ -397,7 +397,7 @@ export default function LibrosLegalesScreen() {
         {TABS.map((t,i) => (
           <button key={i} onClick={()=>setTab(i)}
             className={`px-4 py-2 text-xs font-semibold rounded-t transition-colors
-              ${tab===i ? "bg-amber-700 text-white" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}>
+              ${tab===i ? "bg-yellow-700 text-white" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}>
             {t}
           </button>
         ))}

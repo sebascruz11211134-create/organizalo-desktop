@@ -84,7 +84,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
             value={form.titulo}
             onChange={e => set("titulo", e.target.value)}
             placeholder="Título del evento"
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400"
+            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400/30 focus:border-yellow-400"
           />
 
           {/* Fecha + Hora */}
@@ -95,7 +95,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
                 type="date"
                 value={form.fecha}
                 onChange={e => set("fecha", e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
               />
             </div>
             {!form.todo_el_dia && (
@@ -105,7 +105,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
                   type="time"
                   value={form.hora}
                   onChange={e => set("hora", e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
                 />
               </div>
             )}
@@ -117,7 +117,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
               type="checkbox"
               checked={form.todo_el_dia}
               onChange={e => set("todo_el_dia", e.target.checked)}
-              className="accent-amber-500"
+              className="accent-yellow-500"
             />
             <span className="text-sm text-slate-600">Todo el día</span>
           </label>
@@ -128,7 +128,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
             onChange={(c, str) => set("cliente_nombre", str)}
             tipo="todos"
             placeholder="Cliente (opcional)"
-            ringColor="focus:ring-amber-400"
+            ringColor="focus:ring-yellow-400"
             className="py-2"
           />
 
@@ -138,7 +138,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
             onChange={e => set("descripcion", e.target.value)}
             placeholder="Descripción (opcional)"
             rows={2}
-            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 resize-none"
+            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30 resize-none"
           />
         </div>
 
@@ -159,7 +159,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
           <button
             onClick={() => onSave(form)}
             disabled={!form.titulo.trim()}
-            className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-40 transition-colors"
+            className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-40 transition-colors"
           >
             {esNuevo ? "Crear" : "Guardar"}
           </button>
@@ -283,7 +283,7 @@ export default function CalendarioScreen() {
 
         <button
           onClick={() => { setMes(now.getMonth()); setAño(now.getFullYear()); }}
-          className="text-xs text-amber-700 border border-amber-200 px-3 py-1 rounded-full hover:bg-amber-50 transition-colors"
+          className="text-xs text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full hover:bg-yellow-50 transition-colors"
         >
           Hoy
         </button>
@@ -302,7 +302,7 @@ export default function CalendarioScreen() {
 
         <button
           onClick={() => setModal({ fecha: hoy() })}
-          className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+          className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors"
         >
           <Plus size={15} /> Nuevo evento
         </button>
@@ -330,13 +330,13 @@ export default function CalendarioScreen() {
                 key={i}
                 onClick={() => d && setModal({ fecha })}
                 className={`min-h-[100px] border-b border-r border-slate-100 p-2 cursor-pointer transition-colors
-                  ${d ? "hover:bg-amber-50/40" : "bg-slate-50/50"}
-                  ${esHoy ? "bg-amber-50" : ""}`}
+                  ${d ? "hover:bg-yellow-50/40" : "bg-slate-50/50"}
+                  ${esHoy ? "bg-yellow-50" : ""}`}
               >
                 {d && (
                   <>
                     <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mb-1
-                      ${esHoy ? "bg-amber-500 text-white" : "text-slate-600"}`}>
+                      ${esHoy ? "bg-yellow-500 text-white" : "text-slate-600"}`}>
                       {d}
                     </span>
                     <div className="space-y-0.5">

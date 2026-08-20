@@ -17,10 +17,10 @@ import { BACKEND } from "../utils/config";
 
 const ETAPAS = [
   { id: "prospecto",  label: "Prospecto",  color: "#94a3b8", bg: "bg-slate-100" },
-  { id: "contactado", label: "Contactado", color: "#f59e0b", bg: "bg-amber-50" },
+  { id: "contactado", label: "Contactado", color: "#f59e0b", bg: "bg-yellow-50" },
   { id: "propuesta",  label: "Propuesta",  color: "#6366f1", bg: "bg-indigo-50" },
   { id: "negociacion",label: "Negociación",color: "#3b82f6", bg: "bg-blue-50" },
-  { id: "cliente",    label: "Cliente",    color: "#10b981", bg: "bg-amber-50" },
+  { id: "cliente",    label: "Cliente",    color: "#10b981", bg: "bg-yellow-50" },
   { id: "inactivo",   label: "Inactivo",   color: "#ef4444", bg: "bg-red-50" },
 ];
 
@@ -34,8 +34,8 @@ function etapaInfo(id) {
 function NotaItem({ nota }) {
   return (
     <div className="flex gap-3 py-3 border-b border-slate-100 last:border-0">
-      <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-        <MessageSquare size={12} className="text-amber-600" />
+      <div className="w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 mt-0.5">
+        <MessageSquare size={12} className="text-yellow-600" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-700">{nota.texto}</p>
@@ -134,7 +134,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
       <div className="w-[520px] bg-white shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-start gap-4 px-6 py-5 border-b border-slate-100">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
             {(cliente.nombre || "?")[0].toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -172,8 +172,8 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
         {/* KPIs rápidos */}
         <div className="grid grid-cols-3 border-b border-slate-100">
           {[
-            { label: "Facturado", value: fmtMoney(totalFacturado), icon: BarChart2, color: "text-amber-600" },
-            { label: "CXC pend.", value: fmtMoney(cxcPend),        icon: DollarSign, color: cxcPend > 0 ? "text-amber-600" : "text-slate-400" },
+            { label: "Facturado", value: fmtMoney(totalFacturado), icon: BarChart2, color: "text-yellow-600" },
+            { label: "CXC pend.", value: fmtMoney(cxcPend),        icon: DollarSign, color: cxcPend > 0 ? "text-yellow-600" : "text-slate-400" },
             { label: "Facturas",  value: facturas.length,           icon: Receipt,   color: "text-slate-600" },
           ].map(k => (
             <div key={k.label} className="flex flex-col items-center py-3 border-r last:border-0 border-slate-100">
@@ -196,7 +196,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex-1 py-2.5 text-xs font-medium border-b-2 transition-colors
-                ${tab === t.id ? "border-amber-500 text-amber-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                ${tab === t.id ? "border-yellow-500 text-yellow-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
             >
               {t.label}
             </button>
@@ -216,12 +216,12 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                     onChange={e => setNuevaNota(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && !fechaSeguimiento && agregarNota()}
                     placeholder="Agregar nota de seguimiento…"
-                    className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+                    className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
                   />
                   <button
                     onClick={agregarNota}
                     disabled={!nuevaNota.trim()}
-                    className="px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-40 transition-colors"
+                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-40 transition-colors"
                   >
                     <Plus size={15} />
                   </button>
@@ -253,7 +253,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                 ? <p className="text-sm text-slate-400 text-center py-8">Sin facturas registradas.</p>
                 : facturas.map((f, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
-                    <Receipt size={14} className="text-amber-500 shrink-0" />
+                    <Receipt size={14} className="text-yellow-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-700 truncate">{f.consecutivo || f.numero || `#${i+1}`}</p>
                       <p className="text-xs text-slate-400">{f.fecha}</p>
@@ -274,13 +274,13 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                   const vencida = c.fechaVencimiento && c.fechaVencimiento < new Date().toISOString().slice(0,10);
                   return (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
-                      <DollarSign size={14} className={vencida ? "text-red-500" : "text-amber-500"} />
+                      <DollarSign size={14} className={vencida ? "text-red-500" : "text-yellow-500"} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-700 truncate">{c.descripcion || "CXC"}</p>
                         <p className="text-xs text-slate-400">Vence: {c.fechaVencimiento || "N/D"}</p>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-semibold ${vencida ? "text-red-600" : "text-amber-600"}`}>{fmtMoney(pend)}</p>
+                        <p className={`text-sm font-semibold ${vencida ? "text-red-600" : "text-yellow-600"}`}>{fmtMoney(pend)}</p>
                         {vencida && <span className="text-[10px] text-red-500">Vencida</span>}
                       </div>
                     </div>
@@ -302,9 +302,9 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                       <p className="text-xs text-slate-400">{p.fecha}</p>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-                      ${p.estado === "entregado" ? "bg-amber-100 text-amber-700"
+                      ${p.estado === "entregado" ? "bg-yellow-100 text-yellow-700"
                         : p.estado === "cancelado" ? "bg-red-100 text-red-600"
-                        : "bg-amber-100 text-amber-700"}`}>
+                        : "bg-yellow-100 text-yellow-700"}`}>
                       {p.estado || "pendiente"}
                     </span>
                   </div>
@@ -360,9 +360,9 @@ function ClienteCard({ cliente, onClick, score }) {
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-amber-200 hover:bg-amber-50/30 cursor-pointer transition-all"
+      className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-yellow-200 hover:bg-yellow-50/30 cursor-pointer transition-all"
     >
-      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
         {(cliente.nombre || "?")[0].toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
@@ -513,8 +513,8 @@ export default function CRMClientesScreen() {
       <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
         {!seleccionado ? (
           <>
-            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-              <User size={28} className="text-amber-500" />
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+              <User size={28} className="text-yellow-500" />
             </div>
             <h2 className="text-base font-semibold text-slate-700">Seleccioná un cliente</h2>
             <p className="text-sm text-slate-400 mt-1 max-w-xs">

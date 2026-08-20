@@ -65,7 +65,7 @@ function TabImportarCSV() {
   return (
     <div className="flex flex-col h-full">
       {filas.length===0 ? (
-        <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors ${arrastrando?"border-amber-400 bg-amber-50":"border-slate-200 bg-slate-50"}`}
+        <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors ${arrastrando?"border-yellow-400 bg-yellow-50":"border-slate-200 bg-slate-50"}`}
           onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
           onDragLeave={()=>setArrastrando(false)}
           onDrop={e=>{e.preventDefault();setArrastrando(false);cargarArchivo(e);}}>
@@ -74,12 +74,12 @@ function TabImportarCSV() {
             <p className="font-semibold text-slate-500">Arrastrá el CSV del banco aquí</p>
             <p className="text-sm text-slate-400 mt-1">Columnas esperadas: Fecha · Descripción · Monto</p>
           </div>
-          <label className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-amber-700">
+          <label className="flex items-center gap-2 bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-yellow-700">
             <Upload size={14}/> Seleccionar archivo CSV
             <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarArchivo}/>
           </label>
           {resultado && (
-            <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${resultado.ok?"bg-amber-100 text-green-800":"bg-red-100 text-red-700"}`}>
+            <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${resultado.ok?"bg-yellow-100 text-green-800":"bg-red-100 text-red-700"}`}>
               {resultado.ok ? `✓ Importado: ${resultado.ingresos} ingresos, ${resultado.gastos} gastos` : `Error: ${resultado.error}`}
             </div>
           )}
@@ -90,7 +90,7 @@ function TabImportarCSV() {
             <span className="font-semibold text-slate-600">{filas.length} filas cargadas</span>
             <span className="text-slate-400">Verificá los tipos antes de importar</span>
             <button onClick={importar} disabled={guardando}
-              className="ml-auto bg-amber-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-amber-700 disabled:opacity-50">
+              className="ml-auto bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-yellow-700 disabled:opacity-50">
               {guardando ? "Importando…" : "Importar todo"}
             </button>
             <button onClick={()=>setFilas([])} className="text-slate-400 hover:text-red-500 px-2 py-1.5 rounded hover:bg-red-50">Cancelar</button>
@@ -114,7 +114,7 @@ function TabImportarCSV() {
                     <td className="px-3 py-1.5 text-right font-semibold">{Math.abs(f.monto).toLocaleString("es-CR",{minimumFractionDigits:2})}</td>
                     <td className="px-3 py-1.5 text-center">
                       <button onClick={()=>toggleTipo(i)}
-                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${f.tipo==="ingreso"?"bg-amber-100 text-amber-700":"bg-red-100 text-red-600"}`}>
+                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${f.tipo==="ingreso"?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-600"}`}>
                         {f.tipo==="ingreso"?"Ingreso":"Gasto"}
                       </button>
                     </td>
@@ -218,15 +218,15 @@ export default function ConciliacionScreen() {
         </div>
         {tab==="conciliar" && bancarios.length>0 && (
           <>
-            <span className="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">{matchCount} conciliados</span>
-            <span className="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">{noMatchCount} sin conciliar</span>
+            <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">{matchCount} conciliados</span>
+            <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">{noMatchCount} sin conciliar</span>
             <button onClick={autoMatch} className="flex items-center gap-1 text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">
               <RefreshCw size={11}/> Auto-conciliar
             </button>
           </>
         )}
         {tab==="conciliar" && (
-          <label className="ml-auto flex items-center gap-2 bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700 cursor-pointer">
+          <label className="ml-auto flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700 cursor-pointer">
             <Upload size={13}/> Cargar CSV
             <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarCSV}/>
           </label>
@@ -237,7 +237,7 @@ export default function ConciliacionScreen() {
       {tab==="conciliar" && (bancarios.length===0 ? (
         /* Drop zone */
         <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors
-          ${arrastrando?"border-amber-400 bg-amber-50":"border-slate-200 bg-slate-50"}`}
+          ${arrastrando?"border-yellow-400 bg-yellow-50":"border-slate-200 bg-slate-50"}`}
           onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
           onDragLeave={()=>setArrastrando(false)}
           onDrop={e=>{e.preventDefault();setArrastrando(false);cargarCSV(e);}}>
@@ -261,21 +261,21 @@ export default function ConciliacionScreen() {
                 const local = matchId ? [...recibos,...compras].find(x=>x.id===matchId) : null;
                 return (
                   <div key={i} className={`px-4 py-2.5 border-b border-slate-100 flex items-center gap-3
-                    ${matchId?"bg-amber-50":"hover:bg-slate-50"}`}>
+                    ${matchId?"bg-yellow-50":"hover:bg-slate-50"}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-slate-700 truncate">{b.descripcion}</p>
                       <p className="text-[10px] text-slate-400">{b.fecha}</p>
                     </div>
-                    <p className={`text-sm font-bold shrink-0 ${b.monto>=0?"text-amber-700":"text-red-600"}`}>
+                    <p className={`text-sm font-bold shrink-0 ${b.monto>=0?"text-yellow-700":"text-red-600"}`}>
                       {fmtMoney(Math.abs(b.monto),"CRC")}
                     </p>
                     {matchId
-                      ? <div className="flex items-center gap-1 text-amber-600"><CheckCircle size={14}/><span className="text-[10px]">{local?.concepto||local?.proveedor||"✓"}</span>
+                      ? <div className="flex items-center gap-1 text-yellow-600"><CheckCircle size={14}/><span className="text-[10px]">{local?.concepto||local?.proveedor||"✓"}</span>
                           <button onClick={()=>setMatches(p=>{const n={...p};delete n[i];return n;})} className="ml-1 text-slate-300 hover:text-red-400"><XCircle size={11}/></button>
                         </div>
                       : <div className="flex items-center gap-1">
                           <Minus size={14} className="text-slate-300"/>
-                          <select className="text-[10px] border border-slate-200 rounded px-1 py-0.5 max-w-[120px] focus:outline-none focus:ring-1 focus:ring-amber-400"
+                          <select className="text-[10px] border border-slate-200 rounded px-1 py-0.5 max-w-[120px] focus:outline-none focus:ring-1 focus:ring-yellow-400"
                             value="" onChange={e=>e.target.value&&setMatches(p=>({...p,[i]:e.target.value}))}>
                             <option value="">Asignar…</option>
                             {localesNoMatch.map(l=>(
@@ -297,11 +297,11 @@ export default function ConciliacionScreen() {
             </div>
             <div className="flex-1 overflow-auto">
               {localesNoMatch.map(l=>(
-                <div key={l.id} className="px-4 py-2.5 border-b border-slate-100 hover:bg-amber-50">
+                <div key={l.id} className="px-4 py-2.5 border-b border-slate-100 hover:bg-yellow-50">
                   <p className="text-xs font-semibold text-slate-700 truncate">{l.concepto||l.proveedor||l.cliente||"—"}</p>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-[10px] text-slate-400">{fmtDate(l.fecha||l.creadoEn)}</p>
-                    <p className={`text-xs font-bold ${(l.monto||l.total||0)>=0?"text-amber-700":"text-red-600"}`}>
+                    <p className={`text-xs font-bold ${(l.monto||l.total||0)>=0?"text-yellow-700":"text-red-600"}`}>
                       {fmtMoney(Math.abs(l.monto||l.total||0),"CRC")}
                     </p>
                   </div>

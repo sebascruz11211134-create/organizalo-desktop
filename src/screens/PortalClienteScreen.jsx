@@ -64,7 +64,7 @@ export default function PortalClienteScreen() {
             <p className="text-sm text-slate-500">Tus clientes pueden consultar su estado de cuenta en línea.</p>
           </div>
           <button onClick={guardar} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado?"bg-amber-600 text-white":"bg-amber-600 text-white hover:bg-amber-700"}`}>
+            ${guardado?"bg-yellow-600 text-white":"bg-yellow-600 text-white hover:bg-yellow-700"}`}>
             {guardado?<><CheckCircle size={14}/> Guardado</>:<><Save size={14}/> Guardar</>}
           </button>
         </div>
@@ -95,7 +95,7 @@ export default function PortalClienteScreen() {
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={config.activo} onChange={e=>u("activo",e.target.checked)} className="sr-only peer"/>
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-amber-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"/>
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-yellow-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"/>
               </label>
             </div>
 
@@ -104,7 +104,7 @@ export default function PortalClienteScreen() {
                 <Globe size={14} className="text-slate-400 shrink-0"/>
                 <span className="text-xs text-slate-600 flex-1 truncate font-mono">{portalUrl}</span>
                 <button onClick={copiar} className="p-1 hover:bg-gray-200 rounded">
-                  {copiado?<CheckCircle size={13} className="text-amber-600"/>:<Copy size={13} className="text-slate-400"/>}
+                  {copiado?<CheckCircle size={13} className="text-yellow-600"/>:<Copy size={13} className="text-slate-400"/>}
                 </button>
                 <a href={portalUrl} target="_blank" rel="noreferrer" className="p-1 hover:bg-gray-200 rounded">
                   <ExternalLink size={13} className="text-slate-400"/>
@@ -120,12 +120,12 @@ export default function PortalClienteScreen() {
               <label className="block col-span-2">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Título del portal</span>
                 <input value={config.titulo||""} onChange={e=>u("titulo",e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
               </label>
               <label className="block col-span-2">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Mensaje de bienvenida</span>
                 <textarea value={config.mensaje||""} onChange={e=>u("mensaje",e.target.value)} rows={2}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"/>
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none"/>
               </label>
               <label className="block">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Color principal</span>
@@ -135,11 +135,11 @@ export default function PortalClienteScreen() {
             </div>
             <div className="flex gap-6 mt-3">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.mostrarSaldo} onChange={e=>u("mostrarSaldo",e.target.checked)} className="accent-amber-600"/>
+                <input type="checkbox" checked={config.mostrarSaldo} onChange={e=>u("mostrarSaldo",e.target.checked)} className="accent-yellow-600"/>
                 <span className="text-sm text-slate-600">Mostrar saldo pendiente</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.permitirDescarga} onChange={e=>u("permitirDescarga",e.target.checked)} className="accent-amber-600"/>
+                <input type="checkbox" checked={config.permitirDescarga} onChange={e=>u("permitirDescarga",e.target.checked)} className="accent-yellow-600"/>
                 <span className="text-sm text-slate-600">Permitir descargar facturas</span>
               </label>
             </div>
@@ -195,9 +195,9 @@ export default function PortalClienteScreen() {
               </div>
 
               {config.mostrarSaldo && (
-                <div className={`text-center py-3 rounded-lg mb-3 ${saldoPreview>0?"bg-red-50":"bg-amber-50"}`}>
+                <div className={`text-center py-3 rounded-lg mb-3 ${saldoPreview>0?"bg-red-50":"bg-yellow-50"}`}>
                   <p className="text-[11px] font-semibold uppercase text-slate-500">Saldo pendiente</p>
-                  <p className={`text-xl font-black mt-0.5 ${saldoPreview>0?"text-red-700":"text-amber-700"}`}>
+                  <p className={`text-xl font-black mt-0.5 ${saldoPreview>0?"text-red-700":"text-yellow-700"}`}>
                     {fmtMoney(saldoPreview,"CRC")}
                   </p>
                 </div>

@@ -101,7 +101,7 @@ export default function ClienteAutocomplete({
 
               {/* Plazo de crédito */}
               {c.dias_credito > 0 && (
-                <span className="text-[10px] text-amber-600 font-bold shrink-0">
+                <span className="text-[10px] text-yellow-600 font-bold shrink-0">
                   {c.dias_credito}d
                 </span>
               )}

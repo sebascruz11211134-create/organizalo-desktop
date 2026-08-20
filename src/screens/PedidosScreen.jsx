@@ -6,9 +6,9 @@ import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { reducirInventario } from "../utils/clienteUtils";
 
 const COLS = [
-  { key:"pendiente",  label:"Pendiente",   color:"bg-amber-50  border-amber-200",  dot:"bg-amber-400" },
+  { key:"pendiente",  label:"Pendiente",   color:"bg-yellow-50  border-yellow-200",  dot:"bg-yellow-400" },
   { key:"proceso",    label:"En proceso",  color:"bg-blue-50   border-blue-200",   dot:"bg-blue-500" },
-  { key:"listo",      label:"Listo",       color:"bg-amber-50  border-amber-300",  dot:"bg-amber-500" },
+  { key:"listo",      label:"Listo",       color:"bg-yellow-50  border-yellow-300",  dot:"bg-yellow-500" },
   { key:"entregado",  label:"Entregado",   color:"bg-slate-50  border-slate-200",  dot:"bg-slate-400" },
 ];
 
@@ -58,12 +58,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <input value={busq} onChange={e=>{setBusq(e.target.value);setCliente(e.target.value);setShowC(true);}}
               onFocus={()=>setShowC(true)} onBlur={()=>setTimeout(()=>setShowC(false),150)}
               placeholder="Nombre o código CLI-XXXX…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             {showC && filtrados.length>0 && (
               <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
                 {filtrados.map(c=>(
                   <button key={c.id} onMouseDown={()=>{setCliente(c.nombre);setBusq(c.nombre);setShowC(false);}}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b last:border-0">
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b last:border-0">
                     {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
                     <span className="font-semibold">{c.nombre}</span>
                     <span className="text-slate-400 ml-2">{c.cedula}</span>
@@ -77,7 +77,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Descripción del pedido</label>
             <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3}
               placeholder="Qué incluye el pedido…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -85,12 +85,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Monto (₡)</label>
               <input type="number" value={monto} onChange={e=>setMonto(e.target.value)} min="0"
                 placeholder="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Estado</label>
               <select value={estado} onChange={e=>setEstado(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {COLS.map(c=><option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
@@ -100,12 +100,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha pedido</label>
               <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha entrega</label>
               <input type="date" value={entrega} onChange={e=>setEntrega(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
           </div>
 
@@ -113,7 +113,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
             <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Notas</label>
             <input value={notas} onChange={e=>setNotas(e.target.value)}
               placeholder="Notas adicionales…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
           </div>
 
           {/* Productos del pedido (opcional — reduce inventario al entregar) */}
@@ -123,12 +123,12 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
               <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowProd(true);}}
                 onFocus={()=>setShowProd(true)} onBlur={()=>setTimeout(()=>setShowProd(false),150)}
                 placeholder="Buscar producto…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
               {showProd && prodsFilt.length>0 && (
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-32 overflow-auto">
                   {prodsFilt.map(p=>(
                     <button key={p.id} onMouseDown={()=>agregarProd(p)}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b last:border-0 flex justify-between">
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0 flex justify-between">
                       <span>{p.nombre}</span><span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
                     </button>
                   ))}
@@ -154,7 +154,7 @@ function FormPedido({ pedido, contactos, productos, onGuardar, onCancelar }) {
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
           <button onClick={()=>onGuardar({ id:pedido?.id||genId(), cliente, descripcion:desc, monto:parseFloat(monto)||0, fecha, fechaEntrega:entrega, estado, notas, lineas, creadoEn:pedido?.creadoEn||new Date().toISOString() })}
-            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-700">
+            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
             <Check size={14}/> Guardar
           </button>
         </div>
@@ -221,7 +221,7 @@ export default function PedidosScreen() {
       {/* Toolbar oscuro */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={()=>{setEditando(null);setForm(true);}}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
           <Plus size={13}/> Nuevo pedido
         </button>
         <button disabled={!sel} onClick={()=>sel&&(setEditando(sel),setForm(true))}
@@ -268,12 +268,12 @@ export default function PedidosScreen() {
                 <div className="flex-1 overflow-auto p-3 space-y-2">
                   {items.map(p=>(
                     <div key={p.id} onClick={()=>setSelected(selected===p.id?null:p.id)}
-                      className={`cursor-pointer rounded-xl p-3 shadow-sm border transition-colors ${selected===p.id?"bg-blue-50 border-blue-400 border-l-4":"bg-white border-white hover:border-amber-200"}`}>
+                      className={`cursor-pointer rounded-xl p-3 shadow-sm border transition-colors ${selected===p.id?"bg-blue-50 border-blue-400 border-l-4":"bg-white border-white hover:border-yellow-200"}`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="font-semibold text-sm text-slate-800 leading-tight">{p.cliente || "Sin cliente"}</p>
                       </div>
                       <p className="text-xs text-slate-500 mb-2 line-clamp-2">{p.descripcion}</p>
-                      {p.monto>0 && <p className="text-xs font-bold text-amber-700">{fmtMoney(p.monto,"CRC")}</p>}
+                      {p.monto>0 && <p className="text-xs font-bold text-yellow-700">{fmtMoney(p.monto,"CRC")}</p>}
                       {p.fechaEntrega && <p className="text-[10px] text-slate-400 mt-1">📅 Entrega: {fmtDate(p.fechaEntrega)}</p>}
                       {/* Mover a siguiente estado */}
                       <div className="flex gap-1 mt-2 pt-2 border-t border-slate-100">

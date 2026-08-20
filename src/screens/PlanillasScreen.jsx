@@ -117,7 +117,7 @@ function EmpleadoModal({ emp, onClose, onSave }) {
           {[["Nombre *", "nombre", "text", "col-span-2"], ["Puesto", "puesto", "text", ""], ["Cédula", "cedula", "text", ""], ["Salario bruto (₡) *", "salarioBruto", "number", ""]].map(([lbl, key, type, cls]) => (
             <label key={key} className={`block ${cls}`}>
               <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
-              <input type={type} value={form[key] || ""} onChange={e => u(key, e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              <input type={type} value={form[key] || ""} onChange={e => u(key, e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </label>
           ))}
           <label className="flex items-center gap-2 col-span-2"><input type="checkbox" checked={form.aplicaRenta} onChange={e => u("aplicaRenta", e.target.checked)} className="rounded" /><span className="text-sm">Aplica retención de renta</span></label>
@@ -125,7 +125,7 @@ function EmpleadoModal({ emp, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Guardar</button>
+          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -170,7 +170,7 @@ function PrestamoModal({ empleados, onClose, onSave }) {
         ))}
         <div className="flex gap-3 mt-2">
           <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Registrar</button>
+          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Registrar</button>
         </div>
       </div>
     </div>
@@ -188,8 +188,8 @@ function DetalleRow({ emp }) {
         <td className="text-slate-500 text-xs">{emp.puesto || "—"}</td>
         <td>{fmtMoney(c.bruto, "CRC")}</td>
         <td className="text-red-600">-{fmtMoney(c.dedTotal, "CRC")}</td>
-        <td className="font-bold text-amber-700">{fmtMoney(c.neto, "CRC")}</td>
-        <td className="text-amber-700">{fmtMoney(c.patTotal, "CRC")}</td>
+        <td className="font-bold text-yellow-700">{fmtMoney(c.neto, "CRC")}</td>
+        <td className="text-yellow-700">{fmtMoney(c.patTotal, "CRC")}</td>
         <td className="font-bold text-slate-800">{fmtMoney(c.costoTotal, "CRC")}</td>
         <td className="text-slate-400">{fmtMoney(c.aguinaldo, "CRC")}</td>
       </tr>
@@ -302,18 +302,18 @@ export default function PlanillasScreen() {
         <span className="text-sm font-semibold text-slate-800 min-w-[160px] text-center capitalize">{mesLabel(mes)}</span>
         <button onClick={() => setMes(nextMes(mes))} className="p-2 rounded-lg hover:bg-gray-100"><ChevronRight size={16} className="text-slate-600" /></button>
         <span className="flex-1" />
-        {tab === 2 && <button onClick={() => setModalPrest(true)} className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600"><Plus size={14} /> Nuevo préstamo</button>}
-        <button onClick={() => setModalEmp({})} className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700"><Plus size={14} /> Empleado</button>
+        {tab === 2 && <button onClick={() => setModalPrest(true)} className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-600"><Plus size={14} /> Nuevo préstamo</button>}
+        <button onClick={() => setModalEmp({})} className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700"><Plus size={14} /> Empleado</button>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 bg-white px-6">
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setTab(i)}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors relative ${tab === i ? "border-amber-600 text-amber-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors relative ${tab === i ? "border-yellow-600 text-yellow-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
             {t}
             {i === 2 && prestActivos.length > 0 && (
-              <span className="ml-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{prestActivos.length}</span>
+              <span className="ml-1.5 bg-yellow-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{prestActivos.length}</span>
             )}
           </button>
         ))}
@@ -325,8 +325,8 @@ export default function PlanillasScreen() {
           <div className="grid grid-cols-5 gap-0 border-b border-slate-200 bg-white text-center">
             {[["Salario bruto", fmtMoney(totNomina.bruto, "CRC"), "text-slate-900"],
               ["Deducciones", fmtMoney(totNomina.dedTotal, "CRC"), "text-red-600"],
-              ["A pagar", fmtMoney(totNomina.neto, "CRC"), "text-amber-700 font-bold"],
-              ["Cargas patronales", fmtMoney(totNomina.patTotal, "CRC"), "text-amber-700"],
+              ["A pagar", fmtMoney(totNomina.neto, "CRC"), "text-yellow-700 font-bold"],
+              ["Cargas patronales", fmtMoney(totNomina.patTotal, "CRC"), "text-yellow-700"],
               ["Costo total empresa", fmtMoney(totNomina.costoTotal, "CRC"), "text-slate-900 font-black"],
             ].map(([lbl, val, cls]) => (
               <div key={lbl} className="py-3 px-4 border-r border-slate-100 last:border-r-0">
@@ -339,7 +339,7 @@ export default function PlanillasScreen() {
             {empleados.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                 <p className="text-lg font-semibold">Sin empleados registrados</p>
-                <button onClick={() => setModalEmp({})} className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm">+ Agregar empleado</button>
+                <button onClick={() => setModalEmp({})} className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm">+ Agregar empleado</button>
               </div>
             ) : (
               <table className="table-base">
@@ -353,8 +353,8 @@ export default function PlanillasScreen() {
                     <td colSpan={2} className="text-slate-700">TOTALES ({empleados.length})</td>
                     <td>{fmtMoney(totNomina.bruto, "CRC")}</td>
                     <td className="text-red-600">-{fmtMoney(totNomina.dedTotal, "CRC")}</td>
-                    <td className="text-amber-700">{fmtMoney(totNomina.neto, "CRC")}</td>
-                    <td className="text-amber-700">{fmtMoney(totNomina.patTotal, "CRC")}</td>
+                    <td className="text-yellow-700">{fmtMoney(totNomina.neto, "CRC")}</td>
+                    <td className="text-yellow-700">{fmtMoney(totNomina.patTotal, "CRC")}</td>
                     <td className="text-slate-900 font-black">{fmtMoney(totNomina.costoTotal, "CRC")}</td>
                     <td>{fmtMoney(totNomina.aguinaldo, "CRC")}</td>
                   </tr>
@@ -415,7 +415,7 @@ export default function PlanillasScreen() {
               {sems.map((s, i) => <option key={s.key} value={i}>{s.label}</option>)}
             </select>
             <button onClick={() => setSemSel(s => Math.min(sems.length - 1, s + 1))} className="p-1 rounded hover:bg-gray-100"><ChevronRight size={15} /></button>
-            <span className="ml-auto text-sm font-semibold text-slate-700">Total bruto semana: <span className="text-amber-700">{fmt(totHoras.bruto)}</span></span>
+            <span className="ml-auto text-sm font-semibold text-slate-700">Total bruto semana: <span className="text-yellow-700">{fmt(totHoras.bruto)}</span></span>
           </div>
           <div className="flex-1 overflow-auto">
             {empleados.length === 0 ? (
@@ -437,7 +437,7 @@ export default function PlanillasScreen() {
                       <tr key={emp.id}>
                         <td>
                           <div className="font-semibold text-slate-900">{emp.nombre}</div>
-                          {cuotas > 0 && <div className="text-xs text-amber-600">Cuota préstamo: -{fmt(cuotas)}</div>}
+                          {cuotas > 0 && <div className="text-xs text-yellow-600">Cuota préstamo: -{fmt(cuotas)}</div>}
                         </td>
                         <td className="text-slate-500 text-xs">{fmt(Math.round(h.tarifa))}/h</td>
                         {["normal", "tm", "doble"].map(tipo => (
@@ -445,12 +445,12 @@ export default function PlanillasScreen() {
                             <input type="number" min="0" step="0.5"
                               value={semanasData[`${emp.id}_${sk}_${tipo}`] || ""}
                               onChange={e => setHoras(emp.id, sk, tipo, e.target.value)}
-                              className="w-20 border border-slate-200 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                              className="w-20 border border-slate-200 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-1 focus:ring-yellow-400" />
                           </td>
                         ))}
                         <td>
-                          <div className="font-bold text-amber-700">{fmt(h.bruto)}</div>
-                          {cuotas > 0 && <div className="text-xs font-bold text-amber-700">A pagar: {fmt(aPagar)}</div>}
+                          <div className="font-bold text-yellow-700">{fmt(h.bruto)}</div>
+                          {cuotas > 0 && <div className="text-xs font-bold text-yellow-700">A pagar: {fmt(aPagar)}</div>}
                         </td>
                       </tr>
                     );
@@ -472,7 +472,7 @@ export default function PlanillasScreen() {
             <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
               <TrendingDown size={40} />
               <p className="font-semibold">Sin préstamos registrados</p>
-              <button onClick={() => setModalPrest(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm">+ Nuevo préstamo</button>
+              <button onClick={() => setModalPrest(true)} className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm">+ Nuevo préstamo</button>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
@@ -486,8 +486,8 @@ export default function PlanillasScreen() {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-900">{emp?.nombre || "Empleado"}</span>
                           {p.activo
-                            ? <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">Activo</span>
-                            : <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} />Cancelado</span>
+                            ? <span className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">Activo</span>
+                            : <span className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 size={10} />Cancelado</span>
                           }
                         </div>
                         <p className="text-sm text-slate-500 mt-0.5">{p.descripcion || "Sin descripción"} · desde {p.fecha}</p>
@@ -496,19 +496,19 @@ export default function PlanillasScreen() {
                     </div>
                     {/* Barra progreso */}
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
-                      <div className="h-full bg-amber-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-yellow-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex gap-4">
                         <span className="text-slate-500">Monto: <strong>{fmt(p.monto)}</strong></span>
                         <span className="text-slate-500">Saldo: <strong className="text-red-600">{fmt(p.saldo)}</strong></span>
-                        <span className="text-slate-500">Cuota sem.: <strong className="text-amber-600">{fmt(p.cuota)}</strong></span>
+                        <span className="text-slate-500">Cuota sem.: <strong className="text-yellow-600">{fmt(p.cuota)}</strong></span>
                       </div>
                       <span className="text-xs text-slate-400">{pct}% pagado</span>
                     </div>
                     {p.activo && (
                       <button onClick={() => pagarCuota(p.id)}
-                        className="mt-3 w-full bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold py-1.5 rounded-lg text-sm border border-amber-200 transition-colors">
+                        className="mt-3 w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-semibold py-1.5 rounded-lg text-sm border border-yellow-200 transition-colors">
                         Aplicar cuota ({fmt(p.cuota)})
                       </button>
                     )}

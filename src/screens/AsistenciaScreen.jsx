@@ -122,7 +122,7 @@ export default function AsistenciaScreen() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <Clock size={13} className="text-amber-400"/>
+        <Clock size={13} className="text-yellow-400"/>
         <select value={empSel} onChange={e=>setEmpSel(e.target.value)}
           className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5">
           <option value="todos">Todos los empleados</option>
@@ -153,7 +153,7 @@ export default function AsistenciaScreen() {
                     <p className="text-sm font-semibold text-slate-800">{emp.nombre}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{emp.cargo || emp.puesto || "Empleado"}</p>
                     {info.abierto && (
-                      <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                      <p className="text-[10px] text-yellow-600 font-semibold mt-1">
                         🟢 Entrada: {info.abierto.entrada}
                       </p>
                     )}
@@ -161,7 +161,7 @@ export default function AsistenciaScreen() {
                   <div className="flex flex-col gap-1.5">
                     {!info.abierto ? (
                       <button onClick={() => marcarEntrada(emp.id)}
-                        className="flex items-center gap-1 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
+                        className="flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
                         <UserCheck size={12}/> Entrada
                       </button>
                     ) : (
@@ -206,7 +206,7 @@ export default function AsistenciaScreen() {
                     <td className="text-center">{fmtHoras(horasTotales)}</td>
                     <td className="text-center">
                       {abierto
-                        ? <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[10px] font-semibold">Trabajando</span>
+                        ? <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-semibold">Trabajando</span>
                         : <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-semibold">Fuera</span>}
                     </td>
                   </tr>
@@ -238,8 +238,8 @@ export default function AsistenciaScreen() {
                       <tr key={r.id}>
                         <td className="font-semibold">{emp?.nombre || "—"}</td>
                         <td>{fmtDate(r.fecha)}</td>
-                        <td className="text-amber-600 font-mono text-xs">{r.entrada}</td>
-                        <td className={`font-mono text-xs ${r.salida ? "text-rose-600" : "text-amber-500"}`}>
+                        <td className="text-yellow-600 font-mono text-xs">{r.entrada}</td>
+                        <td className={`font-mono text-xs ${r.salida ? "text-rose-600" : "text-yellow-500"}`}>
                           {r.salida || "Abierto…"}
                         </td>
                         <td className="text-right">{horas ? fmtHoras(horas) : "—"}</td>
@@ -284,7 +284,7 @@ export default function AsistenciaScreen() {
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={()=>setModal(null)} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">Cancelar</button>
-              <button onClick={guardarManual} className="flex-1 py-2.5 bg-amber-700 text-white rounded-lg text-sm font-semibold">Guardar</button>
+              <button onClick={guardarManual} className="flex-1 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold">Guardar</button>
             </div>
           </div>
         </div>

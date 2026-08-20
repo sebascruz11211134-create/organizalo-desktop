@@ -94,14 +94,14 @@ function ContactoModal({ contacto, onClose, onSave }) {
                   onChange={(e) => { setCedula(e.target.value); setCedulaError(""); setSituacion(null); }}
                   onKeyDown={(e) => e.key === "Enter" && buscarEnHacienda()}
                   placeholder="Número de cédula"
-                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 border-r-0"
+                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 border-r-0"
                 />
                 <button
                   type="button"
                   onClick={buscarEnHacienda}
                   disabled={buscando || !cedula.trim()}
                   title="Consultar Hacienda CR"
-                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 text-slate-500 transition-colors disabled:opacity-40"
+                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 text-slate-500 transition-colors disabled:opacity-40"
                 >
                   {buscando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
                 </button>
@@ -122,7 +122,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
               <div className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border
                 ${situacion.moroso === "SI" || situacion.omiso === "SI"
                   ? "bg-red-50 text-red-700 border-red-200"
-                  : "bg-green-50 text-amber-700 border-amber-300"}`}>
+                  : "bg-green-50 text-yellow-700 border-yellow-300"}`}>
                 <span>{situacion.moroso === "SI" || situacion.omiso === "SI" ? "⚠️" : "✓"}</span>
                 <span>
                   {situacion.moroso === "SI" && situacion.omiso === "SI" ? "Moroso + Omiso" :
@@ -144,13 +144,13 @@ function ContactoModal({ contacto, onClose, onSave }) {
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre *</label>
               <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
             <div className="w-28">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código</label>
               <input value={codigoCli} onChange={(e) => setCodigoCli(e.target.value.toUpperCase())}
                 placeholder="CLI-0001"
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
           </div>
 
@@ -191,7 +191,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
                   value={diasCredito}
                   onChange={(e) => setDiasCredito(e.target.value)}
                   placeholder="0 = contado"
-                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-yellow-400"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">días</span>
               </div>
@@ -203,7 +203,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-4 px-5 pb-5">
           <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-amber-600 rounded text-sm font-semibold text-white hover:bg-amber-700">Guardar</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-yellow-600 rounded text-sm font-semibold text-white hover:bg-yellow-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -244,14 +244,14 @@ export default function ContactosScreen() {
   });
 
   const sel = visibles.find(c => c.id === selected);
-  const TIPO_CLS = { cliente: "bg-blue-100 text-blue-700", proveedor: "bg-amber-100 text-amber-700", ambos: "bg-violet-100 text-violet-700" };
+  const TIPO_CLS = { cliente: "bg-blue-100 text-blue-700", proveedor: "bg-yellow-100 text-yellow-700", ambos: "bg-violet-100 text-violet-700" };
 
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar oscuro — igual que CXC */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={() => setModal({})}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Plus size={13}/> Nuevo
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
@@ -318,7 +318,7 @@ export default function ContactosScreen() {
                   <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[c.tipo] || "bg-gray-100 text-slate-600"}`}>{c.tipo}</span></td>
                   <td>
                     {c.dias_credito > 0
-                      ? <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
+                      ? <span className="text-xs font-semibold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
                       : <span className="text-xs text-slate-400">contado</span>}
                   </td>
                   <td className="text-slate-500">{c.email || "—"}</td>

@@ -17,7 +17,7 @@ const ESTADO = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
   if (s <= 0) return { label: "Saldada", cls: "bg-green-100 text-green-800" };
   if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
-  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-amber-100 text-amber-700" };
+  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-yellow-100 text-yellow-700" };
   return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
 };
 
@@ -141,7 +141,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
               value={cliente}
               onChange={e => handleClienteChange(e.target.value)}
               placeholder="Nombre del cliente…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
             />
             <datalist id="cxc-clientes">
               {clientesUnicos.map(c => <option key={c} value={c}/>)}
@@ -151,13 +151,13 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </div>
           {/* Método */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método</label>
             <select value={metodo} onChange={e => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
               {METODOS.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
@@ -165,7 +165,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <div className="col-span-2 md:col-span-4">
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observación</label>
             <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="N° de transferencia, comprobante…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </div>
         </div>
 
@@ -215,10 +215,10 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
                           value={aplicado[d.id] ?? ""}
                           onChange={e => setLinea(d.id, e.target.value)}
                           placeholder="0"
-                          className="w-full border border-amber-300 rounded px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                          className="w-full border border-yellow-300 rounded px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white"
                         />
                       </td>
-                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-amber-700"}`}>
+                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-yellow-700"}`}>
                         {fmtMoney(saldoPost, dmon)}
                       </td>
                     </tr>
@@ -238,7 +238,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
             </div>
             <div>
               <span className="text-slate-400">Total aplicado:</span>{" "}
-              <strong className="text-amber-700">{fmtMoney(totalAplicado, mon)}</strong>
+              <strong className="text-yellow-700">{fmtMoney(totalAplicado, mon)}</strong>
             </div>
           </div>
           <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">
@@ -247,7 +247,7 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
           <button
             disabled={totalAplicado <= 0}
             onClick={guardar}
-            className="px-6 py-2 bg-amber-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
+            className="px-6 py-2 bg-yellow-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
             Guardar recibo
           </button>
         </div>
@@ -316,12 +316,12 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
             <div className="flex-1">
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
               <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
               <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 <option value="CRC">₡ CRC</option>
                 <option value="USD">$ USD</option>
               </select>
@@ -330,17 +330,17 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha vencimiento</label>
             <input type="date" value={vence} onChange={(e) => setVence(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia / Notas</label>
             <input value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura, descripción…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
           </div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-amber-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-yellow-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
         </div>
       </div>
     </div>
@@ -410,13 +410,13 @@ export default function CXCScreen() {
       {/* Toolbar principal */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Plus size={13} /> Nueva
         </button>
         <button
           disabled={!sel || sel.estado === "anulada"}
           onClick={anular}
-          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Ban size={13} /> Anular
         </button>
         <button
@@ -459,7 +459,7 @@ export default function CXCScreen() {
           <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
         </div>
       ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-amber-300 text-xs text-slate-500">
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-yellow-300 text-xs text-slate-500">
           {totCRC > 0 && <span>Por cobrar: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
           {totUSD > 0 && <span><strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
           <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
@@ -499,8 +499,8 @@ export default function CXCScreen() {
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-amber-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-amber-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className="text-yellow-700">{fmtMoney(d.pagado || 0, mon)}</td>
+                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                       {fmtDate(d.fechaVencimiento)}
                     </td>
@@ -522,7 +522,7 @@ export default function CXCScreen() {
                             <tbody>
                               {(d.pagos || []).map((p) => (
                                 <tr key={p.id}>
-                                  <td className="py-0.5 font-mono text-amber-700">{p.numero}</td>
+                                  <td className="py-0.5 font-mono text-yellow-700">{p.numero}</td>
                                   <td className="py-0.5">{p.fecha}</td>
                                   <td className="py-0.5">{p.metodo}</td>
                                   <td className="py-0.5 font-bold">{fmtMoney(p.monto, mon)}</td>

@@ -16,7 +16,7 @@ const ESTADO = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
   if (s <= 0) return { label: "Pagada", cls: "bg-green-100 text-green-800" };
   if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
-  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-amber-100 text-amber-700" };
+  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-yellow-100 text-yellow-700" };
   return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
 };
 
@@ -253,7 +253,7 @@ export default function CXPScreen() {
         <button
           disabled={!sel || sel.estado === "anulada"}
           onClick={anular}
-          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Ban size={13} /> Anular
         </button>
         <button
@@ -326,8 +326,8 @@ export default function CXPScreen() {
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-amber-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-amber-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className="text-yellow-700">{fmtMoney(d.pagado || 0, mon)}</td>
+                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                       <div>{fmtDate(d.fechaVencimiento)}</div>{d.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {d.creadoPor}</div>}
                     </td>

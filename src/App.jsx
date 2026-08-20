@@ -142,7 +142,7 @@ function TrialBanner({ plan }) {
   const urgent = plan.daysLeft <= 1;
   return (
     <div className={`flex items-center justify-between px-4 py-2 text-sm font-semibold
-      ${urgent ? "bg-red-500 text-white" : "bg-amber-400 text-amber-900"}`}>
+      ${urgent ? "bg-red-500 text-white" : "bg-yellow-400 text-yellow-900"}`}>
       <div className="flex items-center gap-2">
         <AlarmClock size={14} />
         {plan.expired
@@ -184,9 +184,9 @@ function BottomTabBar() {
             key={tab.path}
             onClick={() => navigate(tab.path)}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors
-              ${active ? "text-amber-600" : "text-slate-400"}`}
+              ${active ? "text-yellow-600" : "text-slate-400"}`}
           >
-            <tab.icon size={20} className={active ? "text-amber-600" : "text-slate-400"} />
+            <tab.icon size={20} className={active ? "text-yellow-600" : "text-slate-400"} />
             <span>{tab.label}</span>
           </button>
         );

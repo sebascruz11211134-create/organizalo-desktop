@@ -11,10 +11,10 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   const dotColor = isError
     ? "bg-red-400"
     : isSyncing
-    ? "bg-amber-400 animate-pulse"
+    ? "bg-yellow-400 animate-pulse"
     : isOffline
     ? "bg-slate-400"
-    : "bg-amber-400";
+    : "bg-yellow-400";
 
   const label = {
     idle:     "Sincronizado",
@@ -71,7 +71,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                     <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full
-                        ${user.plan==="activo" ? "bg-brand-100 text-brand-700" : "bg-amber-100 text-amber-700"}`}>
+                        ${user.plan==="activo" ? "bg-brand-100 text-brand-700" : "bg-yellow-100 text-yellow-700"}`}>
                         {user.plan === "activo" ? "Plan Activo" : "Prueba gratis"}
                       </span>
                       {(user.rol === "admin" || user.rol === "superadmin") && (

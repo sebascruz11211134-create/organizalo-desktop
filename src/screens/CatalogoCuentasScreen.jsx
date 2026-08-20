@@ -12,8 +12,8 @@ const TIPO_BADGE = {
   activo:     "bg-blue-50 text-blue-700",
   pasivo:     "bg-red-50 text-red-700",
   patrimonio: "bg-purple-50 text-purple-700",
-  ingreso:    "bg-green-50 text-amber-700",
-  costo:      "bg-amber-50 text-amber-700",
+  ingreso:    "bg-green-50 text-yellow-700",
+  costo:      "bg-yellow-50 text-yellow-700",
   gasto:      "bg-slate-100 text-slate-600",
 };
 
@@ -47,20 +47,20 @@ function CuentaModal({ cuenta, cuentas, onClose, onSave }) {
             <label key={key} className={`block ${cls}`}>
               <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
               <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </label>
           ))}
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Tipo</span>
             <select value={form.tipo} onChange={e=>u("tipo",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
               {TIPOS_CUENTA.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Nivel</span>
             <select value={form.nivel} onChange={e=>u("nivel",parseInt(e.target.value))}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
               <option value={1}>1 — Grupo mayor</option>
               <option value={2}>2 — Sub-grupo</option>
               <option value={3}>3 — Cuenta detalle</option>
@@ -73,7 +73,7 @@ function CuentaModal({ cuenta, cuentas, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Guardar</button>
+          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -124,7 +124,7 @@ export default function CatalogoCuentasScreen() {
             placeholder="Buscar por código o nombre…" className="bg-transparent text-sm flex-1 outline-none"/>
         </div>
         <select value={tipo} onChange={e=>setTipo(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
           <option value="Todos">Todos los tipos</option>
           {TIPOS_CUENTA.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
         </select>
@@ -132,7 +132,7 @@ export default function CatalogoCuentasScreen() {
           Restaurar plan CR
         </button>
         <button onClick={()=>setModal({})}
-          className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
+          className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
           <Plus size={14}/> Nueva cuenta
         </button>
       </div>

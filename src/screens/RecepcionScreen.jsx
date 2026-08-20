@@ -17,8 +17,8 @@ import { getToken } from "../utils/auth";
 import { BACKEND } from "../utils/config";
 
 const ESTADO_BADGE = {
-  pendiente:        { label: "Pendiente",       cls: "bg-amber-100 text-amber-700" },
-  aceptada:         { label: "Aceptada",         cls: "bg-green-100 text-amber-700" },
+  pendiente:        { label: "Pendiente",       cls: "bg-yellow-100 text-yellow-700" },
+  aceptada:         { label: "Aceptada",         cls: "bg-green-100 text-yellow-700" },
   rechazada:        { label: "Rechazada",        cls: "bg-red-100 text-red-700" },
   aceptada_parcial: { label: "Parcial",          cls: "bg-blue-100 text-blue-700" },
   error_hacienda:   { label: "Error Hacienda",   cls: "bg-red-100 text-red-700" },
@@ -172,9 +172,9 @@ export default function RecepcionScreen() {
         onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
         onClick={() => fileRef.current?.click()}
         className={`mb-5 border-2 border-dashed rounded-xl px-6 py-10 text-center cursor-pointer transition-colors
-          ${dragging ? "border-amber-300 bg-green-50" : "border-gray-300 hover:border-amber-300 hover:bg-amber-50"}`}>
+          ${dragging ? "border-yellow-300 bg-green-50" : "border-gray-300 hover:border-yellow-300 hover:bg-yellow-50"}`}>
         {subiendo ? (
-          <div className="flex flex-col items-center gap-2 text-amber-700">
+          <div className="flex flex-col items-center gap-2 text-yellow-700">
             <Loader2 size={32} className="animate-spin" />
             <p className="text-sm font-medium">Procesando XMLs…</p>
           </div>
@@ -182,7 +182,7 @@ export default function RecepcionScreen() {
           <div className="flex flex-col items-center gap-2 text-slate-400">
             <Inbox size={36} />
             <p className="text-sm font-medium text-slate-600">
-              Arrastrá archivos <span className="font-mono text-amber-700">.xml</span> aquí, o hacé click para seleccionarlos
+              Arrastrá archivos <span className="font-mono text-yellow-700">.xml</span> aquí, o hacé click para seleccionarlos
             </p>
             <p className="text-xs text-slate-400">Hasta 500 XMLs a la vez — FacturaElectronica, Tiquete, Nota de Crédito…</p>
           </div>
@@ -194,7 +194,7 @@ export default function RecepcionScreen() {
       {/* ── Mensaje resultado ─────────────────────────────────────────────── */}
       {msg && (
         <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-          ${msg.type === "ok" ? "bg-green-50 border border-amber-300 text-amber-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+          ${msg.type === "ok" ? "bg-green-50 border border-yellow-300 text-yellow-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
           {msg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
           {msg.text}
         </div>
@@ -206,7 +206,7 @@ export default function RecepcionScreen() {
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Token Hacienda (Bearer)</label>
           <input type="password" value={haciendaToken} onChange={(e) => setHaciendaToken(e.target.value)}
             placeholder="Dejar vacío si está configurado en el servidor"
-            className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400" />
+            className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
         </div>
 
         {/* Filtro estado */}
@@ -225,7 +225,7 @@ export default function RecepcionScreen() {
         {/* Aceptar todos */}
         {pendientes > 0 && (
           <button onClick={aceptarTodos} disabled={aceptTodos}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
             {aceptTodos ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             Aceptar {pendientes} pendiente{pendientes > 1 ? "s" : ""}
           </button>
@@ -240,10 +240,10 @@ export default function RecepcionScreen() {
           </div>
         ) : errorConex ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
-            <AlertCircle size={36} className="text-amber-400" />
+            <AlertCircle size={36} className="text-yellow-400" />
             <p className="text-sm font-medium text-slate-600">No se pudo conectar al servidor</p>
             <p className="text-xs text-slate-400">El módulo de recepción requiere conexión al backend. Verificá que el servidor esté activo.</p>
-            <button onClick={cargar} className="mt-2 text-xs text-amber-700 underline">Reintentar</button>
+            <button onClick={cargar} className="mt-2 text-xs text-yellow-700 underline">Reintentar</button>
           </div>
         ) : facturas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
@@ -293,7 +293,7 @@ export default function RecepcionScreen() {
                             onClick={() => aceptar(f.id, 1)}
                             disabled={proc}
                             title="Aceptar"
-                            className="flex items-center gap-1 px-2.5 py-1 bg-green-100 text-amber-700 rounded-lg text-xs font-semibold hover:bg-green-200 disabled:opacity-50">
+                            className="flex items-center gap-1 px-2.5 py-1 bg-green-100 text-yellow-700 rounded-lg text-xs font-semibold hover:bg-green-200 disabled:opacity-50">
                             {proc ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
                             Aceptar
                           </button>

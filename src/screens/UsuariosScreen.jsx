@@ -57,18 +57,18 @@ function UsuarioModal({ usuario, onClose, onSave }) {
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Nombre completo *</span>
             <input value={form.nombre} onChange={e=>u("nombre",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Correo</span>
             <input type="email" value={form.correo} onChange={e=>u("correo",e.target.value)}
               placeholder="usuario@empresa.com"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Rol</span>
             <select value={form.rol} onChange={e=>u("rol",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
               {ROLES.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}
             </select>
             {rolInfo && <p className="text-xs text-slate-400 mt-1">{rolInfo.desc}</p>}
@@ -78,7 +78,7 @@ function UsuarioModal({ usuario, onClose, onSave }) {
             <div className="relative mt-1">
               <input type={showPin?"text":"password"} value={form.pin} onChange={e=>u("pin",e.target.value.slice(0,4))}
                 maxLength={4} placeholder="••••"
-                className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm pr-10 focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm pr-10 focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
               <button type="button" onClick={()=>setShowPin(p=>!p)}
                 className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
                 {showPin?<EyeOff size={14}/>:<Eye size={14}/>}
@@ -93,7 +93,7 @@ function UsuarioModal({ usuario, onClose, onSave }) {
 
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Guardar</button>
+          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -135,7 +135,7 @@ export default function UsuariosScreen() {
             <p className="text-sm text-slate-500 mt-0.5">Controlá quién accede a cada módulo del sistema</p>
           </div>
           <button onClick={()=>setModal({})}
-            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
+            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
             <Plus size={14}/> Nuevo usuario
           </button>
         </div>
@@ -190,11 +190,11 @@ export default function UsuariosScreen() {
                       </td>
                       <td>
                         {esSesion
-                          ? <span className="text-xs text-amber-700 font-semibold">● Activo</span>
+                          ? <span className="text-xs text-yellow-700 font-semibold">● Activo</span>
                           : <button onClick={()=>activar(u)} className="text-xs text-blue-600 hover:underline">Cambiar a este</button>}
                       </td>
                       <td>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${u.activo?"bg-green-50 text-amber-700":"bg-slate-100 text-slate-400"}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${u.activo?"bg-green-50 text-yellow-700":"bg-slate-100 text-slate-400"}`}>
                           {u.activo?"Activo":"Inactivo"}
                         </span>
                       </td>
@@ -249,7 +249,7 @@ export default function UsuariosScreen() {
                       return (
                         <td key={r.id} className="py-1.5 px-3 border border-slate-100 text-center">
                           {tiene
-                            ? <span className="text-amber-600 font-bold">✓</span>
+                            ? <span className="text-yellow-600 font-bold">✓</span>
                             : <span className="text-slate-200">—</span>}
                         </td>
                       );

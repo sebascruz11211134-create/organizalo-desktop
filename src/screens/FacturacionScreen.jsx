@@ -106,10 +106,10 @@ function LineaRow({ linea, productos, onChange, onDelete }) {
           <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
             {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 8).map((p) => (
               <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b border-gray-50 last:border-0">
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b border-gray-50 last:border-0">
                 <span className="font-semibold">{p.nombre}</span>
                 <span className="text-slate-400 ml-2">{p.codigoCabys || "—"}</span>
-                <span className="text-amber-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+                <span className="text-yellow-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
               </button>
             ))}
           </div>
@@ -182,14 +182,14 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
           onFocus={() => setShowProd(true)}
           onBlur={() => setTimeout(() => setShowProd(false), 150)}
           placeholder="Buscar o escribir…"
-          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5"/>
+          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5"/>
         {showProd && productos.filter((p) => p.nombre?.toLowerCase().includes(linea.descripcion?.toLowerCase() || "")).length > 0 && (
           <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg z-20 max-h-36 overflow-auto">
             {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 6).map((p) => (
               <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b border-gray-50 last:border-0">
+                className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b border-gray-50 last:border-0">
                 <span className="font-semibold">{p.nombre}</span>
-                <span className="text-amber-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+                <span className="text-yellow-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
               </button>
             ))}
           </div>
@@ -200,7 +200,7 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
         <label className="text-[10px] font-bold text-slate-400 uppercase">Código CABYS</label>
         <input value={linea.codigoCabys} onChange={(e) => onChange({ ...linea, codigoCabys: e.target.value })}
           placeholder="Código CABYS (opcional)"
-          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5"/>
+          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5"/>
       </div>
       {/* Cant + Unid + Precio */}
       <div className="grid grid-cols-3 gap-2">
@@ -208,12 +208,12 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
           <label className="text-[10px] font-bold text-slate-400 uppercase">Cant.</label>
           <input value={linea.cantidad} onChange={(e) => onChange({ ...linea, cantidad: e.target.value })}
             type="number" min="0" step="any"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5 text-center"/>
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-center"/>
         </div>
         <div>
           <label className="text-[10px] font-bold text-slate-400 uppercase">Unidad</label>
           <select value={linea.unidad} onChange={(e) => onChange({ ...linea, unidad: e.target.value })}
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5">
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5">
             {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
@@ -221,7 +221,7 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
           <label className="text-[10px] font-bold text-slate-400 uppercase">Precio unit.</label>
           <input value={linea.precioUnit} onChange={(e) => onChange({ ...linea, precioUnit: e.target.value })}
             type="number" min="0" step="any" placeholder="0"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5 text-right"/>
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-right"/>
         </div>
       </div>
       {/* Desc + IVA */}
@@ -230,12 +230,12 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
           <label className="text-[10px] font-bold text-slate-400 uppercase">Desc. %</label>
           <input value={linea.pctDesc} onChange={(e) => onChange({ ...linea, pctDesc: e.target.value })}
             type="number" min="0" max="100" step="0.01" placeholder="0"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5 text-center"/>
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-center"/>
         </div>
         <div>
           <label className="text-[10px] font-bold text-slate-400 uppercase">Tarifa IVA</label>
           <select value={linea.codigoIVA} onChange={(e) => onChange({ ...linea, codigoIVA: e.target.value })}
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 mt-0.5">
+            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5">
             {TIPOS_IVA.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
@@ -623,18 +623,18 @@ export default function FacturacionScreen() {
                         "Pendiente de envío";
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 fade-in overflow-y-auto py-6 px-4">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-amber-100" : "bg-amber-100"}`}>
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-yellow-100" : "bg-yellow-100"}`}>
           {esEnviada ? "✓" : "⏳"}
         </div>
         <div className="text-center">
           <h2 className="text-2xl font-black text-slate-900">{enviada.numero}</h2>
-          <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold ${esEnviada ? "bg-amber-100 text-amber-800" : "bg-amber-100 text-amber-800"}`}>
+          <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold ${esEnviada ? "bg-yellow-100 text-yellow-800" : "bg-yellow-100 text-yellow-800"}`}>
             {estadoLabel}
           </span>
           {enviada.modoSimulacion && (
             <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">MODO PRUEBA</span>
           )}
-          <p className="text-2xl font-black text-amber-700 mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
+          <p className="text-2xl font-black text-yellow-700 mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
         </div>
 
         {/* Datos de Hacienda */}
@@ -679,7 +679,7 @@ export default function FacturacionScreen() {
             <Printer size={15}/> Imprimir / PDF
           </button>
           <button onClick={() => setEnviada(null)}
-            className="flex items-center gap-2 bg-amber-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-amber-700">
+            className="flex items-center gap-2 bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700">
             <Plus size={16} /> Nueva factura
           </button>
         </div>
@@ -701,7 +701,7 @@ export default function FacturacionScreen() {
           <Save size={13}/> Guardar
         </button>
         <button onClick={handleEnviar} disabled={sending || totalFact === 0}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           {sending ? <span className="animate-spin text-xs">⏳</span> : <Send size={13}/>}
           {sending ? "Enviando…" : "Emitir"}
         </button>
@@ -731,7 +731,7 @@ export default function FacturacionScreen() {
         {["encabezado","lineas"].map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors capitalize
-              ${activeTab === t ? "border-amber-500 text-amber-600" : "border-transparent text-slate-400"}`}>
+              ${activeTab === t ? "border-yellow-500 text-yellow-600" : "border-transparent text-slate-400"}`}>
             {t === "lineas" ? `Líneas (${lineas.length})` : "Encabezado"}
           </button>
         ))}
@@ -757,7 +757,7 @@ export default function FacturacionScreen() {
                   onBlur={() => setTimeout(() => setShowClientes(false), 150)}
                   placeholder="Nombre, código CLI-XXXX…"
                   autoComplete="off"
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 bg-white"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 bg-white"/>
                 {showClientes && clientesFiltrados.length > 0 && (
                   <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
                     {clientesFiltrados.map((c) => (
@@ -765,11 +765,11 @@ export default function FacturacionScreen() {
                         setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01", dias_credito: c.dias_credito || 0 });
                         setBusqCliente(c.nombre); setShowClientes(false);
                         if (c.dias_credito > 0) { setCondPago("02"); setPlazo(String(c.dias_credito)); }
-                      }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b last:border-0">
+                      }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0">
                         {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
                         <span className="font-semibold">{c.nombre}</span>
                         <span className="text-slate-400 ml-1.5 text-[10px]">{c.cedula}</span>
-                        {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-amber-600 font-semibold">{c.dias_credito}d</span>}
+                        {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-yellow-600 font-semibold">{c.dias_credito}d</span>}
                       </button>
                     ))}
                   </div>
@@ -782,7 +782,7 @@ export default function FacturacionScreen() {
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cédula / ID</label>
               <div className="flex gap-1">
                 <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
-                  className="w-20 border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                  className="w-20 border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                   <option value="01">Física</option><option value="02">Jurídica</option>
                   <option value="03">DIMEX</option><option value="04">NITE</option>
                 </select>
@@ -790,9 +790,9 @@ export default function FacturacionScreen() {
                   onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
                   onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
                   placeholder="Número…"
-                  className="flex-1 border border-slate-200 rounded-l px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                  className="flex-1 border border-slate-200 rounded-l px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
                 <button onClick={buscarPorCedula} disabled={buscandoCedula || !cliente.cedula.trim()}
-                  className="flex items-center justify-center w-8 border border-slate-200 rounded-r bg-slate-100 hover:bg-amber-50 text-slate-500 disabled:opacity-40">
+                  className="flex items-center justify-center w-8 border border-slate-200 rounded-r bg-slate-100 hover:bg-yellow-50 text-slate-500 disabled:opacity-40">
                   {buscandoCedula ? <Loader2 size={12} className="animate-spin"/> : <Search size={12}/>}
                 </button>
               </div>
@@ -804,7 +804,7 @@ export default function FacturacionScreen() {
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Correo</label>
               <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
                 placeholder="cliente@empresa.com"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
 
             <div className="border-t border-slate-200"/>
@@ -813,7 +813,7 @@ export default function FacturacionScreen() {
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de documento</label>
               <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
@@ -823,12 +823,12 @@ export default function FacturacionScreen() {
               <div className="flex-1">
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
                 <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
               </div>
               <div className="w-20">
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Moneda</label>
                 <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                  className="w-full border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                   <option value="CRC">₡ CRC</option><option value="USD">$ USD</option>
                 </select>
               </div>
@@ -838,7 +838,7 @@ export default function FacturacionScreen() {
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condición de pago</label>
               <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
@@ -846,13 +846,13 @@ export default function FacturacionScreen() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Plazo (días)</label>
                 <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)} placeholder="30" min="1"
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
               </div>
             )}
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medio de pago</label>
               <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
@@ -863,7 +863,7 @@ export default function FacturacionScreen() {
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendedor / Agente</label>
               <select value={cliente.vendedor || ""} onChange={(e) => setCliente((p) => ({ ...p, vendedor: e.target.value }))}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 <option value="">— Sin asignar —</option>
                 {empleados.map((e) => (
                   <option key={e.id} value={e.nombre}>{e.nombre}{e.puesto ? ` · ${e.puesto}` : ""}</option>
@@ -875,7 +875,7 @@ export default function FacturacionScreen() {
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Lista de precio</label>
               <select value={cliente.listaPrecio || "normal"} onChange={(e) => setCliente((p) => ({ ...p, listaPrecio: e.target.value }))}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 <option value="normal">Normal</option>
                 <option value="especial">Especial</option>
                 <option value="superespecial">Superespecial</option>
@@ -888,7 +888,7 @@ export default function FacturacionScreen() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proyecto</label>
                 <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                   <option value="">— Sin proyecto —</option>
                   {proyectos.filter(p => p.estado === "Activo").map(p => (
                     <option key={p.id} value={p.id}>{p.nombre}{p.codigo ? ` (${p.codigo})` : ""}</option>
@@ -908,7 +908,7 @@ export default function FacturacionScreen() {
                 onChange={(v) => updateLinea(i, v)} onDelete={() => deleteLinea(i)} />
             ))}
             <button onClick={agregarLinea}
-              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-amber-300 text-amber-700 text-sm font-semibold py-3 rounded-xl hover:bg-amber-50">
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-yellow-300 text-yellow-700 text-sm font-semibold py-3 rounded-xl hover:bg-yellow-50">
               <Plus size={15}/> Agregar línea
             </button>
           </div>
@@ -940,7 +940,7 @@ export default function FacturacionScreen() {
             </div>
             <div className="border-t border-slate-100 px-4 py-2">
               <button onClick={agregarLinea}
-                className="flex items-center gap-2 text-amber-700 text-sm font-semibold hover:text-amber-900">
+                className="flex items-center gap-2 text-yellow-700 text-sm font-semibold hover:text-yellow-900">
                 <Plus size={14}/> Agregar línea
               </button>
             </div>
@@ -963,14 +963,14 @@ export default function FacturacionScreen() {
               <span>IVA</span><span>{fmtMoney(totalIVA, moneda)}</span>
             </div>
             <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2 mt-1">
-              <span>TOTAL</span><span className="text-amber-700">{fmtMoney(totalFact, moneda)}</span>
+              <span>TOTAL</span><span className="text-yellow-700">{fmtMoney(totalFact, moneda)}</span>
             </div>
 
             <div className="border-t border-slate-100 pt-3">
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observaciones</label>
               <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
                 rows={4} placeholder="Notas, condiciones…"
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
 
             {/* QR SINPE mini */}

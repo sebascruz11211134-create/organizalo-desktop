@@ -40,8 +40,8 @@ function PasswordStrengthMeter({ password }) {
     { min: 1, label: "Débil",      color: "bg-orange-500" },
     { min: 2, label: "Regular",    color: "bg-yellow-400" },
     { min: 3, label: "Buena",      color: "bg-lime-400" },
-    { min: 4, label: "Fuerte",     color: "bg-amber-400" },
-    { min: 5, label: "Muy fuerte", color: "bg-amber-400" },
+    { min: 4, label: "Fuerte",     color: "bg-yellow-400" },
+    { min: 5, label: "Muy fuerte", color: "bg-yellow-400" },
   ];
   const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
 
@@ -54,7 +54,7 @@ function PasswordStrengthMeter({ password }) {
             ${score >= i ? level.color : "bg-white/15"}`} />
         ))}
         <span className={`text-[10px] font-semibold ml-1 whitespace-nowrap
-          ${score <= 1 ? "text-red-300" : score <= 2 ? "text-orange-300" : score <= 3 ? "text-yellow-300" : "text-amber-300"}`}>
+          ${score <= 1 ? "text-red-300" : score <= 2 ? "text-orange-300" : score <= 3 ? "text-yellow-300" : "text-yellow-300"}`}>
           {level.label}
         </span>
       </div>
@@ -63,9 +63,9 @@ function PasswordStrengthMeter({ password }) {
         <ul className="space-y-0.5">
           {reqs.map(r => (
             <li key={r.key} className={`flex items-center gap-1 text-[10px] transition-colors
-              ${r.ok ? "text-amber-300" : "text-white/40"}`}>
+              ${r.ok ? "text-yellow-300" : "text-white/40"}`}>
               <span className={`w-2.5 h-2.5 rounded-full flex items-center justify-center shrink-0
-                ${r.ok ? "bg-amber-400/30" : "bg-white/10"}`}>
+                ${r.ok ? "bg-yellow-400/30" : "bg-white/10"}`}>
                 {r.ok ? "✓" : "·"}
               </span>
               {r.label}

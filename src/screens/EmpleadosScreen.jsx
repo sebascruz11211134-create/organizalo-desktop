@@ -41,26 +41,26 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Nombre completo *</label>
               <input value={f.nombre} onChange={u("nombre")} placeholder="Nombre del empleado"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Cédula</label>
               <input value={f.cedula} onChange={u("cedula")} placeholder="X-XXXX-XXXX"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Puesto</label>
               <select value={f.puesto} onChange={u("puesto")}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {PUESTOS.map(p=><option key={p}>{p}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Jornada</label>
               <select value={f.jornada} onChange={u("jornada")}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 {TIPOS_JORNADA.map(j=><option key={j}>{j}</option>)}
               </select>
             </div>
@@ -69,38 +69,38 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Salario bruto (₡/mes)</label>
               <input type="number" value={f.salario} onChange={u("salario")} min="0" placeholder="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 text-right"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">N.º asegurado CCSS</label>
               <input value={f.ccss} onChange={u("ccss")} placeholder="Número asegurado"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
           </div>
           {salario>0 && (
             <div className="bg-slate-50 rounded-xl p-3 space-y-1 text-xs">
               <div className="flex justify-between"><span className="text-slate-500">Carga obrera (10.67%)</span><span className="text-red-600">-{fmtMoney(ccssObrero,"CRC")}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Carga patronal (26.25%)</span><span className="text-amber-600">{fmtMoney(ccssPatrono,"CRC")}</span></div>
-              <div className="flex justify-between font-bold border-t border-slate-200 pt-1"><span>Salario neto a pagar</span><span className="text-amber-700">{fmtMoney(salarioNeto,"CRC")}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Carga patronal (26.25%)</span><span className="text-yellow-600">{fmtMoney(ccssPatrono,"CRC")}</span></div>
+              <div className="flex justify-between font-bold border-t border-slate-200 pt-1"><span>Salario neto a pagar</span><span className="text-yellow-700">{fmtMoney(salarioNeto,"CRC")}</span></div>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Correo</label>
               <input value={f.email} onChange={u("email")} placeholder="correo@empresa.com"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Teléfono</label>
               <input value={f.telefono} onChange={u("telefono")} placeholder="8888-8888"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Fecha de ingreso</label>
               <input type="date" value={f.fechaIngreso} onChange={u("fechaIngreso")}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
             </div>
             <div className="flex items-end pb-1">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -113,7 +113,7 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
           <button onClick={()=>onGuardar({ id:emp?.id||genId(), ...f, salario:parseFloat(f.salario)||0, creadoEn:emp?.creadoEn||new Date().toISOString() })}
-            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-700">
+            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
             <Check size={14}/> Guardar
           </button>
         </div>
@@ -162,7 +162,7 @@ export default function EmpleadosScreen() {
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar empleado…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
           <input type="checkbox" checked={soloActivos} onChange={e=>setSoloActivos(e.target.checked)} className="rounded"/>
@@ -174,7 +174,7 @@ export default function EmpleadosScreen() {
             <p className="font-black text-sm text-slate-800">{fmtMoney(totalPlanilla,"CRC")}/mes</p>
           </div>
           <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-700">
+            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700">
             <Plus size={14}/> Agregar empleado
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function EmpleadosScreen() {
         ) : (
           <div className="space-y-2">
             {filtrados.map(e=>(
-              <div key={e.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-amber-300 group">
+              <div key={e.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-yellow-300 group">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-white text-sm"
                   style={{background: e.activo?"#059669":"#94a3b8"}}>
                   {(e.nombre||"?").charAt(0)}

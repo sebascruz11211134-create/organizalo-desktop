@@ -14,8 +14,8 @@ const CATEGORIAS = ["Mercadería","Materia prima","Servicios","Equipo","Suminist
 const MEDIOS = ["Efectivo","Transferencia","SINPE Móvil","Tarjeta","Cheque","Crédito proveedor"];
 
 const ESTADOS = {
-  pendiente:  { label:"Pendiente",   cls:"bg-amber-100 text-amber-700" },
-  pagada:     { label:"Pagada",      cls:"bg-green-100 text-amber-700" },
+  pendiente:  { label:"Pendiente",   cls:"bg-yellow-100 text-yellow-700" },
+  pagada:     { label:"Pagada",      cls:"bg-green-100 text-yellow-700" },
   vencida:    { label:"Vencida",     cls:"bg-red-100 text-red-600" },
 };
 
@@ -97,7 +97,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
     });
   };
 
-  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400";
+  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400";
   const LBL = "block text-[10px] font-bold text-slate-500 uppercase mb-1";
 
   return (
@@ -113,7 +113,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
           <span className="text-slate-500">·</span>
           <span className="text-white font-black">{fmtMoney(total,"CRC")}</span>
         </div>
-        <button onClick={guardar} className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
+        <button onClick={guardar} className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
           <Check size={13}/> Guardar
         </button>
       </div>
@@ -135,7 +135,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
                   {filtrados.map(c=>(
                     <button key={c.id} onMouseDown={()=>seleccionarProveedor(c)}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b last:border-0">
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0">
                       {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
                       <span className="text-slate-400 ml-1.5">{c.cedula}</span>
@@ -145,7 +145,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
                 </div>
               )}
               {diasProvee > 0 && (
-                <p className="text-[10px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">
+                <p className="text-[10px] text-yellow-700 bg-yellow-50 px-2 py-1 rounded mt-1">
                   ⏱ Plazo de pago: {diasProvee} días — vencimiento calculado automáticamente
                 </p>
               )}
@@ -223,7 +223,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
                   <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-36 overflow-auto">
                     {prodsFiltrados.map(p=>(
                       <button key={p.id} onMouseDown={()=>agregarLinea(p)}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b last:border-0 flex justify-between">
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0 flex justify-between">
                         <span className="font-semibold">{p.nombre}</span>
                         <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
                       </button>
@@ -243,7 +243,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
                       <button onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
                     </div>
                   ))}
-                  <p className="text-[10px] text-amber-600">✓ Al guardar se aumentará el stock de estos productos</p>
+                  <p className="text-[10px] text-yellow-600">✓ Al guardar se aumentará el stock de estos productos</p>
                 </div>
               )}
             </div>
@@ -260,21 +260,21 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
             <span>IVA ({pctIVA}%) fiscal</span><span>{fmtMoney(montoIVA,"CRC")}</span>
           </div>
           <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2 mt-1">
-            <span>TOTAL</span><span className="text-amber-700">{fmtMoney(total,"CRC")}</span>
+            <span>TOTAL</span><span className="text-yellow-700">{fmtMoney(total,"CRC")}</span>
           </div>
 
           <div className="border-t border-slate-100 pt-3">
             <label className={LBL}>Observaciones</label>
             <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={4}
               placeholder="Notas, referencia interna…"
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-amber-400"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
           </div>
 
           {(proyectos||[]).length > 0 && (
             <div className="border-t border-slate-100 pt-3">
               <label className={LBL}>Proyecto</label>
               <select value={proyectoId} onChange={e=>setProyectoId(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                 <option value="">— Sin proyecto —</option>
                 {(proyectos||[]).filter(p=>p.estado==="Activo").map(p=>(
                   <option key={p.id} value={p.id}>{p.nombre}{p.codigo?` (${p.codigo})`:""}</option>
@@ -402,9 +402,9 @@ export default function ComprasScreen() {
       {/* KPIs strip */}
       <div className="flex gap-6 px-5 py-2 bg-white border-b border-slate-200 shrink-0">
         {[
-          { label:"Por pagar", val:fmtMoney(totPendiente,"CRC"), color:"text-amber-600" },
+          { label:"Por pagar", val:fmtMoney(totPendiente,"CRC"), color:"text-yellow-600" },
           { label:"Compras del mes", val:fmtMoney(totMes,"CRC"), color:"text-slate-800" },
-          { label:"IVA crédito fiscal", val:fmtMoney(totIVA,"CRC"), color:"text-amber-600" },
+          { label:"IVA crédito fiscal", val:fmtMoney(totIVA,"CRC"), color:"text-yellow-600" },
         ].map(k=>(
           <div key={k.label}>
             <div className="text-[10px] font-bold text-slate-400 uppercase">{k.label}</div>
@@ -416,7 +416,7 @@ export default function ComprasScreen() {
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
         <button onClick={()=>{setEditando(null);setVista("form");}}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
+          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
           <Plus size={13}/> Nueva compra
         </button>
         <button disabled={!sel} onClick={()=>sel&&(setEditando(sel),setVista("form"))}
@@ -429,7 +429,7 @@ export default function ComprasScreen() {
         </button>
         {sel?.estado==="pendiente" && (
           <button onClick={()=>marcarPagada(sel.id)}
-            className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold px-3 py-1.5 rounded">
+            className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 text-xs font-semibold px-3 py-1.5 rounded">
             ✓ Marcar pagada
           </button>
         )}
@@ -495,7 +495,7 @@ export default function ComprasScreen() {
                     {c.fechaVence ? fmtDate(c.fechaVence) : "—"}
                   </td>
                   <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total,"CRC")}</td>
-                  <td className="px-3 py-2.5 text-right text-xs text-amber-600">{fmtMoney(c.montoIVA||0,"CRC")}</td>
+                  <td className="px-3 py-2.5 text-right text-xs text-yellow-600">{fmtMoney(c.montoIVA||0,"CRC")}</td>
                   <td className="px-3 py-2.5"><Badge estado={c.estado}/></td>
                 </tr>
               ))}

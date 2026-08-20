@@ -342,7 +342,7 @@ export default function ChatWidget() {
                       <span className="text-[9px] text-slate-500 mb-0.5 ml-1">{msg.userNombre || msg.user_nombre}</span>
                     )}
                     <div className={`max-w-[88%] px-2.5 py-1.5 rounded-2xl text-xs leading-snug ${
-                      esPropio ? "bg-amber-500 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
+                      esPropio ? "bg-yellow-500 text-white rounded-br-sm" : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm"
                     }`}>
                       {msg.texto}
                       {esPropio && <Checkmarks leido={leido} />}
@@ -372,7 +372,7 @@ export default function ChatWidget() {
                 style={{ lineHeight: "1.5", maxHeight: 56 }}
               />
               <button onClick={enviar} disabled={!texto.trim() || enviando}
-                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors">
+                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 disabled:opacity-40 transition-colors">
                 <Send size={10} />
               </button>
             </div>

@@ -107,19 +107,19 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
   if (mensaje) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-5">
-        <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-4xl">✓</div>
+        <div className="w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center text-4xl">✓</div>
         <div className="text-center">
           <p className="text-2xl font-black text-slate-900">{fmtMoney(mensaje.total,"CRC")}</p>
           <p className="text-slate-500 text-sm mt-1">{mensaje.num} · {mensaje.medio}</p>
           {mensaje.medio==="Efectivo" && mensaje.cambio>0 && (
-            <p className="text-lg font-bold text-amber-700 mt-2">Cambio: {fmtMoney(mensaje.cambio,"CRC")}</p>
+            <p className="text-lg font-bold text-yellow-700 mt-2">Cambio: {fmtMoney(mensaje.cambio,"CRC")}</p>
           )}
         </div>
         <div className="flex gap-3">
           <button onClick={()=>imprimirTicket(mensaje)} className="flex items-center gap-2 border border-slate-200 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50">
             <Printer size={15}/> Imprimir ticket
           </button>
-          <button onClick={()=>setMensaje(null)} className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-amber-700">
+          <button onClick={()=>setMensaje(null)} className="flex items-center gap-2 bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
             <RotateCcw size={15}/> Nueva venta
           </button>
         </div>
@@ -137,7 +137,7 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
             <input ref={inputRef} value={busq} onChange={e=>setBusq(e.target.value)}
               placeholder="Buscar producto, código de barras…"
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400" />
           </div>
         </div>
 
@@ -146,12 +146,12 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
           <div className="grid grid-cols-3 gap-3">
             {filtrados.map(p => (
               <button key={p.id} onClick={()=>agregar(p)}
-                className="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-amber-400 hover:shadow-sm transition-all active:scale-95">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center mb-2">
-                  <span className="text-amber-700 font-bold text-sm">{(p.nombre||"?").charAt(0)}</span>
+                className="bg-white border border-slate-200 rounded-xl p-3 text-left hover:border-yellow-400 hover:shadow-sm transition-all active:scale-95">
+                <div className="w-8 h-8 rounded-lg bg-yellow-50 flex items-center justify-center mb-2">
+                  <span className="text-yellow-700 font-bold text-sm">{(p.nombre||"?").charAt(0)}</span>
                 </div>
                 <p className="text-sm font-semibold text-slate-800 truncate leading-tight">{p.nombre}</p>
-                <p className="text-xs font-bold text-amber-700 mt-0.5">{fmtMoney(p.precio||0,"CRC")}</p>
+                <p className="text-xs font-bold text-yellow-700 mt-0.5">{fmtMoney(p.precio||0,"CRC")}</p>
                 {p.stock != null && <p className="text-[10px] text-slate-400">Stock: {p.stock}</p>}
               </button>
             ))}
@@ -185,7 +185,7 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
             <div key={x.id} className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-slate-800 truncate">{x.nombre}</p>
-                <p className="text-xs text-amber-700">{fmtMoney((x.precio||0)*x.cant,"CRC")}</p>
+                <p className="text-xs text-yellow-700">{fmtMoney((x.precio||0)*x.cant,"CRC")}</p>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={()=>cambiarCant(x.id,-1)} className="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100">
@@ -209,7 +209,7 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
             <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
             <div className="flex justify-between text-slate-500"><span>IVA</span><span>{fmtMoney(iva,"CRC")}</span></div>
             <div className="flex justify-between font-black text-lg text-slate-900 border-t border-slate-200 pt-2">
-              <span>Total</span><span className="text-amber-700">{fmtMoney(total,"CRC")}</span>
+              <span>Total</span><span className="text-yellow-700">{fmtMoney(total,"CRC")}</span>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
           <div className="flex gap-1">
             {MEDIOS.map(m=>(
               <button key={m} onClick={()=>setMedio(m)}
-                className={`flex-1 py-1.5 text-[10px] font-semibold rounded-lg border transition-all ${medio===m?"bg-amber-600 text-white border-amber-600":"border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                className={`flex-1 py-1.5 text-[10px] font-semibold rounded-lg border transition-all ${medio===m?"bg-yellow-600 text-white border-yellow-600":"border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
                 {m}
               </button>
             ))}
@@ -228,15 +228,15 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
               <label className="text-xs text-slate-500 block mb-1">Monto recibido</label>
               <input type="number" value={efectivo} onChange={e=>setEfectivo(e.target.value)}
                 placeholder="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-amber-400" />
+                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-bold text-right focus:outline-none focus:ring-1 focus:ring-yellow-400" />
               {parseFloat(efectivo)>0 && (
-                <p className="text-xs text-right text-amber-600 mt-1 font-semibold">Cambio: {fmtMoney(cambio,"CRC")}</p>
+                <p className="text-xs text-right text-yellow-600 mt-1 font-semibold">Cambio: {fmtMoney(cambio,"CRC")}</p>
               )}
             </div>
           )}
 
           <button onClick={cobrar} disabled={carrito.length===0}
-            className="w-full bg-amber-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-amber-700 disabled:opacity-40 transition-all active:scale-95">
+            className="w-full bg-yellow-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-yellow-700 disabled:opacity-40 transition-all active:scale-95">
             Cobrar {fmtMoney(total,"CRC")}
           </button>
         </div>

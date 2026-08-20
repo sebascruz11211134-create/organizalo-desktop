@@ -63,7 +63,7 @@ export default function ReporteRecibosScreen() {
           <ChevronRight size={16} className="text-slate-600" />
         </button>
         <select value={metodo} onChange={(e) => setMetodo(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
+          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
           {METODOS.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
         <span className="flex-1" />
@@ -78,7 +78,7 @@ export default function ReporteRecibosScreen() {
       </div>
 
       {/* Totales */}
-      <div className="flex gap-4 px-6 py-2 bg-green-50 border-b border-amber-300 text-sm">
+      <div className="flex gap-4 px-6 py-2 bg-green-50 border-b border-yellow-300 text-sm">
         {Object.entries(tots).map(([m, t]) => (
           <span key={m} className="text-green-800 font-semibold">{m}: <strong>{fmtMoney(t, m)}</strong></span>
         ))}
@@ -106,7 +106,7 @@ export default function ReporteRecibosScreen() {
               <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin recibos en {etiq}</td></tr>
             ) : visibles.map((r) => (
               <tr key={r.id}>
-                <td className="font-mono text-xs text-amber-700 font-bold">{r.numero}</td>
+                <td className="font-mono text-xs text-yellow-700 font-bold">{r.numero}</td>
                 <td className="text-slate-500 text-xs">{r.tipo || "Caja"}</td>
                 <td className="text-slate-500">{fmtDate(r.fecha)}</td>
                 <td className="font-semibold text-slate-900">{r.cliente}</td>
@@ -114,7 +114,7 @@ export default function ReporteRecibosScreen() {
                   <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700">{r.metodo}</span>
                 </td>
                 <td className="text-slate-500">{r.moneda}</td>
-                <td className="font-bold text-amber-700">{fmtMoney(r.monto, r.moneda)}</td>
+                <td className="font-bold text-yellow-700">{fmtMoney(r.monto, r.moneda)}</td>
                 <td className="text-slate-400 text-xs">{r.concepto || r.notas || "—"}</td>
               </tr>
             ))}
