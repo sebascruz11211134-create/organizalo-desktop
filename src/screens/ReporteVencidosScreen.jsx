@@ -66,13 +66,13 @@ export default function ReporteVencidosScreen() {
       <div className="flex gap-6 px-6 py-2 bg-red-50 border-b border-red-100 text-sm">
         {totalCRC > 0 && <span className="text-red-800">CRC: <strong className="font-black">{fmtMoney(totalCRC, "CRC")}</strong></span>}
         {totalUSD > 0 && <span className="text-red-800">USD: <strong className="font-black">{fmtMoney(totalUSD, "USD")}</strong></span>}
-        {vencidas.length === 0 && <span className="text-emerald-700 font-semibold">✓ Sin cobros vencidos</span>}
+        {vencidas.length === 0 && <span className="text-amber-700 font-semibold">✓ Sin cobros vencidos</span>}
       </div>
 
       {/* Grupos */}
       <div className="flex-1 overflow-auto">
         {vencidas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-emerald-600">
+          <div className="flex flex-col items-center justify-center h-full text-amber-600">
             <span className="text-4xl mb-3">✓</span>
             <p className="text-lg font-bold">¡Todo al día!</p>
             <p className="text-sm text-slate-400 mt-1">No hay cobros vencidos.</p>
@@ -114,7 +114,7 @@ export default function ReporteVencidosScreen() {
                         <td className="font-bold text-red-600">{fmtMoney(saldo, mon)}</td>
                         <td className="text-slate-500">{mon}</td>
                         <td>{fmtMoney(d.total, mon)}</td>
-                        <td className="text-emerald-700">{fmtMoney(d.pagado || 0, mon)}</td>
+                        <td className="text-amber-700">{fmtMoney(d.pagado || 0, mon)}</td>
                         <td className="text-red-600 font-semibold">{fmtDate(d.fechaVencimiento)}</td>
                         <td className={`font-bold ${dias > 90 ? "text-red-700" : dias > 60 ? "text-red-600" : "text-amber-600"}`}>
                           {dias} días

@@ -46,7 +46,7 @@
       "confirmLabel": "Confirm password",
       "confirmPlaceholder": "Repeat your password",
       "accessCodeLabel": "Access code",
-      "accessCodeHint": "Request it from Organízalo.AI when signing up.",
+      "accessCodeHint": "Request it from Monki.AI when signing up.",
       "creating": "Creating account…",
       "submit": "Create account",
       "back": "← Back to login",
@@ -58,7 +58,7 @@
   },
   "admin": {
     "title": "Administration panel",
-    "subtitle": "Only visible to you · Organízalo.AI",
+    "subtitle": "Only visible to you · Monki.AI",
     "searchPlaceholder": "Search by name, email or company…",
     "noClients": "No registered clients yet.",
     "noResults": "No results for that filter.",

@@ -96,25 +96,25 @@ function ProductoModal({ prod, onClose, onSave }) {
             <label key={key} className={`block ${cls}`}>
               <span className="text-xs font-semibold text-slate-500 uppercase">{label}</span>
               <input type={type} value={form[key]??""} onChange={e=>u(key,e.target.value)} step={type==="number"?"any":undefined} min={type==="number"?"0":undefined}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
             </label>
           ))}
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Categoría</span>
-            <select value={form.categoria} onChange={e=>u("categoria",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
+            <select value={form.categoria} onChange={e=>u("categoria",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
               {CATEGORIAS.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Unidad</span>
-            <select value={form.unidad} onChange={e=>u("unidad",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
+            <select value={form.unidad} onChange={e=>u("unidad",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
               {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
             </select>
           </label>
           <label className="block col-span-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
             <textarea value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} rows={2}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-amber-400"/>
           </label>
           <label className="flex items-center gap-2 col-span-2">
             <input type="checkbox" checked={form.activo} onChange={e=>u("activo",e.target.checked)} className="rounded"/>
@@ -123,7 +123,7 @@ function ProductoModal({ prod, onClose, onSave }) {
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Guardar</button>
+          <button onClick={guardar}  className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -164,7 +164,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
     } finally { setGuardando(false); }
   };
 
-  const tipoColor = tipo==="Entrada" ? "bg-emerald-500" : tipo==="Salida" ? "bg-rose-500" : "bg-amber-500";
+  const tipoColor = tipo==="Entrada" ? "bg-amber-500" : tipo==="Salida" ? "bg-rose-500" : "bg-amber-500";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -180,7 +180,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div className="grid grid-cols-3 gap-2 mt-1">
               {["Entrada","Salida","Ajuste"].map(t=>(
                 <button key={t} onClick={()=>handleTipo(t)}
-                  className={`py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${tipo===t ? t==="Entrada"?"border-emerald-500 bg-emerald-50 text-emerald-700":t==="Salida"?"border-rose-500 bg-rose-50 text-rose-700":"border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
+                  className={`py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${tipo===t ? t==="Entrada"?"border-amber-500 bg-amber-50 text-amber-700":t==="Salida"?"border-rose-500 bg-rose-50 text-rose-700":"border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
                   {t}
                 </button>
               ))}
@@ -195,12 +195,12 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowDrop(true);setProdSel(null);}}
               onFocus={()=>setShowDrop(true)} onBlur={()=>setTimeout(()=>setShowDrop(false),150)}
               placeholder="Buscar producto…"
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             {showDrop && filtrados.length>0 && (
               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-auto">
                 {filtrados.map(p=>(
                   <button key={p.id} onMouseDown={()=>seleccionar(p)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b border-gray-50 last:border-0">
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b border-gray-50 last:border-0">
                     <span className="font-semibold">{p.nombre}</span>
                     <span className="text-slate-400 ml-2">Stock: {p.stock??"—"}</span>
                   </button>
@@ -220,14 +220,14 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Cantidad</label>
               <input type="number" min="0.01" step="any" value={cantidad} onChange={e=>setCantidad(e.target.value)} placeholder="Ej: 10"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
           )}
           {/* Motivo */}
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase">Motivo</label>
             <select value={motivo} onChange={e=>setMotivo(e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
               {MOTIVOS[tipo].map(m=><option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -236,12 +236,12 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
               <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Nota (opcional)</label>
               <input value={nota} onChange={e=>setNota(e.target.value)} placeholder="Referencia…"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
           </div>
           <div className="flex gap-2 pt-1">
@@ -341,7 +341,7 @@ export default function InventarioScreen() {
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors mr-1
-              ${tab===t.key ? "border-emerald-500 text-emerald-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+              ${tab===t.key ? "border-amber-500 text-amber-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
             {t.label}
             {t.key==="productos" && <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{productos.length}</span>}
             {t.key==="movimientos" && <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{manuales.length}</span>}
@@ -360,7 +360,7 @@ export default function InventarioScreen() {
             <select value={cat} onChange={e=>setCat(e.target.value)} className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none">
               {categorias.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
-            <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+            <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
               <Plus size={15}/> Nuevo producto
             </button>
           </div>
@@ -382,10 +382,10 @@ export default function InventarioScreen() {
                   return (
                     <tr key={p.id} className={p.activo===false?"opacity-40":""}>
                       <td className="text-xs font-mono text-slate-400">{p.codigoInterno||"—"}</td>
-                      <td className="font-semibold text-slate-900"><div className="flex items-center gap-2"><Package size={13} className="text-emerald-600 shrink-0"/>{p.nombre}</div></td>
+                      <td className="font-semibold text-slate-900"><div className="flex items-center gap-2"><Package size={13} className="text-amber-600 shrink-0"/>{p.nombre}</div></td>
                       <td className="text-slate-500 text-xs">{p.categoria||"—"}</td>
                       <td className="text-xs font-mono text-slate-400">{p.codigoCabys||"—"}</td>
-                      <td className="text-emerald-700 font-semibold">{fmtMoney(p.precio,settings.moneda||"CRC")}</td>
+                      <td className="text-amber-700 font-semibold">{fmtMoney(p.precio,settings.moneda||"CRC")}</td>
                       <td className="text-slate-500">{p.costo?fmtMoney(p.costo,settings.moneda||"CRC"):"—"}</td>
                       <td className={`font-bold ${bajo?"text-red-600":"text-slate-700"}`}>{p.stock??"—"}{bajo&&<span className="ml-1 text-xs text-red-500">⚠</span>}</td>
                       <td className="text-slate-400">{p.stockMin??0}</td>
@@ -409,7 +409,7 @@ export default function InventarioScreen() {
           <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-white border-b border-gray-200">
             <p className="text-sm text-slate-500">{manuales.length} movimientos manuales registrados</p>
             <button onClick={()=>setShowModalMov(true)}
-              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">
+              className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-700">
               <Plus size={15}/> Nuevo movimiento
             </button>
           </div>
@@ -433,12 +433,12 @@ export default function InventarioScreen() {
                     <td className="font-semibold">{m.productoNombre}</td>
                     <td>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold
-                        ${m.tipo==="Entrada"?"bg-emerald-100 text-emerald-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-amber-100 text-amber-700"}`}>
+                        ${m.tipo==="Entrada"?"bg-amber-100 text-amber-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-amber-100 text-amber-700"}`}>
                         {m.tipo}
                       </span>
                     </td>
                     <td className="text-slate-500 text-xs">{m.motivo}</td>
-                    <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-emerald-700":m.tipo==="Salida"?"text-rose-600":"text-amber-700"}`}>
+                    <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-amber-700":m.tipo==="Salida"?"text-rose-600":"text-amber-700"}`}>
                       {m.tipo==="Entrada"?`+${m.cantidad}`:m.tipo==="Salida"?`-${m.cantidad}`:`=${m.stockFinal}`}
                     </td>
                     <td className="text-slate-400 text-xs">{m.nota||"—"}</td>
@@ -466,7 +466,7 @@ export default function InventarioScreen() {
               {prodsFiltK.length===0 && <p className="text-center text-slate-400 text-xs py-8">Sin productos</p>}
               {prodsFiltK.map(p=>(
                 <button key={p.id} onClick={()=>setSelected(p.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${selected===p.id?"bg-emerald-50 border-l-2 border-l-emerald-600":""}`}>
+                  className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${selected===p.id?"bg-amber-50 border-l-2 border-l-amber-600":""}`}>
                   <p className="text-xs font-semibold text-slate-800 truncate">{p.nombre}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Stock: {p.stock??"—"} {p.unidad||""}</p>
                 </button>
@@ -477,7 +477,7 @@ export default function InventarioScreen() {
           {/* Panel derecho */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 flex-wrap">
-              <Package size={13} className="text-emerald-400"/>
+              <Package size={13} className="text-amber-400"/>
               <span className="text-white text-xs font-semibold">{prodKardex ? prodKardex.nombre : "Seleccioná un producto"}</span>
               {prodKardex && <>
                 <div className="w-px h-5 bg-slate-500 mx-1"/>
@@ -504,7 +504,7 @@ export default function InventarioScreen() {
                 <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-slate-200">
                   <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
                     <p className="text-[10px] text-slate-400 uppercase font-medium">Entradas</p>
-                    <p className="text-xl font-bold text-emerald-700">+{totalEntradas}</p>
+                    <p className="text-xl font-bold text-amber-700">+{totalEntradas}</p>
                   </div>
                   <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
                     <p className="text-[10px] text-slate-400 uppercase font-medium">Salidas</p>
@@ -529,11 +529,11 @@ export default function InventarioScreen() {
                         {movimientos.map((m,i)=>(
                           <tr key={i}>
                             <td>{fmtDate(m.fecha)}</td>
-                            <td><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.tipo==="Entrada"?"bg-emerald-100 text-emerald-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-amber-100 text-amber-700"}`}>{m.tipo}</span></td>
+                            <td><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.tipo==="Entrada"?"bg-amber-100 text-amber-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-amber-100 text-amber-700"}`}>{m.tipo}</span></td>
                             <td className="text-slate-500 text-xs">{m.origen}</td>
                             <td className="font-mono text-xs">{m.ref}</td>
                             <td className="text-slate-600 max-w-[160px] truncate text-xs">{m.detalle}</td>
-                            <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-emerald-700":m.tipo==="Salida"?"text-rose-600":"text-amber-700"}`}>
+                            <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-amber-700":m.tipo==="Salida"?"text-rose-600":"text-amber-700"}`}>
                               {m.tipo==="Entrada"?`+${m.cant}`:m.tipo==="Salida"?`-${m.cant}`:`=${m.saldo}`}
                             </td>
                             <td className="text-right font-semibold">{m.saldo}</td>

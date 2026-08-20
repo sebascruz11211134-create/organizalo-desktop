@@ -40,8 +40,8 @@ function PasswordStrengthMeter({ password }) {
     { min: 1, label: "Débil",      color: "bg-orange-500" },
     { min: 2, label: "Regular",    color: "bg-yellow-400" },
     { min: 3, label: "Buena",      color: "bg-lime-400" },
-    { min: 4, label: "Fuerte",     color: "bg-emerald-400" },
-    { min: 5, label: "Muy fuerte", color: "bg-emerald-400" },
+    { min: 4, label: "Fuerte",     color: "bg-amber-400" },
+    { min: 5, label: "Muy fuerte", color: "bg-amber-400" },
   ];
   const level = [...levels].reverse().find(l => score >= l.min) || levels[0];
 
@@ -54,7 +54,7 @@ function PasswordStrengthMeter({ password }) {
             ${score >= i ? level.color : "bg-white/15"}`} />
         ))}
         <span className={`text-[10px] font-semibold ml-1 whitespace-nowrap
-          ${score <= 1 ? "text-red-300" : score <= 2 ? "text-orange-300" : score <= 3 ? "text-yellow-300" : "text-emerald-300"}`}>
+          ${score <= 1 ? "text-red-300" : score <= 2 ? "text-orange-300" : score <= 3 ? "text-yellow-300" : "text-amber-300"}`}>
           {level.label}
         </span>
       </div>
@@ -63,9 +63,9 @@ function PasswordStrengthMeter({ password }) {
         <ul className="space-y-0.5">
           {reqs.map(r => (
             <li key={r.key} className={`flex items-center gap-1 text-[10px] transition-colors
-              ${r.ok ? "text-emerald-300" : "text-white/40"}`}>
+              ${r.ok ? "text-amber-300" : "text-white/40"}`}>
               <span className={`w-2.5 h-2.5 rounded-full flex items-center justify-center shrink-0
-                ${r.ok ? "bg-emerald-400/30" : "bg-white/10"}`}>
+                ${r.ok ? "bg-amber-400/30" : "bg-white/10"}`}>
                 {r.ok ? "✓" : "·"}
               </span>
               {r.label}
@@ -399,11 +399,11 @@ export default function LoginScreen({ onLogin }) {
         {/* Logo */}
         <div className="flex flex-col items-center mb-7">
           <div className="mb-3">
-            <CubeLogo size={44} />
+            <img src="/MK_Logo2.png" alt="Monki.AI" style={{ width: 64, height: 64, objectFit: "contain" }} />
           </div>
           <div className="flex items-baseline gap-0.5">
-            <span className="text-[22px] font-bold text-white tracking-tight leading-none">Organízalo</span>
-            <span className="text-[14px] font-bold leading-none text-white/90">.AI</span>
+            <span className="text-[22px] font-bold text-white tracking-tight leading-none">Monki</span>
+            <span className="text-[14px] font-bold leading-none" style={{ color: "#FACC15" }}>.AI</span>
           </div>
           <p className="text-[11px] text-white/80 mt-1 tracking-wide">{t("login.tagline")}</p>
         </div>
@@ -504,7 +504,7 @@ export default function LoginScreen({ onLogin }) {
 
       {/* Footer */}
       <div className="relative z-10 no-drag flex items-center justify-center gap-3 pb-3 shrink-0">
-        <p className="text-[10px] text-white/55">Organízalo.AI · Costa Rica · v1.0</p>
+        <p className="text-[10px] text-white/55">Monki.AI · Costa Rica · v1.0</p>
         <div className="flex items-center gap-1 text-[10px] font-semibold">
           <button
             onClick={() => i18n.changeLanguage("es")}

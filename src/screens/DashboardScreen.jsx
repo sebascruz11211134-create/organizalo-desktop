@@ -122,7 +122,7 @@ function BarChart28({ data }) {
         return (
           <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5 group relative">
             <div
-              className={`w-full rounded-t transition-all duration-300 ${isToday ? "bg-emerald-500" : "bg-emerald-200 group-hover:bg-emerald-400"}`}
+              className={`w-full rounded-t transition-all duration-300 ${isToday ? "bg-amber-500" : "bg-amber-200 group-hover:bg-amber-400"}`}
               style={{ height: `${Math.max(pct, 2)}%` }}
             />
             {d.label && (
@@ -143,7 +143,7 @@ function BarChart28({ data }) {
 // ── KPI Card ───────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert, color = "slate" }) {
   const colors = {
-    green:  { bg: "bg-emerald-50", border: "border-emerald-100", icon: "text-emerald-500", val: "text-emerald-700" },
+    green:  { bg: "bg-amber-50", border: "border-amber-100", icon: "text-amber-500", val: "text-amber-700" },
     red:    { bg: "bg-red-50",     border: "border-red-100",     icon: "text-red-400",     val: "text-red-700"     },
     blue:   { bg: "bg-blue-50",    border: "border-blue-100",    icon: "text-blue-500",    val: "text-slate-900"   },
     slate:  { bg: "bg-white",      border: "border-slate-200",   icon: "text-slate-400",   val: "text-slate-900"   },
@@ -165,7 +165,7 @@ function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert
         <p className="text-[10px] text-slate-400">{sub}</p>
         {trend && (
           <span className={`flex items-center gap-0.5 text-[10px] font-semibold
-            ${trendUp ? "text-emerald-600" : "text-red-500"}`}>
+            ${trendUp ? "text-amber-600" : "text-red-500"}`}>
             {trendUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
             {trend}
           </span>
@@ -179,7 +179,7 @@ function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert
 function EstadoBadge({ estado }) {
   const map = {
     pendiente: "bg-amber-100 text-amber-700",
-    pagada:    "bg-green-100 text-emerald-700",
+    pagada:    "bg-green-100 text-amber-700",
     vencida:   "bg-red-100 text-red-700",
     enviada:   "bg-blue-100 text-blue-700",
   };
@@ -210,7 +210,7 @@ function InsightCard({ stats, facturas, debts }) {
     if (totAnt > 0) {
       const pct = ((totMes - totAnt) / totAnt * 100).toFixed(0);
       const sube = parseInt(pct) >= 0;
-      return { icon: sube ? "📈" : "📉", color: sube ? "bg-emerald-50 border-emerald-100 text-emerald-800" : "bg-amber-50 border-amber-100 text-amber-800", texto: `Ventas ${sube ? "+" : ""}${pct}% vs mes anterior` };
+      return { icon: sube ? "📈" : "📉", color: sube ? "bg-amber-50 border-amber-100 text-amber-800" : "bg-amber-50 border-amber-100 text-amber-800", texto: `Ventas ${sube ? "+" : ""}${pct}% vs mes anterior` };
     }
     return { icon: "✅", color: "bg-slate-50 border-slate-200 text-slate-600", texto: "Todo en orden. Seguí registrando." };
   }, [stats.facturasMes]);
@@ -414,7 +414,7 @@ export default function DashboardScreen() {
             <p className="text-[11px] text-slate-400 mt-0.5 capitalize">{fecha}</p>
           </div>
           <button onClick={() => navigate("/facturacion")}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold
+            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold
                        px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">
             <Receipt size={12} /> Nueva factura
           </button>
@@ -494,7 +494,7 @@ export default function DashboardScreen() {
                   <p className="text-[10px] text-slate-400">Últimos 28 días</p>
                 </div>
                 <button onClick={() => navigate("/analytics")}
-                  className="text-[10px] text-emerald-600 font-semibold hover:underline flex items-center gap-1">
+                  className="text-[10px] text-amber-600 font-semibold hover:underline flex items-center gap-1">
                   Ver análisis completo <ChevronRight size={10}/>
                 </button>
               </div>
@@ -506,14 +506,14 @@ export default function DashboardScreen() {
               <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800">Facturas recientes</h3>
                 <button onClick={() => navigate("/facturas-historial")}
-                  className="flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold">
+                  className="flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-700 font-semibold">
                   Ver todas <ChevronRight size={12} />
                 </button>
               </div>
               {recentFacturas.length === 0 ? (
                 <div className="px-5 py-8 text-center text-xs text-slate-400">
                   Aún no hay facturas emitidas.<br />
-                  <button onClick={() => navigate("/facturacion")} className="text-emerald-600 font-semibold mt-1">Crear primera factura →</button>
+                  <button onClick={() => navigate("/facturacion")} className="text-amber-600 font-semibold mt-1">Crear primera factura →</button>
                 </div>
               ) : (
                 <>
@@ -561,7 +561,7 @@ export default function DashboardScreen() {
                         : "?";
                       return (
                         <div key={f.id || i} className="flex items-center gap-3 px-4 py-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 text-[11px] font-bold text-emerald-700">
+                          <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 text-[11px] font-bold text-amber-700">
                             {initials}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -618,7 +618,7 @@ export default function DashboardScreen() {
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-800">Top clientes</h3>
                 <button onClick={() => navigate("/contactos")}
-                  className="flex items-center gap-1 text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold">
+                  className="flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-700 font-semibold">
                   Ver todos <ChevronRight size={12} />
                 </button>
               </div>
@@ -642,7 +642,7 @@ export default function DashboardScreen() {
                           </span>
                         </div>
                         <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                          <div className="h-full bg-amber-400 rounded-full transition-all duration-500"
                             style={{ width: `${pct}%` }} />
                         </div>
                       </div>

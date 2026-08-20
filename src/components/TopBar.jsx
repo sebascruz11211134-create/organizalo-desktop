@@ -14,7 +14,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
     ? "bg-amber-400 animate-pulse"
     : isOffline
     ? "bg-slate-400"
-    : "bg-emerald-400";
+    : "bg-amber-400";
 
   const label = {
     idle:     "Sincronizado",

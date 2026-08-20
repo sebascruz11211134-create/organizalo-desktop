@@ -85,19 +85,19 @@ function MovModal({ onClose, onSave }) {
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Tipo</span>
             <select value={form.tipo} onChange={e=>u("tipo",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
               {TIPOS_MOV.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Monto (₡)</span>
             <input type="number" min="0" step="any" value={form.monto} onChange={e=>u("monto",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-slate-500 uppercase">Es</span>
             <div className="flex gap-2 mt-1">
-              <button onClick={()=>u("esIngreso",true)} className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${form.esIngreso?"border-emerald-300 bg-green-50 text-emerald-700":"border-slate-200 text-slate-500"}`}>↑ Ingreso</button>
+              <button onClick={()=>u("esIngreso",true)} className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${form.esIngreso?"border-amber-300 bg-green-50 text-amber-700":"border-slate-200 text-slate-500"}`}>↑ Ingreso</button>
               <button onClick={()=>u("esIngreso",false)} className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${!form.esIngreso?"border-red-500 bg-red-50 text-red-600":"border-slate-200 text-slate-500"}`}>↓ Egreso</button>
             </div>
           </label>
@@ -105,12 +105,12 @@ function MovModal({ onClose, onSave }) {
             <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
             <input value={form.descripcion} onChange={e=>u("descripcion",e.target.value)}
               placeholder="Detalle del movimiento…"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
           </label>
         </div>
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Agregar</button>
+          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Agregar</button>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@ function CierreModal({ saldoEsperado, onClose, onCerrar }) {
               <span className="w-16 text-right text-sm font-semibold text-slate-700">₡{b.toLocaleString("es-CR")}</span>
               <span className="text-slate-400 text-xs">×</span>
               <input type="number" min="0" value={conteo[b]||""} onChange={e=>u(b,e.target.value)}
-                className="w-20 border border-slate-200 rounded-md px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                className="w-20 border border-slate-200 rounded-md px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-amber-400"/>
               <span className="text-xs text-slate-400">= {fmtMoney(b*(conteo[b]||0),"CRC")}</span>
             </div>
           ))}
@@ -156,7 +156,7 @@ function CierreModal({ saldoEsperado, onClose, onCerrar }) {
             <span className="text-slate-500">Conteo físico</span>
             <span className="font-semibold">{fmtMoney(totalFisico,"CRC")}</span>
           </div>
-          <div className={`flex justify-between text-sm font-bold border-t border-slate-200 pt-2 ${diferencia===0?"text-emerald-700":diferencia>0?"text-blue-700":"text-red-600"}`}>
+          <div className={`flex justify-between text-sm font-bold border-t border-slate-200 pt-2 ${diferencia===0?"text-amber-700":diferencia>0?"text-blue-700":"text-red-600"}`}>
             <span>Diferencia</span>
             <span>{diferencia>=0?"+":""}{fmtMoney(diferencia,"CRC")}</span>
           </div>
@@ -165,7 +165,7 @@ function CierreModal({ saldoEsperado, onClose, onCerrar }) {
         <div className="flex gap-3 mt-5">
           <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
           <button onClick={()=>onCerrar({ conteo, totalFisico, diferencia })}
-            className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+            className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
             Confirmar cierre
           </button>
         </div>
@@ -247,14 +247,14 @@ export default function CajaScreen() {
               <Plus size={14}/> Movimiento
             </button>
             <button onClick={()=>setModal("cierre")}
-              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+              className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
               <Lock size={14}/> Cerrar caja
             </button>
           </>
         )}
         {!cajaDia && (
           <button onClick={()=>setModal("apertura")}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
             <Unlock size={14}/> Abrir caja
           </button>
         )}
@@ -277,7 +277,7 @@ export default function CajaScreen() {
           <div className="grid grid-cols-4 gap-0 border-b border-slate-200 bg-white text-center">
             {[
               ["Saldo inicial",     fmtMoney(cajaDia.saldoInicial,"CRC"), "text-slate-700"],
-              ["Ingresos",          fmtMoney(totalIngresos,"CRC"),         "text-emerald-700"],
+              ["Ingresos",          fmtMoney(totalIngresos,"CRC"),         "text-amber-700"],
               ["Egresos",           fmtMoney(totalEgresos,"CRC"),          "text-red-600"],
               [cerrada?"Saldo al cierre":"Saldo actual", fmtMoney(cerrada?(cajaDia.arqueo?.totalFisico||saldoEsperado):saldoEsperado,"CRC"), "text-slate-900 font-black"],
             ].map(([lbl,val,cls])=>(
@@ -291,7 +291,7 @@ export default function CajaScreen() {
           {/* Diferencia arqueo si cerrada */}
           {cerrada && cajaDia.arqueo && (
             <div className={`flex items-center gap-3 px-6 py-3 border-b text-sm font-semibold
-              ${cajaDia.arqueo.diferencia===0?"bg-green-50 border-emerald-300 text-green-800":cajaDia.arqueo.diferencia>0?"bg-blue-50 border-blue-100 text-blue-800":"bg-red-50 border-red-100 text-red-700"}`}>
+              ${cajaDia.arqueo.diferencia===0?"bg-green-50 border-amber-300 text-green-800":cajaDia.arqueo.diferencia>0?"bg-blue-50 border-blue-100 text-blue-800":"bg-red-50 border-red-100 text-red-700"}`}>
               {cajaDia.arqueo.diferencia===0?<CheckCircle size={16}/>:<AlertTriangle size={16}/>}
               Caja cerrada · Diferencia en arqueo: {cajaDia.arqueo.diferencia>=0?"+":""}{fmtMoney(cajaDia.arqueo.diferencia,"CRC")}
               <span className="ml-2 font-normal text-xs opacity-70">Cerrada {cajaDia.cierreEn ? new Date(cajaDia.cierreEn).toLocaleTimeString("es-CR",{hour:"2-digit",minute:"2-digit"}) : ""}</span>
@@ -316,7 +316,7 @@ export default function CajaScreen() {
                       <td className="text-slate-400 text-xs font-mono">{m.hora}</td>
                       <td className="text-slate-700">{m.tipo}</td>
                       <td className="text-slate-500 text-xs">{m.descripcion||"—"}</td>
-                      <td className="text-right font-semibold text-emerald-700">{m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
+                      <td className="text-right font-semibold text-amber-700">{m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
                       <td className="text-right font-semibold text-red-600">{!m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
                       <td>{abierta && <button onClick={()=>eliminarMovimiento(m.id)} className="p-1 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={13}/></button>}</td>
                     </tr>
@@ -337,11 +337,11 @@ export default function CajaScreen() {
               <span className="text-xs font-semibold text-slate-500 uppercase">Saldo inicial en efectivo (₡)</span>
               <input type="number" min="0" step="any" value={apertura} onChange={e=>setApertura(e.target.value)}
                 placeholder="0" autoFocus
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400"/>
             </label>
             <div className="flex gap-3 mt-5">
               <button onClick={()=>setModal(null)} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-              <button onClick={abrirCaja} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Abrir caja</button>
+              <button onClick={abrirCaja} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">Abrir caja</button>
             </div>
           </div>
         </div>

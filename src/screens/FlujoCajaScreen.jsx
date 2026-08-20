@@ -102,7 +102,7 @@ function PagoFijoModal({ onClose, onSave }) {
         </label>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">Guardar</button>
+          <button onClick={guardar} className="flex-1 bg-amber-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-amber-700">Guardar</button>
         </div>
       </div>
     </div>
@@ -128,7 +128,7 @@ function MovModal({ onClose, onSave }) {
         <div className="flex gap-2 mb-4">
           {["entrada", "salida"].map(t => (
             <button key={t} onClick={() => u("tipo", t)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold border capitalize ${form.tipo === t ? (t === "entrada" ? "bg-emerald-500 text-white border-emerald-300" : "bg-red-500 text-white border-red-500") : "border-slate-200 text-slate-600"}`}>
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border capitalize ${form.tipo === t ? (t === "entrada" ? "bg-amber-500 text-white border-amber-300" : "bg-red-500 text-white border-red-500") : "border-slate-200 text-slate-600"}`}>
               {t === "entrada" ? "▼ Entrada" : "▲ Salida"}
             </button>
           ))}
@@ -153,7 +153,7 @@ function MovModal({ onClose, onSave }) {
         </label>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className={`flex-1 ${form.tipo === "entrada" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"} text-white py-2 rounded-lg text-sm font-semibold`}>
+          <button onClick={guardar} className={`flex-1 ${form.tipo === "entrada" ? "bg-amber-500 hover:bg-amber-600" : "bg-red-500 hover:bg-red-600"} text-white py-2 rounded-lg text-sm font-semibold`}>
             Registrar
           </button>
         </div>
@@ -241,17 +241,17 @@ export default function FlujoCajaScreen() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-        <TrendingUp size={18} className="text-emerald-600" />
+        <TrendingUp size={18} className="text-amber-600" />
         <button onClick={() => setMes(prevMes(mes))} className="p-1 rounded hover:bg-gray-100"><ChevronLeft size={16} /></button>
         <span className="text-sm font-semibold text-slate-800 min-w-[100px] text-center">{mesLabel(mes)}</span>
         <button onClick={() => setMes(nextMes(mes))} className="p-1 rounded hover:bg-gray-100"><ChevronRight size={16} /></button>
         <span className="flex-1" />
-        {tab === 1 && <button onClick={() => setModalPago(true)} className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-emerald-700"><Plus size={14} /> Pago fijo</button>}
-        {tab === 2 && <button onClick={() => setModalMov(true)} className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-emerald-700"><Plus size={14} /> Movimiento</button>}
+        {tab === 1 && <button onClick={() => setModalPago(true)} className="flex items-center gap-1 bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-amber-700"><Plus size={14} /> Pago fijo</button>}
+        {tab === 2 && <button onClick={() => setModalMov(true)} className="flex items-center gap-1 bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-amber-700"><Plus size={14} /> Movimiento</button>}
       </div>
 
       {/* Saldo disponible */}
-      <div className={`px-6 py-3 border-b ${alerta ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-100"}`}>
+      <div className={`px-6 py-3 border-b ${alerta ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-100"}`}>
         {alerta && (
           <div className="flex items-center gap-2 text-red-700 text-xs font-semibold mb-2">
             <AlertTriangle size={14} />
@@ -280,10 +280,10 @@ export default function FlujoCajaScreen() {
           ))}
           <div className="flex flex-col border-l border-slate-200 pl-4">
             <span className="text-[10px] font-bold text-slate-400 uppercase">Total disponible (est.)</span>
-            <span className={`text-base font-black ${alerta ? "text-red-600" : "text-emerald-700"}`}>{fmt(totalDisponible)}</span>
+            <span className={`text-base font-black ${alerta ? "text-red-600" : "text-amber-700"}`}>{fmt(totalDisponible)}</span>
           </div>
           <button onClick={() => editSaldo ? guardarSaldo(saldo) : setEditSaldo(true)}
-            className="ml-auto flex items-center gap-1 text-xs text-emerald-700 hover:underline font-semibold">
+            className="ml-auto flex items-center gap-1 text-xs text-amber-700 hover:underline font-semibold">
             <Edit3 size={12} /> {editSaldo ? "Guardar saldo" : "Editar saldo"}
           </button>
         </div>
@@ -293,7 +293,7 @@ export default function FlujoCajaScreen() {
       <div className="flex border-b border-slate-200 bg-white px-6">
         {TABS.map((t, i) => (
           <button key={t} onClick={() => setTab(i)}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === i ? "border-emerald-600 text-emerald-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === i ? "border-amber-600 text-amber-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
             {t}
           </button>
         ))}
@@ -305,9 +305,9 @@ export default function FlujoCajaScreen() {
           {/* Resumen del mes */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[
-              ["Entradas del mes", fmt(totalEntradas), "text-emerald-700"],
+              ["Entradas del mes", fmt(totalEntradas), "text-amber-700"],
               ["Salidas del mes", fmt(totalSalidas), "text-red-600"],
-              ["Flujo neto", fmt(totalEntradas - totalSalidas), totalEntradas >= totalSalidas ? "text-emerald-700" : "text-red-600"],
+              ["Flujo neto", fmt(totalEntradas - totalSalidas), totalEntradas >= totalSalidas ? "text-amber-700" : "text-red-600"],
             ].map(([l, v, cls]) => (
               <div key={l} className="bg-white rounded-xl border border-slate-200 p-4">
                 <p className="text-[10px] font-bold text-slate-400 uppercase">{l}</p>
@@ -324,7 +324,7 @@ export default function FlujoCajaScreen() {
               const deficit = gastos > totalDisponible;
               return (
                 <div key={sem.inicio}
-                  className={`rounded-xl border p-4 flex items-center gap-4 ${esActual ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+                  className={`rounded-xl border p-4 flex items-center gap-4 ${esActual ? "border-amber-400 bg-amber-50" : "border-slate-200 bg-white"}`}>
                   <div className="flex-1">
                     <p className="text-xs font-bold text-slate-500 uppercase">Semana {i + 1} {esActual && "· Actual"}</p>
                     <p className="text-sm font-semibold text-slate-800 mt-0.5">{sem.inicio} → {sem.fin}</p>
@@ -333,7 +333,7 @@ export default function FlujoCajaScreen() {
                     <p className="text-[10px] text-slate-400 uppercase">Gastos estimados</p>
                     <p className={`text-base font-bold ${deficit ? "text-red-600" : "text-slate-800"}`}>{fmt(gastos)}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${deficit ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${deficit ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                     {deficit ? "Déficit" : "OK"}
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function FlujoCajaScreen() {
             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
               <DollarSign size={40} />
               <p className="font-semibold">Sin pagos fijos registrados</p>
-              <button onClick={() => setModalPago(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar pago fijo</button>
+              <button onClick={() => setModalPago(true)} className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar pago fijo</button>
             </div>
           ) : (
             <table className="table-base">
@@ -388,7 +388,7 @@ export default function FlujoCajaScreen() {
             <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
               <TrendingUp size={40} />
               <p className="font-semibold">Sin movimientos en {mesLabel(mes)}</p>
-              <button onClick={() => setModalMov(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar movimiento</button>
+              <button onClick={() => setModalMov(true)} className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar movimiento</button>
             </div>
           ) : (
             <table className="table-base">
@@ -409,11 +409,11 @@ export default function FlujoCajaScreen() {
                     <td className="font-semibold text-slate-900">{mv.descripcion}</td>
                     <td><span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs">{mv.categoria}</span></td>
                     <td>
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${mv.tipo === "entrada" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${mv.tipo === "entrada" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
                         {mv.tipo === "entrada" ? "▼ Entrada" : "▲ Salida"}
                       </span>
                     </td>
-                    <td className={`font-bold ${mv.tipo === "entrada" ? "text-emerald-700" : "text-red-600"}`}>
+                    <td className={`font-bold ${mv.tipo === "entrada" ? "text-amber-700" : "text-red-600"}`}>
                       {mv.tipo === "entrada" ? "+" : "-"}{fmt(mv.monto)}
                     </td>
                     <td>

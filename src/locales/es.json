@@ -46,7 +46,7 @@
       "confirmLabel": "Confirmar",
       "confirmPlaceholder": "Repetí la contraseña",
       "accessCodeLabel": "Código de acceso",
-      "accessCodeHint": "Solicitalo a Organízalo.AI al contratar.",
+      "accessCodeHint": "Solicitalo a Monki.AI al contratar.",
       "creating": "Creando cuenta…",
       "submit": "Crear cuenta",
       "back": "← Volver al login",
@@ -58,7 +58,7 @@
   },
   "admin": {
     "title": "Panel de administración",
-    "subtitle": "Solo visible para vos · Organízalo.AI",
+    "subtitle": "Solo visible para vos · Monki.AI",
     "searchPlaceholder": "Buscar por nombre, email o empresa…",
     "noClients": "Sin clientes registrados aún.",
     "noResults": "Sin resultados para ese filtro.",

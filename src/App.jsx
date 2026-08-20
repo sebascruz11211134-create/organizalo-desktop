@@ -184,9 +184,9 @@ function BottomTabBar() {
             key={tab.path}
             onClick={() => navigate(tab.path)}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors
-              ${active ? "text-emerald-600" : "text-slate-400"}`}
+              ${active ? "text-amber-600" : "text-slate-400"}`}
           >
-            <tab.icon size={20} className={active ? "text-emerald-600" : "text-slate-400"} />
+            <tab.icon size={20} className={active ? "text-amber-600" : "text-slate-400"} />
             <span>{tab.label}</span>
           </button>
         );
@@ -216,7 +216,7 @@ export default function App() {
   const [showOnboarding,     setShowOnboarding]     = useState(false);
   const location = useLocation();
 
-  const titulo = TITULOS[location.pathname] || "Organízalo.AI";
+  const titulo = TITULOS[location.pathname] || "Monki.AI";
 
   // ── Verificar sesión al arrancar ───────────────────────────────────────────
   useEffect(() => {
@@ -331,7 +331,7 @@ export default function App() {
           </svg>
 
           <div className="flex items-baseline gap-0.5">
-            <span className="text-white font-bold tracking-tight" style={{ fontSize: 22 }}>Organízalo</span>
+            <span className="text-white font-bold tracking-tight" style={{ fontSize: 22 }}>Monki</span>
             <span className="font-bold text-white/80" style={{ fontSize: 14 }}>.AI</span>
           </div>
 

@@ -32,7 +32,7 @@ function baseHTML(titulo, negocio, cuerpo) {
     <h1>${titulo}</h1>
     <p class="meta">${negocio} &nbsp;·&nbsp; ${fecha}</p>
     ${cuerpo}
-    <div class="footer">Generado por Organízalo.AI · Costa Rica</div>
+    <div class="footer">Generado por Monki.AI · Costa Rica</div>
   </body></html>`;
 }
 

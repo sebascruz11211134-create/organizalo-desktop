@@ -11,7 +11,7 @@ export function Placeholder({ nombre, descripcion }) {
       <Construction size={48} className="mb-4 text-gray-300" />
       <h2 className="text-lg font-bold text-slate-600 mb-2">{nombre}</h2>
       <p className="text-sm text-center max-w-xs">{descripcion || "Este módulo está disponible en el app móvil y se integrará próximamente en la versión desktop."}</p>
-      <p className="text-xs text-gray-300 mt-6">Organízalo.AI Desktop · En desarrollo</p>
+      <p className="text-xs text-gray-300 mt-6">Monki.AI Desktop · En desarrollo</p>
     </div>
   );
 }

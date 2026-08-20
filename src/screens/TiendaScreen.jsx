@@ -63,7 +63,7 @@ export default function TiendaScreen() {
             <p className="text-sm text-slate-500">Publicá tu catálogo de productos en una página pública.</p>
           </div>
           <button onClick={guardar} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado?"bg-emerald-600 text-white":"bg-emerald-600 text-white hover:bg-emerald-700"}`}>
+            ${guardado?"bg-amber-600 text-white":"bg-amber-600 text-white hover:bg-amber-700"}`}>
             {guardado?<><CheckCircle size={14}/> Guardado</>:<><Save size={14}/> Guardar</>}
           </button>
         </div>
@@ -81,7 +81,7 @@ export default function TiendaScreen() {
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={config.activa} onChange={e=>u("activa",e.target.checked)} className="sr-only peer"/>
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"/>
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-amber-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"/>
               </label>
             </div>
 
@@ -90,7 +90,7 @@ export default function TiendaScreen() {
                 <Globe size={14} className="text-slate-400 shrink-0"/>
                 <span className="text-xs text-slate-600 flex-1 truncate font-mono">{tiendaUrl}</span>
                 <button onClick={copiar} className="p-1 hover:bg-gray-200 rounded" title="Copiar enlace">
-                  {copiado?<CheckCircle size={13} className="text-emerald-600"/>:<Copy size={13} className="text-slate-400"/>}
+                  {copiado?<CheckCircle size={13} className="text-amber-600"/>:<Copy size={13} className="text-slate-400"/>}
                 </button>
                 <a href={tiendaUrl} target="_blank" rel="noreferrer" className="p-1 hover:bg-gray-200 rounded">
                   <ExternalLink size={13} className="text-slate-400"/>
@@ -112,24 +112,24 @@ export default function TiendaScreen() {
                 <label key={key} className={`block ${cls}`}>
                   <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
                   <input type={type} value={config[key]||""} onChange={e=>u(key,e.target.value)}
-                    className={`mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 ${type==="color"?"h-10 cursor-pointer":""}`}/>
+                    className={`mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 ${type==="color"?"h-10 cursor-pointer":""}`}/>
                 </label>
               ))}
               <label className="block col-span-2">
                 <span className="text-xs font-semibold text-slate-500 uppercase">Descripción / Eslogan</span>
                 <textarea value={config.descripcion||""} onChange={e=>u("descripcion",e.target.value)} rows={2}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none"
+                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
                   placeholder="Describí tu negocio en una línea..."/>
               </label>
             </div>
 
             <div className="flex items-center gap-3 mt-3">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.mostrarStock} onChange={e=>u("mostrarStock",e.target.checked)} className="accent-emerald-600"/>
+                <input type="checkbox" checked={config.mostrarStock} onChange={e=>u("mostrarStock",e.target.checked)} className="accent-amber-600"/>
                 <span className="text-sm text-slate-600">Mostrar stock disponible en la tienda</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer ml-4">
-                <input type="checkbox" checked={config.moneda==="USD"} onChange={e=>u("moneda",e.target.checked?"USD":"CRC")} className="accent-emerald-600"/>
+                <input type="checkbox" checked={config.moneda==="USD"} onChange={e=>u("moneda",e.target.checked?"USD":"CRC")} className="accent-amber-600"/>
                 <span className="text-sm text-slate-600">Mostrar precios en USD</span>
               </label>
             </div>
@@ -141,12 +141,12 @@ export default function TiendaScreen() {
               <h3 className="text-sm font-bold text-slate-900 mb-3">Compartir</h3>
               <div className="flex gap-3">
                 <button onClick={whatsappLink}
-                  className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700">
+                  className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-amber-700">
                   <Phone size={14}/> Compartir por WhatsApp
                 </button>
                 <button onClick={copiar}
                   className="flex items-center gap-2 border border-slate-200 text-slate-600 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50">
-                  {copiado?<CheckCircle size={14} className="text-emerald-600"/>:<Copy size={14}/>}
+                  {copiado?<CheckCircle size={14} className="text-amber-600"/>:<Copy size={14}/>}
                   {copiado?"¡Copiado!":"Copiar enlace"}
                 </button>
               </div>

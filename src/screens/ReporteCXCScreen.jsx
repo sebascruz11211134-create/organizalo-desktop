@@ -42,8 +42,8 @@ function Tabla({ cuentas, moneda }) {
               <td className="font-semibold text-slate-900">{d.nombre}</td>
               <td className="text-slate-400 text-xs">{d.notas || "—"}</td>
               <td>{fmtMoney(d.total, moneda)}</td>
-              <td className="text-emerald-700">{fmtMoney(d.pagado || 0, moneda)}</td>
-              <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmtMoney(saldo, moneda)}</td>
+              <td className="text-amber-700">{fmtMoney(d.pagado || 0, moneda)}</td>
+              <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-amber-700"}`}>{fmtMoney(saldo, moneda)}</td>
               <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                 {fmtDate(d.fechaVencimiento)}
               </td>
@@ -52,10 +52,10 @@ function Tabla({ cuentas, moneda }) {
           );
         })}
         {cuentas.length > 0 && (
-          <tr className="bg-green-50 font-bold text-green-900 border-t-2 border-emerald-300">
-            <td colSpan={2} className="text-emerald-700">TOTAL {moneda}</td>
+          <tr className="bg-green-50 font-bold text-green-900 border-t-2 border-amber-300">
+            <td colSpan={2} className="text-amber-700">TOTAL {moneda}</td>
             <td>{fmtMoney(totB, moneda)}</td>
-            <td className="text-emerald-700">{fmtMoney(totP, moneda)}</td>
+            <td className="text-amber-700">{fmtMoney(totP, moneda)}</td>
             <td className="text-red-600">{fmtMoney(Math.max(0, totB - totP), moneda)}</td>
             <td colSpan={2}></td>
           </tr>
@@ -96,7 +96,7 @@ export default function ReporteCXCScreen() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
         <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-400">
+          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-400">
           <option value="todos">Todos los estados</option>
           <option value="pendientes">Pendientes</option>
           <option value="vencidas">Vencidas</option>
@@ -114,9 +114,9 @@ export default function ReporteCXCScreen() {
       </div>
 
       {/* Resumen */}
-      <div className="flex gap-6 px-6 py-2 bg-green-50 border-b border-emerald-300 text-sm">
-        <span className="text-slate-500">Saldo CRC: <strong className={salCRC > 0 ? "text-red-600" : "text-emerald-700"}>{fmtMoney(salCRC, "CRC")}</strong></span>
-        <span className="text-slate-500">Saldo USD: <strong className={salUSD > 0 ? "text-red-600" : "text-emerald-700"}>{fmtMoney(salUSD, "USD")}</strong></span>
+      <div className="flex gap-6 px-6 py-2 bg-green-50 border-b border-amber-300 text-sm">
+        <span className="text-slate-500">Saldo CRC: <strong className={salCRC > 0 ? "text-red-600" : "text-amber-700"}>{fmtMoney(salCRC, "CRC")}</strong></span>
+        <span className="text-slate-500">Saldo USD: <strong className={salUSD > 0 ? "text-red-600" : "text-amber-700"}>{fmtMoney(salUSD, "USD")}</strong></span>
         <span className="ml-auto text-slate-400">{crc.length + usd.length} cuentas</span>
       </div>
 

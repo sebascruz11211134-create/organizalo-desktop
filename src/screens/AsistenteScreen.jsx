@@ -27,7 +27,7 @@ const ROL_LABEL = {
 // Íconos y etiquetas para cada herramienta del agente
 const TOOL_META = {
   buscar_facturas:    { label: "Facturas",     icon: FileText,    color: "text-blue-600   bg-blue-50   border-blue-200" },
-  buscar_cxc:         { label: "Cuentas ×Cob", icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  buscar_cxc:         { label: "Cuentas ×Cob", icon: TrendingUp,  color: "text-amber-600 bg-amber-50 border-amber-200" },
   buscar_cxp:         { label: "Cuentas ×Pag", icon: AlertCircle, color: "text-orange-600 bg-orange-50 border-orange-200" },
   buscar_inventario:  { label: "Inventario",   icon: Package,     color: "text-violet-600 bg-violet-50 border-violet-200" },
   buscar_contactos:   { label: "Contactos",    icon: Users,       color: "text-sky-600    bg-sky-50    border-sky-200" },
@@ -109,7 +109,7 @@ function ToolChip({ toolName }) {
 function CuotaBar({ cuota }) {
   if (!cuota) return null;
   const pct = Math.min(100, (cuota.usados / cuota.limite) * 100);
-  const color = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-emerald-500";
+  const color = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-amber-500";
   return (
     <div className="flex items-center gap-2 text-[11px] text-slate-500">
       <span>{cuota.usados}/{cuota.limite} consultas hoy</span>
@@ -212,12 +212,12 @@ export default function AsistenteScreen() {
     <div className="flex flex-col h-full">
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <Sparkles size={18} className="text-emerald-600" />
+        <Sparkles size={18} className="text-amber-600" />
         <span className="font-bold text-gray-800">Asistente IA</span>
         <span className="text-xs text-slate-400 ml-1">· Claude + datos reales</span>
 
         {rolLabel && (
-          <span className="flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+          <span className="flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
             <Shield size={10} />
             {rolLabel}
           </span>
@@ -241,8 +241,8 @@ export default function AsistenteScreen() {
       <div className="flex-1 overflow-auto px-6 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
-              <Bot size={32} className="text-emerald-600" />
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+              <Bot size={32} className="text-amber-600" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-800">
@@ -258,7 +258,7 @@ export default function AsistenteScreen() {
                   key={s}
                   onClick={() => enviar(s)}
                   className="text-left text-xs px-3 py-2 border border-slate-200 rounded-md
-                             hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800
+                             hover:bg-amber-50 hover:border-amber-300 hover:text-amber-800
                              transition-colors text-slate-600"
                 >
                   {s}
@@ -273,7 +273,7 @@ export default function AsistenteScreen() {
             <div
               className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
                 ${m.role === "user"
-                  ? "bg-emerald-700 text-white rounded-br-sm"
+                  ? "bg-amber-700 text-white rounded-br-sm"
                   : m.esLimite
                     ? "bg-amber-50 text-amber-800 border border-amber-200 rounded-bl-sm"
                     : m.error
@@ -329,7 +329,7 @@ export default function AsistenteScreen() {
           <button
             onClick={() => enviar()}
             disabled={!input.trim() || loading || !token}
-            className="p-2 bg-emerald-700 text-white rounded-xl hover:bg-emerald-800
+            className="p-2 bg-amber-700 text-white rounded-xl hover:bg-amber-800
                        disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <Send size={15} />

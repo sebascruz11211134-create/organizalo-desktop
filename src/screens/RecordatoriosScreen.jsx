@@ -93,7 +93,7 @@ export default function RecordatoriosScreen() {
     if (window.Notification && Notification.permission !== "denied") {
       Notification.requestPermission().then(perm => {
         if (perm==="granted") {
-          new Notification("Organízalo — Cobros pendientes", {
+          new Notification("Monki — Cobros pendientes", {
             body: `Tenés ${pendientes.filter(d=>d.dias<0).length} facturas vencidas por cobrar.`,
             icon: undefined,
           });
@@ -149,22 +149,22 @@ export default function RecordatoriosScreen() {
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Avisar X días antes</span>
               <input type="number" min="0" max="90" value={config.diasAviso} onChange={e=>setConfig(p=>({...p,diasAviso:parseInt(e.target.value)||7}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">SINPE Móvil</span>
               <input value={config.sinpe||""} onChange={e=>setConfig(p=>({...p,sinpe:e.target.value}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"/>
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-slate-500 uppercase">Plantilla de mensaje</span>
               <select value={config.plantilla} onChange={e=>setConfig(p=>({...p,plantilla:e.target.value}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400">
+                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400">
                 {PLANTILLAS.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </label>
             <div className="flex items-end">
-              <button onClick={guardarConfig} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+              <button onClick={guardarConfig} className="w-full bg-amber-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-amber-700">
                 Guardar config
               </button>
             </div>
@@ -179,7 +179,7 @@ export default function RecordatoriosScreen() {
       <div className="flex gap-2 px-8 py-3 bg-white border-b border-slate-100">
         {[["todos","Todos"],["vencidas","Vencidas"],["proximas","Próximas"]].map(([k,lbl])=>(
           <button key={k} onClick={()=>setFiltro(k)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${filtro===k?"bg-emerald-600 text-white":"text-slate-500 hover:bg-slate-100"}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${filtro===k?"bg-amber-600 text-white":"text-slate-500 hover:bg-slate-100"}`}>
             {lbl}
           </button>
         ))}
@@ -225,7 +225,7 @@ export default function RecordatoriosScreen() {
               {/* Botón enviar */}
               <button onClick={()=>enviarWhatsApp(d)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold shrink-0 transition-all
-                  ${ya?"bg-green-50 text-emerald-700 border border-emerald-300":"bg-emerald-600 text-white hover:bg-emerald-700"}`}>
+                  ${ya?"bg-green-50 text-amber-700 border border-amber-300":"bg-amber-600 text-white hover:bg-amber-700"}`}>
                 {ya?<><CheckCircle size={13}/> Enviado</>:<><Send size={13}/> WhatsApp</>}
               </button>
             </div>

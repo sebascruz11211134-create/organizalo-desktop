@@ -36,8 +36,8 @@ const TIPOS_NEGOCIO = [
     label: "General",
     icon: Building2,
     desc: "Rocky responde preguntas frecuentes y registra mensajes.",
-    color: "text-emerald-500",
-    activeBg: "bg-emerald-50 border-emerald-300",
+    color: "text-amber-500",
+    activeBg: "bg-amber-50 border-amber-300",
   },
 ];
 
@@ -65,9 +65,9 @@ function LlamadaCard({ llamada }) {
   return (
     <div className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-        ${exitosa ? "bg-emerald-100" : "bg-amber-50"}`}>
+        ${exitosa ? "bg-amber-100" : "bg-amber-50"}`}>
         {exitosa
-          ? <CheckCircle2 size={15} className="text-emerald-600" />
+          ? <CheckCircle2 size={15} className="text-amber-600" />
           : <XCircle size={15} className="text-amber-500" />}
       </div>
       <div className="flex-1 min-w-0">
@@ -77,14 +77,14 @@ function LlamadaCard({ llamada }) {
         </div>
         <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{llamada.resumen || llamada.pregunta}</p>
         {llamada.accion && llamada.accion !== "NINGUNA" && (
-          <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+          <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
             <ChevronRight size={10} />
             {llamada.accion === "PEDIDO" ? "Pedido creado" : llamada.accion === "CITA" ? "Cita agendada" : llamada.accion}
           </span>
         )}
       </div>
       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0
-        ${exitosa ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+        ${exitosa ? "bg-amber-100 text-amber-700" : "bg-amber-100 text-amber-700"}`}>
         {exitosa ? "OK" : llamada.resultado || "N/D"}
       </span>
     </div>
@@ -199,11 +199,11 @@ export default function RockyRecepcionistaScreen() {
         <label className="flex items-center gap-2 cursor-pointer">
           <div
             onClick={() => set("activo", !config.activo)}
-            className={`relative w-10 h-6 rounded-full transition-colors ${config.activo ? "bg-emerald-500" : "bg-slate-300"}`}
+            className={`relative w-10 h-6 rounded-full transition-colors ${config.activo ? "bg-amber-500" : "bg-slate-300"}`}
           >
             <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${config.activo ? "translate-x-5" : "translate-x-1"}`} />
           </div>
-          <span className={`text-xs font-medium ${config.activo ? "text-emerald-700" : "text-slate-500"}`}>
+          <span className={`text-xs font-medium ${config.activo ? "text-amber-700" : "text-slate-500"}`}>
             {config.activo ? "Activo" : "Inactivo"}
           </span>
         </label>
@@ -212,7 +212,7 @@ export default function RockyRecepcionistaScreen() {
           onClick={guardar}
           disabled={guardando}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado ? "bg-emerald-500 text-white" : "bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"}`}
+            ${guardado ? "bg-amber-500 text-white" : "bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"}`}
         >
           {guardado ? <><CheckCircle2 size={14} /> Guardado</> : guardando ? "Guardando…" : "Guardar"}
         </button>
@@ -387,7 +387,7 @@ export default function RockyRecepcionistaScreen() {
             <div className="grid grid-cols-4 gap-3 mb-5">
               {[
                 { label: "Total llamadas", value: totalLlamadas, color: "text-slate-700" },
-                { label: "Completadas",    value: completadas,   color: "text-emerald-600" },
+                { label: "Completadas",    value: completadas,   color: "text-amber-600" },
                 { label: "Pedidos",        value: pedidosCreados,color: "text-orange-600" },
                 { label: "Citas",          value: citasCreadas,  color: "text-blue-600" },
               ].map(s => (

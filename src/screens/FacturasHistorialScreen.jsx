@@ -38,7 +38,7 @@ function DetalleFact({ f, moneda, recibos = [] }) {
                   <td className="py-0.5 text-center">{l.cantidad} {l.unidad}</td>
                   <td className="py-0.5 text-right">{fmtMoney(l.precioUnit, moneda)}</td>
                   <td className="py-0.5 text-right text-slate-400">{l.pctIVA}%</td>
-                  <td className="py-0.5 text-right font-bold text-emerald-700">{fmtMoney(l.total, moneda)}</td>
+                  <td className="py-0.5 text-right font-bold text-amber-700">{fmtMoney(l.total, moneda)}</td>
                 </tr>
               ))}
             </tbody>
@@ -69,10 +69,10 @@ function DetalleFact({ f, moneda, recibos = [] }) {
             <tbody>
               {recibosVinculados.map(r => (
                 <tr key={r.id} className="border-t border-slate-100">
-                  <td className="py-1 font-mono font-bold text-emerald-700">#{r.numero}</td>
+                  <td className="py-1 font-mono font-bold text-amber-700">#{r.numero}</td>
                   <td className="py-1 text-slate-500">{r.fecha}</td>
                   <td className="py-1 text-slate-500">{r.metodoPago}</td>
-                  <td className="py-1 text-right font-bold text-emerald-700">{fmtMoney(r.monto, r.moneda || moneda)}</td>
+                  <td className="py-1 text-right font-bold text-amber-700">{fmtMoney(r.monto, r.moneda || moneda)}</td>
                 </tr>
               ))}
             </tbody>
@@ -166,12 +166,12 @@ export default function FacturasHistorialScreen() {
           <span className="text-blue-700 font-semibold">Seleccionada:</span>
           <span className="font-bold text-slate-800">{sel.numero}</span>
           <span className="text-slate-500">{sel.cliente?.nombre || "Consumidor Final"}</span>
-          <span className="font-bold text-emerald-700">{fmtMoney(sel.total, sel.moneda)}</span>
+          <span className="font-bold text-amber-700">{fmtMoney(sel.total, sel.moneda)}</span>
           {sel.estado === "anulada" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulada</span>}
           <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
         </div>
       ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-emerald-300 text-xs text-slate-500">
+        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-amber-300 text-xs text-slate-500">
           {totCRC > 0 && <span>CRC: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
           {totUSD > 0 && <span>USD: <strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
           <span className="ml-auto">{visibles.length} factura{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
@@ -207,13 +207,13 @@ export default function FacturasHistorialScreen() {
                     className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                     onClick={() => setSelected(isSel ? null : f.id)}
                   >
-                    <td className={`font-mono text-xs font-bold ${esAnulada ? "line-through text-slate-400" : "text-emerald-700"}`}>{f.numero}</td>
+                    <td className={`font-mono text-xs font-bold ${esAnulada ? "line-through text-slate-400" : "text-amber-700"}`}>{f.numero}</td>
                     <td className="text-slate-400 text-xs">{f.tipoDoc || "01"}</td>
                     <td className="text-slate-500"><div>{fmtDate(f.fecha)}</div>{f.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {f.creadoPor}</div>}</td>
                     <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{f.cliente?.nombre || "—"}</td>
                     <td className="text-slate-400 text-xs font-mono">{f.cliente?.cedula || "—"}</td>
                     <td className="text-slate-500">{f.moneda}</td>
-                    <td className={`font-bold ${esAnulada ? "line-through text-slate-400" : "text-emerald-700"}`}>{fmtMoney(f.total, f.moneda)}</td>
+                    <td className={`font-bold ${esAnulada ? "line-through text-slate-400" : "text-amber-700"}`}>{fmtMoney(f.total, f.moneda)}</td>
                     <td>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>
                         <Icon size={10} /> {est.label}

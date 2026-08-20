@@ -52,7 +52,7 @@ function buildResumen(facturas, debts) {
 }
 
 const ESTADO_BADGE = {
-  pagada:    "bg-green-100 text-emerald-700",
+  pagada:    "bg-green-100 text-amber-700",
   parcial:   "bg-amber-100 text-amber-700",
   pendiente: "bg-red-100 text-red-700",
 };
@@ -147,7 +147,7 @@ export default function ReporteCobrosClienteScreen() {
             <button key={id} onClick={() => setFiltro(id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filtro === id
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-amber-600 text-white"
                   : "border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}>
               {label}
@@ -218,10 +218,10 @@ export default function ReporteCobrosClienteScreen() {
                 <span className="text-xs font-semibold text-slate-600 ml-3 shrink-0">
                   Fact: {fmtMoney(res.totalFacturado, moneda)}
                 </span>
-                <span className="text-xs font-semibold text-emerald-700 ml-3 shrink-0">
+                <span className="text-xs font-semibold text-amber-700 ml-3 shrink-0">
                   Cobrado: {fmtMoney(res.totalPagado, moneda)}
                 </span>
-                <span className={`text-xs font-bold ml-3 shrink-0 ${res.totalSaldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
+                <span className={`text-xs font-bold ml-3 shrink-0 ${res.totalSaldo > 0 ? "text-red-600" : "text-amber-700"}`}>
                   Saldo: {fmtMoney(res.totalSaldo, moneda)}
                 </span>
               </button>
@@ -252,10 +252,10 @@ export default function ReporteCobrosClienteScreen() {
                           <td className="px-3 py-2 text-right font-semibold text-slate-700">
                             {fmtMoney(f.total, f.moneda || moneda)}
                           </td>
-                          <td className="px-3 py-2 text-right text-emerald-700">
+                          <td className="px-3 py-2 text-right text-amber-700">
                             {fmtMoney(f.pagado, f.moneda || moneda)}
                           </td>
-                          <td className={`px-3 py-2 text-right font-bold ${f.saldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
+                          <td className={`px-3 py-2 text-right font-bold ${f.saldo > 0 ? "text-red-600" : "text-amber-700"}`}>
                             {fmtMoney(f.saldo, f.moneda || moneda)}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -270,8 +270,8 @@ export default function ReporteCobrosClienteScreen() {
                       <tr className="bg-slate-50 font-bold text-slate-700 border-t border-slate-200">
                         <td colSpan={3} className="px-4 py-2 text-xs text-slate-500">Subtotal</td>
                         <td className="px-3 py-2 text-right text-xs">{fmtMoney(res.totalFacturado, moneda)}</td>
-                        <td className="px-3 py-2 text-right text-xs text-emerald-700">{fmtMoney(res.totalPagado, moneda)}</td>
-                        <td className={`px-3 py-2 text-right text-xs ${res.totalSaldo > 0 ? "text-red-600" : "text-emerald-700"}`}>
+                        <td className="px-3 py-2 text-right text-xs text-amber-700">{fmtMoney(res.totalPagado, moneda)}</td>
+                        <td className={`px-3 py-2 text-right text-xs ${res.totalSaldo > 0 ? "text-red-600" : "text-amber-700"}`}>
                           {fmtMoney(res.totalSaldo, moneda)}
                         </td>
                         <td/>

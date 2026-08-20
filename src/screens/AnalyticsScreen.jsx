@@ -127,7 +127,7 @@ export default function AnalyticsScreen() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <TrendingUp size={13} className="text-emerald-400"/>
+        <TrendingUp size={13} className="text-amber-400"/>
         <span className="text-white text-xs font-semibold">Análisis de negocio</span>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
         <label className="text-slate-300 text-xs">Período:</label>
@@ -150,7 +150,7 @@ export default function AnalyticsScreen() {
           {/* ── KPI strip ── */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Total ventas período", value: fmtMoney(resumen.totalVentas, "CRC"), color: "text-emerald-700" },
+              { label: "Total ventas período", value: fmtMoney(resumen.totalVentas, "CRC"), color: "text-amber-700" },
               { label: "Total gastos período", value: fmtMoney(resumen.totalGastos, "CRC"), color: "text-red-600" },
               { label: "Mejor mes", value: resumen.mejorMes ? `${resumen.mejorMes.mes} · ${fmtMoney(resumen.mejorMes.Ventas, "CRC")}` : "—", color: "text-blue-700" },
             ].map((k, i) => (
@@ -184,7 +184,7 @@ export default function AnalyticsScreen() {
             {/* Top productos */}
             <div className="bg-white border border-slate-200 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
-                <Package size={13} className="text-emerald-500"/>
+                <Package size={13} className="text-amber-500"/>
                 <h3 className="text-sm font-bold text-slate-800">Productos más vendidos</h3>
               </div>
               {topProductos.length === 0 ? (
@@ -224,7 +224,7 @@ export default function AnalyticsScreen() {
           {/* ── Top clientes ── */}
           <div className="bg-white border border-slate-200 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Users size={13} className="text-emerald-500"/>
+              <Users size={13} className="text-amber-500"/>
               <h3 className="text-sm font-bold text-slate-800">Top clientes por facturación</h3>
             </div>
             {topClientes.length === 0 ? (

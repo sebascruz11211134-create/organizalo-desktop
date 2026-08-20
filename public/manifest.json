@@ -1,39 +1,13 @@
 {
-  "name": "Organízalo.AI",
-  "short_name": "Organízalo",
-  "description": "Sistema de gestión empresarial para pymes costarricenses",
+  "name": "Monki.AI",
+  "short_name": "Monki",
+  "description": "Sistema de gestión empresarial Monki.AI",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#10b981",
-  "orientation": "landscape-primary",
+  "background_color": "#1e293b",
+  "theme_color": "#FACC15",
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["business", "finance", "productivity"],
-  "lang": "es-CR",
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Facturación",
-      "url": "/facturacion",
-      "description": "Emitir facturas electrónicas"
-    },
-    {
-      "name": "Dashboard",
-      "url": "/",
-      "description": "Panel principal"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

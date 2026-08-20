@@ -13,7 +13,7 @@ import { exportExcel } from "../utils/reportHelpers";
 const ESTADOS = {
   borrador:  { label: "Borrador",  cls: "bg-slate-100 text-slate-600" },
   enviada:   { label: "Enviada",   cls: "bg-blue-100 text-blue-700" },
-  recibida:  { label: "Recibida",  cls: "bg-emerald-100 text-emerald-700" },
+  recibida:  { label: "Recibida",  cls: "bg-amber-100 text-amber-700" },
   cancelada: { label: "Cancelada", cls: "bg-red-100 text-red-600" },
 };
 
@@ -108,7 +108,7 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
               className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-center" placeholder="Cant."/>
             <input type="number" value={linea.precioUnit} onChange={e=>setLinea(p=>({...p,precioUnit:e.target.value}))}
               className="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs" placeholder="Precio unit."/>
-            <button onClick={addLinea} className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ Agregar</button>
+            <button onClick={addLinea} className="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ Agregar</button>
           </div>
           <table className="w-full text-xs">
             <thead><tr className="text-slate-400">
@@ -148,7 +148,7 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-semibold">Guardar OC</button>
+          <button onClick={guardar} className="flex-1 py-2.5 bg-amber-700 text-white rounded-lg text-sm font-semibold">Guardar OC</button>
         </div>
       </div>
     </div>
@@ -220,7 +220,7 @@ export default function OrdenesCompraScreen() {
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
         <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Plus size={13}/> Nueva OC
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1"/>
@@ -231,7 +231,7 @@ export default function OrdenesCompraScreen() {
         </button>
         <button disabled={!sel || sel.estado==="recibida" || sel.estado==="cancelada"}
           onClick={() => sel && recibirOC(sel)}
-          className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-30 text-white px-3 py-1.5 rounded text-xs font-semibold">
+          className="flex items-center gap-1.5 bg-amber-700 hover:bg-amber-800 disabled:opacity-30 text-white px-3 py-1.5 rounded text-xs font-semibold">
           <Check size={13}/> Recibir
         </button>
         <button disabled={!sel || sel.estado==="recibida"}
@@ -285,7 +285,7 @@ export default function OrdenesCompraScreen() {
                 const est = ESTADOS[o.estado] || ESTADOS.borrador;
                 return (
                   <tr key={o.id} onClick={()=>setSelected(s=>s===o.id?null:o.id)}
-                    className={`cursor-pointer ${selected===o.id?"bg-emerald-50 ring-1 ring-inset ring-emerald-300":""}`}>
+                    className={`cursor-pointer ${selected===o.id?"bg-amber-50 ring-1 ring-inset ring-amber-300":""}`}>
                     <td className="font-mono text-xs font-bold">{o.numero}</td>
                     <td className="font-semibold">{o.proveedor}</td>
                     <td>{fmtDate(o.fecha)}</td>

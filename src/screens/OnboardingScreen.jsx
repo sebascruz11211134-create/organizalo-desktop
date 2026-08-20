@@ -43,20 +43,20 @@ function StepEmpresa({ onNext }) {
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nombre del negocio *</label>
         <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Ferretería López S.A."
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cédula jurídica / física</label>
         <input value={cedula} onChange={e => setCedula(e.target.value)} placeholder="3-101-000000"
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Teléfono</label>
         <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="8888-8888"
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
       </div>
       <button onClick={guardar} disabled={!nombre.trim()}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+        className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
         Continuar <ArrowRight size={15}/>
       </button>
     </div>
@@ -161,8 +161,8 @@ function StepCliente({ onNext }) {
 function StepListo({ onFactura, onDashboard }) {
   return (
     <div className="text-center space-y-4">
-      <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
-        <CheckCircle size={40} className="text-emerald-600"/>
+      <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+        <CheckCircle size={40} className="text-amber-600"/>
       </div>
       <div>
         <p className="text-slate-700 text-sm font-semibold">¡Estás listo para empezar!</p>
@@ -170,7 +170,7 @@ function StepListo({ onFactura, onDashboard }) {
       </div>
       <div className="flex flex-col gap-2 pt-2">
         <button onClick={onFactura}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
+          className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
           <Receipt size={15}/> Crear primera factura
         </button>
         <button onClick={onDashboard}
@@ -196,7 +196,7 @@ export default function OnboardingScreen({ onDone }) {
   const paso_actual = PASOS[paso - 1];
   const Icon = paso_actual.icon;
   const colorMap = {
-    emerald: { ring: "ring-emerald-400", bg: "bg-emerald-600", text: "text-emerald-600", light: "bg-emerald-50" },
+    emerald: { ring: "ring-amber-400", bg: "bg-amber-600", text: "text-amber-600", light: "bg-amber-50" },
     blue:    { ring: "ring-blue-400",    bg: "bg-blue-600",    text: "text-blue-600",    light: "bg-blue-50"    },
     violet:  { ring: "ring-violet-400",  bg: "bg-violet-600",  text: "text-violet-600",  light: "bg-violet-50"  },
     amber:   { ring: "ring-amber-400",   bg: "bg-amber-500",   text: "text-amber-600",   light: "bg-amber-50"   },

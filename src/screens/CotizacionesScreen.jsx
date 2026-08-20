@@ -10,7 +10,7 @@ const IVA_PCT = { "01":0,"02":1,"03":2,"04":4,"05":0,"06":4,"07":8,"08":13 };
 const ESTADOS = [
   { value:"borrador",  label:"Borrador",   color:"bg-slate-100 text-slate-600" },
   { value:"enviada",   label:"Enviada",    color:"bg-blue-100 text-blue-700" },
-  { value:"aceptada",  label:"Aceptada",   color:"bg-green-100 text-emerald-700" },
+  { value:"aceptada",  label:"Aceptada",   color:"bg-green-100 text-amber-700" },
   { value:"rechazada", label:"Rechazada",  color:"bg-red-100 text-red-600" },
   { value:"vencida",   label:"Vencida",    color:"bg-amber-100 text-amber-700" },
 ];
@@ -46,7 +46,7 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
         <button onClick={onNueva}
-          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
+          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
           <Plus size={13}/> Nueva
         </button>
         <button disabled={!sel} onClick={()=>sel&&onEditar(sel)}
@@ -54,7 +54,7 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
           Editar
         </button>
         <button disabled={!sel} onClick={()=>sel&&onConvertir(sel)}
-          className="flex items-center gap-1.5 border border-emerald-400 text-emerald-300 hover:bg-emerald-500/20 text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
+          className="flex items-center gap-1.5 border border-amber-400 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
           <Send size={11}/> Facturar
         </button>
         <button disabled={!sel} onClick={()=>sel&&onDuplicar(sel)}
@@ -153,7 +153,7 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
     onGuardar({ id: cotizacion?.id || genId(), numero:num, cliente, estado, fecha, validez, notas, lineas:lineasCalc, subtotal, totalIVA, total, creadoEn: cotizacion?.creadoEn || new Date().toISOString(), creadoPor: cotizacion?.creadoPor || getAutorSync() });
   };
 
-  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400";
+  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-amber-400";
   const LBL = "block text-[10px] font-bold text-slate-500 uppercase mb-1";
 
   return (
@@ -171,7 +171,7 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
           className="text-xs border border-slate-500 bg-slate-600 text-white rounded px-2 py-1.5 focus:outline-none">
           {ESTADOS.map(e=><option key={e.value} value={e.value}>{e.label}</option>)}
         </select>
-        <button onClick={guardar} className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
+        <button onClick={guardar} className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
           <Check size={13}/> Guardar
         </button>
       </div>
@@ -191,7 +191,7 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
                 <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
                   {filtrados.map(c=>(
                     <button key={c.id} onMouseDown={()=>{setCliente({nombre:c.nombre,cedula:c.cedula||"",email:c.email||"",tipo:c.tipoCedula||"01"});setBusqCliente(c.nombre);setShowClientes(false);}}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 border-b last:border-0">
+                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-amber-50 border-b last:border-0">
                       {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
                       <span className="font-semibold">{c.nombre}</span>
                     </button>
@@ -241,32 +241,32 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
                       <input value={l.descripcion}
                         onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,descripcion:e.target.value}:x))}
                         placeholder="Descripción…"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-emerald-50"/>
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-amber-50"/>
                     </td>
                     <td className="px-1">
                       <input value={l.cantidad} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
                         type="number" min="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-emerald-50 text-center"/>
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-amber-50 text-center"/>
                     </td>
                     <td className="px-1">
                       <input value={l.precioUnit} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,precioUnit:e.target.value}:x))}
                         type="number" min="0" placeholder="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-emerald-50 text-right"/>
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-amber-50 text-right"/>
                     </td>
                     <td className="px-1">
                       <input value={l.pctDesc} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,pctDesc:e.target.value}:x))}
                         type="number" min="0" max="100" placeholder="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-emerald-50 text-center"/>
+                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-amber-50 text-center"/>
                     </td>
                     <td className="px-1">
                       <select value={l.codigoIVA} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,codigoIVA:e.target.value}:x))}
-                        className="border-0 bg-transparent text-xs outline-none py-2 px-1 rounded focus:bg-emerald-50">
+                        className="border-0 bg-transparent text-xs outline-none py-2 px-1 rounded focus:bg-amber-50">
                         <option value="01">0%</option>
                         <option value="07">8%</option>
                         <option value="08">13%</option>
                       </select>
                     </td>
-                    <td className="text-right font-semibold text-sm px-4 text-emerald-700">{fmtMoney(calcLinea(l).total,"CRC")}</td>
+                    <td className="text-right font-semibold text-sm px-4 text-amber-700">{fmtMoney(calcLinea(l).total,"CRC")}</td>
                     <td>
                       <button onClick={()=>setLineas(p=>p.filter((_,j)=>j!==i))}
                         className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
@@ -280,7 +280,7 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
           </div>
           <div className="border-t border-slate-100 px-4 py-2">
             <button onClick={()=>setLineas(p=>[...p,lineaVacia()])}
-              className="flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 font-semibold">
+              className="flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-900 font-semibold">
               <Plus size={13}/> Agregar línea
             </button>
           </div>
@@ -292,13 +292,13 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
           <div className="flex justify-between text-xs text-slate-600"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
           <div className="flex justify-between text-xs text-slate-500"><span>IVA</span><span>{fmtMoney(totalIVA,"CRC")}</span></div>
           <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2">
-            <span>TOTAL</span><span className="text-emerald-700">{fmtMoney(total,"CRC")}</span>
+            <span>TOTAL</span><span className="text-amber-700">{fmtMoney(total,"CRC")}</span>
           </div>
           <div className="border-t border-slate-100 pt-3">
             <label className={LBL}>Notas / condiciones</label>
             <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={5}
               placeholder="Condiciones de pago, validez…"
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-emerald-400"/>
+              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-amber-400"/>
           </div>
         </div>
       </div>

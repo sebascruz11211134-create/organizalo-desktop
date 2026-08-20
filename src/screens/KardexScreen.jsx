@@ -183,7 +183,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
     }
   };
 
-  const tipoColor = tipo === "Entrada" ? "bg-emerald-500" : tipo === "Salida" ? "bg-rose-500" : "bg-amber-500";
+  const tipoColor = tipo === "Entrada" ? "bg-amber-500" : tipo === "Salida" ? "bg-rose-500" : "bg-amber-500";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -203,7 +203,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
                 <button key={t} onClick={() => handleTipo(t)}
                   className={`py-2 rounded-lg text-sm font-semibold border-2 transition-colors
                     ${tipo === t
-                      ? t === "Entrada" ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                      ? t === "Entrada" ? "border-amber-500 bg-amber-50 text-amber-700"
                         : t === "Salida" ? "border-rose-500 bg-rose-50 text-rose-700"
                         : "border-amber-500 bg-amber-50 text-amber-700"
                       : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
@@ -227,13 +227,13 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
               onFocus={() => setShowDrop(true)}
               onBlur={() => setTimeout(() => setShowDrop(false), 150)}
               placeholder="Buscar producto…"
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
             {showDrop && filtrados.length > 0 && (
               <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-auto">
                 {filtrados.map(p => (
                   <button key={p.id} onMouseDown={() => seleccionar(p)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-emerald-50 border-b border-gray-50 last:border-0">
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50 border-b border-gray-50 last:border-0">
                     <span className="font-semibold">{p.nombre}</span>
                     <span className="text-slate-400 ml-2">Stock: {p.stock ?? "—"}</span>
                   </button>
@@ -263,7 +263,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
                 type="number" min="0.01" step="any" value={cantidad}
                 onChange={e => setCantidad(e.target.value)}
                 placeholder="Ej: 10"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
             </div>
           )}
@@ -272,7 +272,7 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase">Motivo</label>
             <select value={motivo} onChange={e => setMotivo(e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
               {MOTIVOS[tipo].map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -282,13 +282,13 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
               <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 uppercase">Nota (opcional)</label>
               <input value={nota} onChange={e => setNota(e.target.value)}
                 placeholder="Referencia, orden…"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"/>
             </div>
           </div>
 
@@ -382,7 +382,7 @@ export default function KardexScreen() {
           {filtrados.map(p => (
             <button key={p.id} onClick={() => setSelected(p.id)}
               className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors
-                ${selected === p.id ? "bg-emerald-50 border-l-2 border-l-emerald-600" : ""}`}>
+                ${selected === p.id ? "bg-amber-50 border-l-2 border-l-amber-600" : ""}`}>
               <p className="text-xs font-semibold text-slate-800 truncate">{p.nombre}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">Stock: {p.stock ?? "—"} {p.unidad || ""}</p>
             </button>
@@ -394,7 +394,7 @@ export default function KardexScreen() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 flex-wrap">
-          <Package size={13} className="text-emerald-400"/>
+          <Package size={13} className="text-amber-400"/>
           <span className="text-white text-xs font-semibold">
             {producto ? producto.nombre : "Seleccioná un producto"}
           </span>
@@ -416,7 +416,7 @@ export default function KardexScreen() {
           )}
           {!producto && <div className="flex-1"/>}
           <button onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold">
+            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-xs font-bold">
             <Plus size={13}/> Movimiento
           </button>
         </div>
@@ -435,7 +435,7 @@ export default function KardexScreen() {
             <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-slate-200">
               <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
                 <p className="text-[10px] text-slate-400 uppercase font-medium">Entradas</p>
-                <p className="text-xl font-bold text-emerald-700">+{totalEntradas}</p>
+                <p className="text-xl font-bold text-amber-700">+{totalEntradas}</p>
               </div>
               <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
                 <p className="text-[10px] text-slate-400 uppercase font-medium">Salidas</p>
@@ -470,7 +470,7 @@ export default function KardexScreen() {
                         <td>{fmtDate(m.fecha)}</td>
                         <td>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold
-                            ${m.tipo === "Entrada" ? "bg-emerald-100 text-emerald-700"
+                            ${m.tipo === "Entrada" ? "bg-amber-100 text-amber-700"
                               : m.tipo === "Salida" ? "bg-rose-100 text-rose-700"
                               : "bg-amber-100 text-amber-700"}`}>
                             {m.tipo}
@@ -480,7 +480,7 @@ export default function KardexScreen() {
                         <td className="font-mono text-xs">{m.ref}</td>
                         <td className="text-slate-600 max-w-[160px] truncate text-xs">{m.detalle}</td>
                         <td className={`text-right font-bold
-                          ${m.tipo === "Entrada" ? "text-emerald-700"
+                          ${m.tipo === "Entrada" ? "text-amber-700"
                             : m.tipo === "Salida" ? "text-rose-600"
                             : "text-amber-700"}`}>
                           {m.tipo === "Entrada" ? `+${m.cant}`

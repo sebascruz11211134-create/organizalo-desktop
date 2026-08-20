@@ -30,7 +30,7 @@ function fmt(iso) {
 
 function EstadoBadge({ estado }) {
   const MAP = {
-    activo:     { label: "Activo",     bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" },
+    activo:     { label: "Activo",     bg: "bg-amber-100", text: "text-amber-700", dot: "bg-amber-500" },
     trial:      { label: "En trial",   bg: "bg-blue-100",    text: "text-blue-700",    dot: "bg-blue-500"    },
     vencido:    { label: "Vencido",    bg: "bg-amber-100",   text: "text-amber-700",   dot: "bg-amber-500"   },
     suspendido: { label: "Suspendido", bg: "bg-red-100",     text: "text-red-700",     dot: "bg-red-500"     },
@@ -51,7 +51,7 @@ const CLAVE_META = {
   cotizaciones:       { label: "Cotizaciones",          icon: FileText,   color: "bg-sky-500"     },
   pedidos:            { label: "Pedidos",               icon: Package,    color: "bg-orange-500"  },
   contactos:          { label: "Contactos",             icon: Users,      color: "bg-violet-500"  },
-  inventario:         { label: "Inventario",            icon: Package,    color: "bg-emerald-500" },
+  inventario:         { label: "Inventario",            icon: Package,    color: "bg-amber-500" },
   recibos:            { label: "Recibos",               icon: FileText,   color: "bg-teal-500"    },
   cxc:                { label: "CXC por cobrar",        icon: DollarSign, color: "bg-green-500"   },
   cxp:                { label: "CXP por pagar",         icon: CreditCard, color: "bg-red-500"     },
@@ -169,7 +169,7 @@ function SoportePanel({ u, token }) {
       </div>
 
       {msgOp && (
-        <p className={`text-xs px-3 py-1.5 rounded-lg font-medium ${msgOp.startsWith("✅") ? "bg-emerald-50 text-emerald-700" : msgOp.startsWith("📋") ? "bg-slate-100 text-slate-600" : "bg-red-50 text-red-600"}`}>
+        <p className={`text-xs px-3 py-1.5 rounded-lg font-medium ${msgOp.startsWith("✅") ? "bg-amber-50 text-amber-700" : msgOp.startsWith("📋") ? "bg-slate-100 text-slate-600" : "bg-red-50 text-red-600"}`}>
           {msgOp}
         </p>
       )}
@@ -244,7 +244,7 @@ function SoportePanel({ u, token }) {
                       ) : (
                         <>
                           <button onClick={() => guardar(k.clave)} disabled={opLoading}
-                            className="flex items-center gap-1 text-[11px] px-2 py-1 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-60">
+                            className="flex items-center gap-1 text-[11px] px-2 py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-60">
                             <Save size={10}/> Guardar
                           </button>
                           <button onClick={() => setEditando(null)}
@@ -262,7 +262,7 @@ function SoportePanel({ u, token }) {
                       <textarea
                         value={editVal}
                         onChange={e => setEditVal(e.target.value)}
-                        className="w-full font-mono text-[11px] bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none text-slate-800"
+                        className="w-full font-mono text-[11px] bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none text-slate-800"
                         rows={12}
                         spellCheck={false}
                       />
@@ -325,7 +325,7 @@ function FilaCliente({ u, token, onRefresh }) {
         onClick={() => setExpandido(e => !e)}
       >
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm flex-shrink-0">
           {(u.nombre || u.email)[0].toUpperCase()}
         </div>
 
@@ -384,7 +384,7 @@ function FilaCliente({ u, token, onRefresh }) {
                 onClick={() => setTab(tab_.id)}
                 className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors -mb-px
                   ${tab === tab_.id
-                    ? "border-emerald-500 text-emerald-600"
+                    ? "border-amber-500 text-amber-600"
                     : "border-transparent text-slate-400 hover:text-slate-600"}`}
               >
                 {tab_.label}
@@ -424,7 +424,7 @@ function FilaCliente({ u, token, onRefresh }) {
               <button
                 onClick={() => hacer("activar")}
                 disabled={accion === "activar"}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-60"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-60"
               >
                 <CheckCircle size={12}/> Activar plan
               </button>
@@ -467,7 +467,7 @@ function FilaCliente({ u, token, onRefresh }) {
           </div>
 
           {msg && (
-            <p className="text-xs text-emerald-600 font-medium">{msg}</p>
+            <p className="text-xs text-amber-600 font-medium">{msg}</p>
           )}
 
           {/* Nota de soporte */}
@@ -480,7 +480,7 @@ function FilaCliente({ u, token, onRefresh }) {
               onChange={e => setNota(e.target.value)}
               placeholder={t("admin.notePlaceholder")}
               rows={2}
-              className="mt-1 w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none text-slate-700 placeholder-slate-300"
+              className="mt-1 w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none text-slate-700 placeholder-slate-300"
             />
             <button
               onClick={guardarNota}
@@ -583,7 +583,7 @@ function ModulosPanel({ u, token }) {
         </p>
         <div className="flex items-center gap-2">
           {!todosHabilitados && (
-            <button onClick={habilitarTodos} className="text-[11px] text-emerald-600 hover:underline">
+            <button onClick={habilitarTodos} className="text-[11px] text-amber-600 hover:underline">
               Habilitar todos
             </button>
           )}
@@ -600,12 +600,12 @@ function ModulosPanel({ u, token }) {
               onClick={() => toggle(m.id)}
               className={`flex items-start gap-2.5 px-3 py-2 rounded-lg border text-left transition-all ${
                 on
-                  ? "bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+                  ? "bg-amber-50 border-amber-200 hover:bg-amber-100"
                   : "bg-slate-50 border-slate-200 hover:bg-slate-100 opacity-60"
               }`}
             >
               <div className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${
-                on ? "bg-emerald-500" : "bg-slate-300"
+                on ? "bg-amber-500" : "bg-slate-300"
               }`}>
                 {on && <CheckCircle size={10} className="text-white"/>}
               </div>
@@ -619,7 +619,7 @@ function ModulosPanel({ u, token }) {
       </div>
 
       {msg && (
-        <p className={`text-xs px-3 py-1.5 rounded-lg font-medium ${msg.startsWith("✅") ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-600"}`}>
+        <p className={`text-xs px-3 py-1.5 rounded-lg font-medium ${msg.startsWith("✅") ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"}`}>
           {msg}
         </p>
       )}
@@ -627,7 +627,7 @@ function ModulosPanel({ u, token }) {
       <button
         onClick={guardar}
         disabled={guardando}
-        className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
+        className="w-full flex items-center justify-center gap-1.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
       >
         <Save size={12}/> {guardando ? t("common.saving") : t("admin.saveChanges")}
       </button>
@@ -727,7 +727,7 @@ function CodigosPanel({ token }) {
                 value={form.nombreCliente}
                 onChange={e => setForm(p => ({ ...p, nombreCliente: e.target.value }))}
                 placeholder={t("admin.codes.clientPlaceholder")}
-                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700"
+                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-slate-700"
               />
             </div>
             <div>
@@ -737,18 +737,18 @@ function CodigosPanel({ token }) {
                 value={form.emailEsperado}
                 onChange={e => setForm(p => ({ ...p, emailEsperado: e.target.value }))}
                 placeholder="cliente@empresa.com"
-                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700"
+                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-slate-700"
               />
             </div>
             <div>
-              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.maxUsersLabel")} <span className="text-emerald-600 font-semibold">*</span></label>
+              <label className="text-[11px] text-slate-500 block mb-1">{t("admin.codes.maxUsersLabel")} <span className="text-amber-600 font-semibold">*</span></label>
               <input
                 type="number"
                 value={form.maxUsos}
                 onChange={e => setForm(p => ({ ...p, maxUsos: e.target.value }))}
                 min={1}
                 max={100}
-                className="w-full text-xs border border-emerald-300 rounded-lg px-2.5 py-1.5 bg-emerald-50 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700 font-semibold"
+                className="w-full text-xs border border-amber-300 rounded-lg px-2.5 py-1.5 bg-amber-50 focus:outline-none focus:ring-1 focus:ring-amber-400 text-slate-700 font-semibold"
               />
             </div>
             <div>
@@ -760,21 +760,21 @@ function CodigosPanel({ token }) {
                 placeholder={t("admin.codes.expiresPlaceholder")}
                 min={1}
                 max={365}
-                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400 text-slate-700"
+                className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 text-slate-700"
               />
             </div>
           </div>
           <button
             type="submit"
             disabled={generando}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
+            className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-60"
           >
             <Plus size={12}/> {generando ? t("common.generating") : t("admin.codes.generateBtn")}
           </button>
         </form>
 
         {msg && (
-          <p className={`text-xs px-3 py-2 rounded-lg font-medium ${msg.startsWith("✅") ? "bg-emerald-50 text-emerald-700" : msg.startsWith("📋") ? "bg-slate-100 text-slate-600" : "bg-red-50 text-red-600"}`}>
+          <p className={`text-xs px-3 py-2 rounded-lg font-medium ${msg.startsWith("✅") ? "bg-amber-50 text-amber-700" : msg.startsWith("📋") ? "bg-slate-100 text-slate-600" : "bg-red-50 text-red-600"}`}>
             {msg}
           </p>
         )}
@@ -794,7 +794,7 @@ function CodigosPanel({ token }) {
               <div key={c.id} className={`px-3 py-2.5 rounded-lg border text-xs ${lleno ? "bg-slate-50 border-slate-100 opacity-70" : "bg-white border-slate-200"}`}>
                 <div className="flex items-center gap-3">
                   {/* Indicador */}
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${lleno ? "bg-slate-400" : "bg-emerald-500"}`}/>
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${lleno ? "bg-slate-400" : "bg-amber-500"}`}/>
                   {/* Código */}
                   <span className="font-mono font-bold text-slate-800 tracking-widest w-24 flex-shrink-0">{c.codigo}</span>
                   {/* Info */}
@@ -805,7 +805,7 @@ function CodigosPanel({ token }) {
                   </div>
                   {/* Contador de usuarios */}
                   <div className="text-right flex-shrink-0 w-20">
-                    <p className={`font-bold ${lleno ? "text-slate-500" : "text-emerald-600"}`}>
+                    <p className={`font-bold ${lleno ? "text-slate-500" : "text-amber-600"}`}>
                       {c.usos_actuales}/{c.max_usos}
                     </p>
                     <p className="text-[10px] text-slate-400">{lleno ? "completo" : "usuarios"}</p>
@@ -834,7 +834,7 @@ function CodigosPanel({ token }) {
                 {c.max_usos > 1 && (
                   <div className="mt-2 h-1 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${lleno ? "bg-slate-400" : "bg-emerald-500"}`}
+                      className={`h-full rounded-full transition-all ${lleno ? "bg-slate-400" : "bg-amber-500"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -925,10 +925,10 @@ function ApiUsagePanel({ token }) {
 
   return (
     <div className="space-y-2 mt-3">
-      {msg && <p className="text-xs text-emerald-700 font-medium">{msg}</p>}
+      {msg && <p className="text-xs text-amber-700 font-medium">{msg}</p>}
       {rows.map(r => {
         const pct = Math.min(100, ((r.mensajes_usados || 0) / (r.limite_mensajes || 50)) * 100);
-        const barColor = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-emerald-500";
+        const barColor = pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-400" : "bg-amber-500";
         const tokTotal = (r.tokens_entrada || 0) + (r.tokens_salida || 0);
         return (
           <div key={r.empresa_id} className="border border-slate-200 rounded-xl p-4 bg-white">
@@ -958,14 +958,14 @@ function ApiUsagePanel({ token }) {
                     type="number" min="1" max="9999"
                     value={nuevoLim}
                     onChange={e => setNuevoLim(e.target.value)}
-                    className="w-20 text-xs border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    className="w-20 text-xs border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400"
                     placeholder="msg/día"
                     autoFocus
                   />
                   <button
                     onClick={() => guardarLimite(r.empresa_id)}
                     disabled={guardando}
-                    className="text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                    className="text-xs bg-amber-600 text-white px-2 py-1 rounded-md hover:bg-amber-700 disabled:opacity-50"
                   >
                     {guardando ? "…" : "Guardar"}
                   </button>
@@ -1062,7 +1062,7 @@ export default function AdminScreen() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard label="Total clientes" value={stats.total}      color="bg-slate-700"    icon={Users}       />
-          <StatCard label="Activos"         value={stats.activos}    color="bg-emerald-500"  icon={CheckCircle} />
+          <StatCard label="Activos"         value={stats.activos}    color="bg-amber-500"  icon={CheckCircle} />
           <StatCard label="En trial"        value={stats.enTrial}    color="bg-blue-500"     icon={Clock}       />
           <StatCard label="Vencidos"        value={stats.vencidos}   color="bg-amber-500"    icon={AlertCircle} />
           <StatCard label="Suspendidos"     value={stats.suspendidos} color="bg-red-500"     icon={XCircle}     />
@@ -1092,7 +1092,7 @@ export default function AdminScreen() {
           onClick={() => setVerApiUsage(v => !v)}
           className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
         >
-          <Sparkles size={14} className="text-emerald-600"/>
+          <Sparkles size={14} className="text-amber-600"/>
           Uso de IA por empresa
           {verApiUsage ? <ChevronUp size={13} className="text-slate-400"/> : <ChevronDown size={13} className="text-slate-400"/>}
         </button>
@@ -1109,7 +1109,7 @@ export default function AdminScreen() {
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             placeholder={t("admin.searchPlaceholder")}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
           />
         </div>
         <div className="flex gap-1.5 flex-wrap">
