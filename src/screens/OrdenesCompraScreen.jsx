@@ -291,7 +291,7 @@ export default function OrdenesCompraScreen() {
                     <td>{fmtDate(o.fecha)}</td>
                     <td className="text-slate-500">{o.fechaEntrega ? fmtDate(o.fechaEntrega) : "—"}</td>
                     <td><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${est.cls}`}>{est.label}</span></td>
-                    <td className="text-right font-semibold">{fmtMoney(o.total,settings)}</td>
+                    <td className="text-right font-semibold">{fmtMoney(o.total, o.moneda || settings?.moneda || "CRC")}</td>
                     <td className="text-slate-400 text-xs max-w-[150px] truncate">{o.notas||"—"}</td>
                   </tr>
                 );
