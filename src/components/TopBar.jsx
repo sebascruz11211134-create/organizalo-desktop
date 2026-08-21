@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { RefreshCw, LogOut, ChevronDown, Menu, Users, Pencil, Check, X } from "lucide-react";
 import { BACKEND } from "../utils/config.js";
+import { getToken } from "../utils/auth.js";
 
 export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMobileMenu, onUserUpdate }) {
   const [menuOpen,    setMenuOpen]    = useState(false);
@@ -40,7 +41,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
     setSaving(true);
     setErrorMsg("");
     try {
-      const token = localStorage.getItem("token");
+      const token = await getToken();
       const res = await fetch(`${BACKEND}/api/auth/perfil`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
