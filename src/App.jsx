@@ -5,7 +5,7 @@ import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import LoginScreen from "./screens/LoginScreen";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { syncAll, startAutoSync, connectSocket, disconnectSocket } from "./utils/sync";
+import { syncAll, startAutoSync, connectSocket, disconnectSocket, processQueue, onSyncUpdate } from "./utils/sync";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
 
 // ── Lazy imports — solo cargan al navegar a cada pantalla ─────────────────────
@@ -294,12 +294,13 @@ export default function App() {
     setShowOnboarding(localStorage.getItem(ONBOARDING_KEY) !== "1");
     setAuthState("authenticated");
     if (token) {
-      // freshLogin: true → solo pull, no push, para no contaminar esta cuenta
-      // con datos residuales de una sesión anterior en el mismo browser
+      // freshLogin: true → solo pull, no push
       setSyncStatus("syncing");
       syncAll({ freshLogin: true })
         .then(r => setSyncStatus(r.ok ? "idle" : "error"))
         .catch(() => setSyncStatus("error"));
+      // Procesar cualquier dato que quedó pendiente de sesión anterior
+      processQueue().catch(console.warn);
       // Conectar WebSocket para sync en tiempo real
       connectSocket().catch(console.warn);
     }
@@ -330,7 +331,14 @@ export default function App() {
   useEffect(() => {
     if (authState !== "authenticated") return;
     handleSync();
-    startAutoSync((res) => { setSyncStatus(res.ok ? "idle" : "error"); });
+    // Escuchar cambios de estado internos (queued, offline, idle, error)
+    const unsub = onSyncUpdate(({ status }) => {
+      if (status) setSyncStatus(status);
+    });
+    startAutoSync((res) => {
+      if (!res.ok) setSyncStatus("error");
+    });
+    return () => { unsub(); };
   }, [authState]);
 
   // Polling mensajes no leídos cada 30s

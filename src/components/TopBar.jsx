@@ -13,21 +13,27 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   const isSyncing = syncStatus === "syncing";
   const isError   = syncStatus === "error";
   const isOffline = syncStatus === "offline";
+  const isQueued  = syncStatus === "queued";
 
   const dotColor = isError
     ? "bg-red-400"
     : isSyncing
     ? "bg-yellow-400 animate-pulse"
+    : isQueued
+    ? "bg-orange-400 animate-pulse"
     : isOffline
     ? "bg-slate-400"
-    : "bg-yellow-400";
+    : "bg-green-400";
 
   const label = {
     idle:     "Sincronizado",
     syncing:  "Sincronizando…",
-    error:    "Error de sync",
+    queued:   "Guardando localmente…",
+    error:    "Reintentando…",
     offline:  "Sin conexión",
   }[syncStatus] ?? "";
+
+  const showBanner = isOffline || isQueued || isError;
 
   function abrirEdicion() {
     setNuevoNombre(user?.nombre || "");
@@ -151,6 +157,24 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
           )}
         </div>
       </header>
+
+      {/* Banner de sync pendiente */}
+      {showBanner && (
+        <div className={`px-4 py-1.5 text-[11px] font-medium flex items-center gap-2
+          ${isOffline
+            ? "bg-slate-700 text-slate-200"
+            : isQueued
+            ? "bg-orange-50 text-orange-700 border-b border-orange-200"
+            : "bg-red-50 text-red-700 border-b border-red-200"
+          }`}>
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOffline ? "bg-slate-400" : isQueued ? "bg-orange-400 animate-pulse" : "bg-red-400 animate-pulse"}`} />
+          {isOffline
+            ? "Sin conexión — tus cambios están guardados localmente y se sincronizarán al reconectarte."
+            : isQueued
+            ? "Cambios guardados localmente — sincronizando con el servidor…"
+            : "Reintentando conexión con el servidor — tus datos están seguros."}
+        </div>
+      )}
 
       {/* Modal editar perfil */}
       {editando && (
