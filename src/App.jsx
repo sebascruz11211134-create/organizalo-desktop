@@ -375,6 +375,7 @@ export default function App() {
             user={user}
             onLogout={handleLogout}
             onMobileMenu={() => setMobileMenuOpen((o) => !o)}
+            onUserUpdate={(updated) => { setUser(updated); localStorage.setItem("user", JSON.stringify(updated)); }}
           />
 
           <main className="flex-1 overflow-auto pb-16 md:pb-0">
