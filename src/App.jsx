@@ -73,6 +73,30 @@ const SUPERADMIN_EMAIL = "sebascruz11211134@gmail.com";
 
 const ONBOARDING_KEY = "@finanzia/onboarding_completado";
 
+// ── Error boundary — atrapa crashes de cualquier pantalla ────────────────────
+class ScreenErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  componentDidCatch(err) { console.error("[ScreenErrorBoundary]", err); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col h-full items-center justify-center gap-3 p-8 text-center">
+          <p className="text-2xl">⚠️</p>
+          <p className="font-semibold text-slate-700">Esta pantalla tuvo un error al cargar</p>
+          <p className="text-xs text-slate-400 max-w-xs">{this.state.error?.message || "Error desconocido"}</p>
+          <button
+            onClick={() => { this.setState({ error: null }); window.location.reload(); }}
+            className="mt-2 px-4 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700">
+            Recargar app
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ── Spinner de pantalla durante lazy-load ─────────────────────────────────────
 function ScreenFallback() {
   return (
@@ -379,6 +403,7 @@ export default function App() {
           />
 
           <main className="flex-1 overflow-auto pb-16 md:pb-0">
+            <ScreenErrorBoundary>
             <Suspense fallback={<ScreenFallback />}>
               <Routes>
                 <Route path="/"                   element={<DashboardScreen />} />
@@ -441,6 +466,7 @@ export default function App() {
                 )}
               </Routes>
             </Suspense>
+            </ScreenErrorBoundary>
           </main>
         </div>
       </div>

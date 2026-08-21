@@ -737,7 +737,7 @@ export default function ConfiguracionScreen() {
               <div>
                 <p className="text-xs font-bold text-slate-500 uppercase mb-2">Qué querés recibir</p>
                 <div className="space-y-1">
-                  {ntfyPrefs.tipos.map(tipo => (
+                  {(ntfyPrefs.tipos || []).map(tipo => (
                     <button
                       key={tipo.id}
                       onClick={() => togglePref(tipo.id)}
