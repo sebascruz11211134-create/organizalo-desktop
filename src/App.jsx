@@ -59,7 +59,7 @@ const CRMClientesScreen          = lazy(() => import("./screens/CRMClientesScree
 const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
 const ConfiguracionScreen   = lazy(() => import("./screens/ConfiguracionScreen"));
 const AdminScreen           = lazy(() => import("./screens/AdminScreen"));
-const ChatWidget            = lazy(() => import("./components/ChatWidget"));
+// ChatWidget eliminado — el chat está en el menú lateral
 const LibrosLegalesScreen            = lazy(() => import("./screens/LibrosLegalesScreen"));
 const KardexScreen                   = lazy(() => import("./screens/KardexScreen"));
 const AsistenciaScreen               = lazy(() => import("./screens/AsistenciaScreen"));
@@ -235,6 +235,7 @@ export default function App() {
     return () => window.removeEventListener("resize", handler);
   }, []);
   const [syncStatus,         setSyncStatus]         = useState("idle");
+  const [unreadChat,         setUnreadChat]         = useState(0);
   const [authState,          setAuthState]          = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
   const [user,               setUser]               = useState(null);
   const [plan,               setPlan]               = useState(null);
@@ -329,10 +330,30 @@ export default function App() {
   useEffect(() => {
     if (authState !== "authenticated") return;
     handleSync();
-    // startAutoSync reporta "error" solo tras 3 fallos consecutivos
-    startAutoSync((res) => {
-      setSyncStatus(res.ok ? "idle" : "error");
-    });
+    startAutoSync((res) => { setSyncStatus(res.ok ? "idle" : "error"); });
+  }, [authState]);
+
+  // Polling mensajes no leídos cada 30s
+  useEffect(() => {
+    if (authState !== "authenticated") return;
+    const fetchUnread = async () => {
+      try {
+        const { getToken } = await import("./utils/auth");
+        const { BACKEND }  = await import("./utils/config");
+        const token = await getToken();
+        if (!token) return;
+        const res = await fetch(`${BACKEND}/api/chat/no-leidos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const d = await res.json();
+          setUnreadChat(d.total || 0);
+        }
+      } catch {}
+    };
+    fetchUnread();
+    const id = setInterval(fetchUnread, 30000);
+    return () => clearInterval(id);
   }, [authState]);
 
   // ── Splash / Loading inicial ───────────────────────────────────────────────
@@ -392,6 +413,8 @@ export default function App() {
           modulosHabilitados={modulosHabilitados}
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
+          unreadChat={unreadChat}
+          onChatOpen={() => setUnreadChat(0)}
         />
 
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -473,11 +496,6 @@ export default function App() {
           </main>
         </div>
       </div>
-
-      {/* Chat flotante — visible en cualquier pantalla */}
-      <Suspense fallback={null}>
-        <ChatWidget />
-      </Suspense>
 
       {/* Bottom tab bar — solo móvil */}
       <BottomTabBar />

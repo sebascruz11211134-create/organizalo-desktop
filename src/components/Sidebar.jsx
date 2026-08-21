@@ -141,7 +141,6 @@ const NAV = [
       { label: "Empresas",      path: "/empresas",  icon: Building2 },
       { label: "Usuarios",      path: "/usuarios",  icon: Shield },
       { label: "Importar datos",path: "/migracion", icon: DatabaseZap },
-      { label: "Chat interno",  path: "/chat",      icon: MessageSquare },
     ],
   },
 
@@ -166,13 +165,14 @@ const NAV = [
 const SIEMPRE_VISIBLES = new Set(["inicio", "administracion", "config"]);
 
 // ── Ítem de primer nivel (single) ─────────────────────────────────────────────
-function SingleItem({ item, collapsed }) {
+function SingleItem({ item, collapsed, badge = 0, onNavigate }) {
   return (
     <NavLink
       to={item.path}
       title={collapsed ? item.label : undefined}
+      onClick={onNavigate}
       className={({ isActive }) =>
-        `group flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150
+        `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150
          ${isActive
            ? "bg-yellow-500 text-white shadow-lg shadow-yellow-900/30"
            : "text-slate-300 hover:bg-white/[0.08] hover:text-white"}`
@@ -180,11 +180,24 @@ function SingleItem({ item, collapsed }) {
     >
       {({ isActive }) => (
         <>
-          <item.icon
-            size={16}
-            className={`shrink-0 transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-white"}`}
-          />
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          <div className="relative shrink-0">
+            <item.icon
+              size={16}
+              className={`transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-white"}`}
+            />
+            {/* Badge de mensajes no leídos */}
+            {badge > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] flex items-center justify-center bg-red-500 text-white text-[9px] font-bold rounded-full px-0.5 leading-none">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
+          </div>
+          {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+          {!collapsed && badge > 0 && (
+            <span className="min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+              {badge > 99 ? "99+" : badge}
+            </span>
+          )}
         </>
       )}
     </NavLink>
@@ -255,7 +268,7 @@ function GroupItem({ item, collapsed }) {
 }
 
 // ── Sidebar principal ──────────────────────────────────────────────────────────
-export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados, mobileOpen, onMobileClose }) {
+export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados, mobileOpen, onMobileClose, unreadChat = 0, onChatOpen }) {
   const esSuperAdmin = userEmail === SUPERADMIN_EMAIL;
   const { moneda, setMoneda, tipoCambio, cargando } = useCurrency();
   const location = useLocation();
@@ -305,6 +318,15 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
             ? <SingleItem key={item.id} item={item} collapsed={collapsed} />
             : <GroupItem  key={item.id} item={item} collapsed={collapsed} />
         )}
+
+        {/* ── Chat interno (ítem independiente con badge) ── */}
+        <div className="mx-1 my-1" style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />
+        <SingleItem
+          item={{ id: "chat", label: "Chat interno", path: "/chat", icon: MessageSquare }}
+          collapsed={collapsed}
+          badge={unreadChat}
+          onNavigate={onChatOpen}
+        />
 
         {/* Panel admin — solo superadmin */}
         {esSuperAdmin && (
