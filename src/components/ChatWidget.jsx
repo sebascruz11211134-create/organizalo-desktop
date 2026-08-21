@@ -390,8 +390,8 @@ export default function ChatWidget() {
           width: 52, height: 52, borderRadius: "50%",
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: isDragging ? "grabbing" : "grab",
-          background: abierto ? "#334155" : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-          boxShadow: "0 4px 20px rgba(16,185,129,0.4), 0 2px 6px rgba(0,0,0,0.15)",
+          background: abierto ? "#334155" : "linear-gradient(135deg, #ca8a04 0%, #facc15 100%)",
+          boxShadow: "0 4px 20px rgba(250,204,21,0.45), 0 2px 6px rgba(0,0,0,0.15)",
           color: "#fff", userSelect: "none", touchAction: "none",
           position: "relative", transition: isDragging ? "none" : "background 0.2s",
         }}

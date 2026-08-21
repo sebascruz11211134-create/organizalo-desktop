@@ -53,8 +53,8 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
               onClick={() => setMenuOpen((o) => !o)}
               className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
             >
-              <div className="w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-[9px] font-bold">{(user.nombre||"U").charAt(0).toUpperCase()}</span>
+              <div className="w-5 h-5 bg-brand-400 rounded-full flex items-center justify-center">
+                <span className="text-slate-900 text-[9px] font-bold">{(user.nombre||"U").charAt(0).toUpperCase()}</span>
               </div>
               <span className="max-w-[120px] truncate font-medium">{user.nombre || user.email}</span>
               <ChevronDown size={10} />

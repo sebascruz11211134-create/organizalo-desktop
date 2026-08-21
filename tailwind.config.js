@@ -12,19 +12,19 @@ export default {
 
       // ── Paleta de marca ────────────────────────────────────────────────────
       colors: {
-        // Color marca: Emerald — botones, links activos, accent
+        // Color marca: Yellow (Monki) — botones, links activos, accent
         brand: {
-          50:  "#ecfdf5",
-          100: "#d1fae5",
-          200: "#a7f3d0",
-          300: "#6ee7b7",
-          400: "#34d399",
-          500: "#10b981",   // ← color principal
-          600: "#059669",
-          700: "#047857",
-          800: "#065f46",
-          900: "#064e3b",
-          DEFAULT: "#10b981",
+          50:  "#fefce8",
+          100: "#fef9c3",
+          200: "#fef08a",
+          300: "#fde047",
+          400: "#facc15",   // ← color principal
+          500: "#eab308",
+          600: "#ca8a04",
+          700: "#a16207",
+          800: "#854d0e",
+          900: "#713f12",
+          DEFAULT: "#facc15",
         },
         // Semánticos
         danger:  { DEFAULT: "#ef4444", light: "#fee2e2", dark: "#dc2626" },
