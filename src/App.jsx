@@ -330,7 +330,7 @@ export default function App() {
   // Sync inicial + auto-sync cada 30s (solo si autenticado)
   useEffect(() => {
     if (authState !== "authenticated") return;
-    handleSync();
+    // No llamar handleSync() aquí — startAutoSync ya hace el primer sync
     // Escuchar cambios de estado internos (queued, offline, idle, error)
     const unsub = onSyncUpdate(({ status }) => {
       if (status) setSyncStatus(status);

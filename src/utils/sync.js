@@ -35,7 +35,7 @@ let _failCount   = 0;
 let _socket      = null;
 let _interval    = null;
 
-const FAIL_LIMIT = 3;        // errores antes de reportar "error" (no queued)
+const FAIL_LIMIT = 5;        // errores antes de reportar "error" (no queued)
 const RETRY_MAX_MS = 60_000; // backoff máximo entre reintentos
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

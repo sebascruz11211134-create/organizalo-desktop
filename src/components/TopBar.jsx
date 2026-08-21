@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { RefreshCw, LogOut, ChevronDown, Menu, Users, Pencil, Check, X } from "lucide-react";
 import { BACKEND } from "../utils/config.js";
 import { getToken } from "../utils/auth.js";
@@ -33,7 +33,23 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
     offline:  "Sin conexión",
   }[syncStatus] ?? "";
 
-  const showBanner = isOffline || isQueued || isError;
+  // Banner solo aparece si el estado malo persiste más de 4s
+  // (evita que parpadee en hipos breves de red)
+  const [bannerVisible, setBannerVisible] = useState(false);
+  const bannerTimer = useRef(null);
+  useEffect(() => {
+    const bad = isOffline || isQueued || isError;
+    if (bad) {
+      if (!bannerTimer.current) {
+        bannerTimer.current = setTimeout(() => setBannerVisible(true), 4000);
+      }
+    } else {
+      if (bannerTimer.current) { clearTimeout(bannerTimer.current); bannerTimer.current = null; }
+      setBannerVisible(false);
+    }
+    return () => {};
+  }, [isOffline, isQueued, isError]);
+  const showBanner = bannerVisible;
 
   function abrirEdicion() {
     setNuevoNombre(user?.nombre || "");
