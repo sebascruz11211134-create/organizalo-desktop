@@ -206,6 +206,7 @@ export default function RecepcionScreen() {
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Token Hacienda (Bearer)</label>
           <input type="password" value={haciendaToken} onChange={(e) => setHaciendaToken(e.target.value)}
             placeholder="Dejar vacío si está configurado en el servidor"
+            autoComplete="new-password"
             className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
         </div>
 
