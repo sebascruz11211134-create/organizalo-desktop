@@ -325,11 +325,14 @@ export default function App() {
     setTimeout(() => setSyncStatus("idle"), 3000);
   }, []);
 
-  // Sync inicial + auto-sync cada 3 min (solo si autenticado)
+  // Sync inicial + auto-sync cada 30s (solo si autenticado)
   useEffect(() => {
     if (authState !== "authenticated") return;
     handleSync();
-    startAutoSync((res) => setSyncStatus(res.ok ? "idle" : "error"));
+    // startAutoSync reporta "error" solo tras 3 fallos consecutivos
+    startAutoSync((res) => {
+      setSyncStatus(res.ok ? "idle" : "error");
+    });
   }, [authState]);
 
   // ── Splash / Loading inicial ───────────────────────────────────────────────
