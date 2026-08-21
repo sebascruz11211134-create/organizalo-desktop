@@ -7,6 +7,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   const [editando,    setEditando]    = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [saving,      setSaving]      = useState(false);
+  const [errorMsg,    setErrorMsg]    = useState("");
 
   const isSyncing = syncStatus === "syncing";
   const isError   = syncStatus === "error";
@@ -29,6 +30,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
 
   function abrirEdicion() {
     setNuevoNombre(user?.nombre || "");
+    setErrorMsg("");
     setEditando(true);
     setMenuOpen(false);
   }
@@ -36,6 +38,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   async function guardarPerfil() {
     if (!nuevoNombre.trim() || nuevoNombre.trim().length < 2) return;
     setSaving(true);
+    setErrorMsg("");
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${BACKEND}/api/auth/perfil`, {
@@ -47,7 +50,12 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
         const updated = await res.json();
         onUserUpdate && onUserUpdate(updated);
         setEditando(false);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || `Error ${res.status} — el backend puede estar actualizándose, intenta en 1 minuto.`);
       }
+    } catch (e) {
+      setErrorMsg("Sin conexión con el servidor.");
     } finally {
       setSaving(false);
     }
@@ -157,6 +165,9 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 mb-4"
               placeholder="Tu nombre"
             />
+            {errorMsg && (
+              <p className="text-[11px] text-red-500 mb-3">{errorMsg}</p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setEditando(false)}
