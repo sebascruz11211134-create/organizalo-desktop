@@ -290,7 +290,7 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         {!collapsed && (
           <div className="min-w-0 flex items-baseline gap-0.5">
             <p className="text-[14px] font-semibold text-white leading-none tracking-tight whitespace-nowrap">Monki</p>
-            <span className="text-[10px] font-bold leading-none" style={{ color: "#FACC15" }}>.AI</span>
+            <span className="text-[10px] font-bold leading-none" style={{ color: "#FACC15" }}>.ERP</span>
           </div>
         )}
       </div>
