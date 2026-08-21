@@ -698,7 +698,7 @@ export default function ConfiguracionScreen() {
         </div>
 
         <p className="text-xs text-slate-400 mt-4">
-          Backend: https://organizalo-backend-production.up.railway.app
+          Backend: https://api.organizalo.ai
         </p>
       </div>
 

@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Wifi, WifiOff, RefreshCw, MessageCircle, CheckCircle2, AlertCircle } from "lucide-react";
 import { getToken } from "../utils/auth";
 
-const BACKEND = "https://organizalo-backend-production.up.railway.app";
+import { BACKEND } from "../utils/config.js";
 
 async function apiFetch(path, opts = {}) {
   const token = await getToken();

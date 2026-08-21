@@ -8,7 +8,7 @@ import { ShoppingBag, Save, ExternalLink, Copy, CheckCircle, Globe, Phone, Packa
 import db from "../utils/db";
 import { fmtMoney } from "../utils/fmt";
 
-const BACKEND = "https://organizalo-backend-production.up.railway.app";
+import { BACKEND } from "../utils/config.js";
 
 export default function TiendaScreen() {
   const [config,    setConfig]    = useState({ activa: false, nombre:"", descripcion:"", sinpe:"", whatsapp:"", colorPrincipal:"#0f172a", moneda:"CRC", mostrarStock:true });

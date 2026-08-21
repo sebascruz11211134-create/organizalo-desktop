@@ -12,7 +12,7 @@ import {
 import db from "../utils/db";
 import { genId, hoy } from "../utils/fmt";
 
-const BACKEND = "https://organizalo-backend-production.up.railway.app";
+import { BACKEND } from "../utils/config.js";
 
 // ── Definición de módulos ───────────────────────────────────────────────────
 

@@ -19,7 +19,7 @@ import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
 import { reducirInventario, crearCXC } from "../utils/clienteUtils";
 
-const BACKEND = "https://organizalo-backend-production.up.railway.app";
+import { BACKEND } from "../utils/config.js";
 
 // ── Constantes Hacienda ───────────────────────────────────────────────────────
 const TIPOS_DOC = [

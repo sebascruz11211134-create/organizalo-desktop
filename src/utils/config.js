@@ -10,4 +10,4 @@ const isLocalhost =
 
 export const BACKEND = isLocalhost
   ? ""
-  : "https://organizalo-backend-production.up.railway.app";
+  : "https://api.organizalo.ai";

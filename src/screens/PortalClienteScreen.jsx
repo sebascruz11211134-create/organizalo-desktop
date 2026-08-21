@@ -10,7 +10,7 @@ import { Globe, Save, CheckCircle, Users, FileText, Copy, ExternalLink, Eye } fr
 import db from "../utils/db";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 
-const BACKEND = "https://organizalo-backend-production.up.railway.app";
+import { BACKEND } from "../utils/config.js";
 
 export default function PortalClienteScreen() {
   const [config,   setConfig]   = useState({ activo: false, titulo:"", mensaje:"", permitirDescarga:true, mostrarSaldo:true, colorPrincipal:"#0f172a" });
