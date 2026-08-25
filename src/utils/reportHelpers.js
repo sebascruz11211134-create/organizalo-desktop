@@ -45,6 +45,20 @@ function fmt(num, moneda = "CRC") {
 
 function hoy() { return new Date().toISOString().slice(0, 10); }
 
+function _mostrarToast(msg) {
+  const t = document.createElement("div");
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:"fixed", bottom:"24px", left:"50%", transform:"translateX(-50%)",
+    background:"#111827", color:"#fff", padding:"12px 20px", borderRadius:"12px",
+    fontSize:"14px", fontFamily:"-apple-system,sans-serif", zIndex:"99999",
+    boxShadow:"0 4px 20px rgba(0,0,0,0.3)", whiteSpace:"nowrap",
+    transition:"opacity 0.4s", opacity:"1",
+  });
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.remove(), 400); }, 4000);
+}
+
 // ── Imprimir HTML (Electron o browser nativo) ─────────────────────────────────
 export async function printHTML(html) {
   if (window.electronAPI?.print?.html) {
@@ -123,7 +137,25 @@ export async function exportExcel(sheets, nombre) {
       }
     }
 
-    // Link download — funciona en macOS Safari PWA y todos los browsers desktop
+    // Intentar File System Access API (muestra diálogo "Guardar como" nativo)
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fn,
+          types: [{ description: "Excel", accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        _mostrarToast(`✅ Guardado: ${fn}`);
+        return;
+      } catch (e) {
+        if (e.name === "AbortError") return; // usuario canceló
+        // Si falla (permisos, etc.) caemos al link download
+      }
+    }
+
+    // Fallback: link download — va a la carpeta Descargas del sistema
     const url = URL.createObjectURL(blob);
     const a   = document.createElement("a");
     a.href     = url;
@@ -132,6 +164,7 @@ export async function exportExcel(sheets, nombre) {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 8000);
+    _mostrarToast(`📥 Guardado en Descargas: ${fn}`);
   } catch (e) {
     console.error("Error exportando Excel:", e);
     alert("No se pudo exportar Excel.");
