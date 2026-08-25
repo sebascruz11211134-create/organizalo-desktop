@@ -68,7 +68,33 @@ export async function exportExcel(sheets, nombre) {
     const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
     const wb   = XLSX.utils.book_new();
     for (const sheet of sheets) {
-      const ws = XLSX.utils.aoa_to_sheet([sheet.columnas, ...sheet.filas]);
+      const data = [sheet.columnas, ...sheet.filas];
+      const ws   = XLSX.utils.aoa_to_sheet(data);
+
+      // Anchos de columna personalizados
+      if (sheet.anchos) {
+        ws["!cols"] = sheet.anchos.map(w => ({ wch: w }));
+      } else {
+        // Anchos automáticos — max de header vs datos
+        const maxW = sheet.columnas.map((h, ci) => {
+          const vals = sheet.filas.map(r => String(r[ci] ?? "").length);
+          return { wch: Math.min(40, Math.max(h.length, ...vals) + 2) };
+        });
+        ws["!cols"] = maxW;
+      }
+
+      // Formato numérico para celdas con números (fila 2 en adelante)
+      sheet.filas.forEach((row, ri) => {
+        row.forEach((val, ci) => {
+          if (typeof val === "number") {
+            const cellRef = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+            if (ws[cellRef]) {
+              ws[cellRef].z = val % 1 !== 0 ? "#,##0.00" : "#,##0";
+            }
+          }
+        });
+      });
+
       XLSX.utils.book_append_sheet(wb, ws, sheet.nombre.slice(0, 31));
     }
     XLSX.writeFile(wb, `${nombre || "reporte"}.xlsx`);
@@ -210,14 +236,46 @@ export function sheetsNotasCredito(notas) {
 }
 
 export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
-  const cols = ["Cliente","Referencia","Total","Cobrado","Saldo","Vencimiento","Estado"];
-  const mkF  = (cuentas,mon) => cuentas.map((d)=>{
-    const saldo=Math.max(0,d.total-(d.pagado||0));
-    return [d.nombre,d.notas||"—",d.total,d.pagado||0,saldo,d.fechaVencimiento||"—",
-      saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoy())?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente"];
-  });
-  return [{ nombre:"CXC Colones (₡)",columnas:cols,filas:mkF(cuentasCRC,"CRC") },
-          { nombre:"CXC Dólares ($)", columnas:cols,filas:mkF(cuentasUSD,"USD") }];
+  const cols = [
+    "Cliente","Referencia","Fecha Emisión","Fecha Vencimiento",
+    "Total","Cobrado","Saldo Pendiente",
+    "Días Vencido","Tramo","Estado",
+  ];
+  const anchos = [30,20,14,16,14,14,16,12,14,12];
+  const mkF = (cuentas) => {
+    const hoyStr = hoy();
+    // Ordenar: vencidas primero, luego por días vencidos desc
+    const sorted = [...cuentas].sort((a,b)=>{
+      const sA=Math.max(0,a.total-(a.pagado||0));
+      const sB=Math.max(0,b.total-(b.pagado||0));
+      const vA=a.fechaVencimiento&&a.fechaVencimiento<hoyStr&&sA>0?1:0;
+      const vB=b.fechaVencimiento&&b.fechaVencimiento<hoyStr&&sB>0?1:0;
+      if (vA!==vB) return vB-vA;
+      const dA=a.fechaVencimiento?Math.max(0,Math.floor((Date.now()-new Date(a.fechaVencimiento))/86400000)):0;
+      const dB=b.fechaVencimiento?Math.max(0,Math.floor((Date.now()-new Date(b.fechaVencimiento))/86400000)):0;
+      return dB-dA;
+    });
+    const filas = sorted.map((d)=>{
+      const saldo   = Math.max(0, d.total-(d.pagado||0));
+      const diasV   = d.fechaVencimiento&&saldo>0 ? Math.max(0,Math.floor((Date.now()-new Date(d.fechaVencimiento))/86400000)) : 0;
+      const estado  = saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoyStr&&saldo>0)?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente";
+      const tramo   = d.bucket || (diasV>120?"Más de 120 días":diasV>90?"91-120 días":diasV>60?"61-90 días":diasV>30?"31-60 días":diasV>0?"0-30 días":"Al día");
+      return [d.nombre, d.notas||"—", d.fecha||"—", d.fechaVencimiento||"—",
+              d.total, d.pagado||0, saldo, diasV||"", tramo, estado];
+    });
+    // Fila de totales
+    const totTotal  = sorted.reduce((s,d)=>s+d.total,0);
+    const totCobrado= sorted.reduce((s,d)=>s+(d.pagado||0),0);
+    const totSaldo  = sorted.reduce((s,d)=>s+Math.max(0,d.total-(d.pagado||0)),0);
+    filas.push(["TOTAL","","","", totTotal, totCobrado, totSaldo, "", "", ""]);
+    return { filas, anchos };
+  };
+  const crc = mkF(cuentasCRC);
+  const usd = mkF(cuentasUSD);
+  return [
+    { nombre:"CXC Colones (₡)", columnas:cols, filas:crc.filas, anchos:crc.anchos },
+    { nombre:"CXC Dólares ($)",  columnas:cols, filas:usd.filas, anchos:usd.anchos },
+  ];
 }
 
 export function sheetsReporteRecibos(visibles) {
