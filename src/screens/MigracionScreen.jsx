@@ -155,18 +155,30 @@ const MODULOS = [
         const { crearEvento } = await import("../utils/clienteUtils");
         const token = await getToken();
         if (token) {
+          const todayStr = new Date().toISOString().slice(0, 10);
           for (const d of limpios) {
             if (!d.fechaVencimiento) continue;
             const saldo = Math.max(0, d.total - (d.pagado || 0));
             if (saldo <= 0) continue;
             const montoFmt = saldo.toLocaleString("es-CR", { minimumFractionDigits: 0 });
-            await crearEvento({ token, titulo: `💰 Cobro: ${d.nombre}`, descripcion: `Vence ₡${montoFmt}.${d.notas ? ` ${d.notas}` : ""}`, fecha: d.fechaVencimiento, tipo: "recordatorio", color: "#10b981" }).catch(() => {});
-            // Recordatorio 3 días antes
-            const antes = new Date(d.fechaVencimiento);
-            antes.setDate(antes.getDate() - 3);
-            const antesStr = antes.toISOString().slice(0, 10);
-            if (antesStr > new Date().toISOString().slice(0, 10)) {
-              await crearEvento({ token, titulo: `⏰ Cobro próximo: ${d.nombre}`, descripcion: `Vence en 3 días (${d.fechaVencimiento}). ₡${montoFmt}`, fecha: antesStr, tipo: "recordatorio", color: "#f59e0b" }).catch(() => {});
+            const yaVencio  = d.fechaVencimiento < todayStr;
+            // Si ya venció → evento en HOY marcado como vencido; si es futuro → evento en la fecha real
+            const fechaEvento = yaVencio ? todayStr : d.fechaVencimiento;
+            const titulo = yaVencio
+              ? `🔴 VENCIDA: ${d.nombre}`
+              : `💰 Cobro: ${d.nombre}`;
+            const desc = yaVencio
+              ? `Venció el ${d.fechaVencimiento}. Saldo pendiente ₡${montoFmt}.${d.notas ? ` ${d.notas}` : ""}`
+              : `Vence ₡${montoFmt}.${d.notas ? ` ${d.notas}` : ""}`;
+            await crearEvento({ token, titulo, descripcion: desc, fecha: fechaEvento, tipo: "recordatorio", color: yaVencio ? "#ef4444" : "#10b981" }).catch(() => {});
+            // Recordatorio 3 días antes (solo si es futuro)
+            if (!yaVencio) {
+              const antes = new Date(d.fechaVencimiento);
+              antes.setDate(antes.getDate() - 3);
+              const antesStr = antes.toISOString().slice(0, 10);
+              if (antesStr > todayStr) {
+                await crearEvento({ token, titulo: `⏰ Cobro próximo: ${d.nombre}`, descripcion: `Vence en 3 días (${d.fechaVencimiento}). ₡${montoFmt}`, fecha: antesStr, tipo: "recordatorio", color: "#f59e0b" }).catch(() => {});
+              }
             }
           }
         }
