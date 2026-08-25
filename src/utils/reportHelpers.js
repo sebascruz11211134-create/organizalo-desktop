@@ -284,22 +284,34 @@ export function htmlReporteVencidos(grupos, settings) {
 // ── Sheets Excel por tipo ─────────────────────────────────────────────────────
 
 export function sheetsEstadoCuenta(cliente, debts, settings) {
-  const cols = ["Referencia","Moneda","Total","Cobrado","Saldo","Vencimiento","Estado","N° Recibo","Fecha RC","Método","Monto RC"];
+  const cols = ["Referencia","Fecha Emisión","Fecha Vencimiento","Moneda","Total","Cobrado","Saldo","Estado","N° Recibo","Fecha RC","Método","Monto RC"];
+  const anchos = [22,14,16,8,14,14,14,10,14,12,12,14];
+  const hoyStr = hoy();
   const filas = [];
-  debts.forEach((d) => {
-    const mon = d.moneda||settings.moneda||"CRC";
+  let gtTotal=0, gtCobrado=0, gtSaldo=0;
+  const sorted = [...debts].sort((a,b)=>(a.fechaVencimiento||"").localeCompare(b.fechaVencimiento||""));
+  sorted.forEach((d) => {
+    const mon   = d.moneda||settings.moneda||"CRC";
     const saldo = Math.max(0,d.total-(d.pagado||0));
-    filas.push([d.notas||"—",mon,d.total,d.pagado||0,saldo,d.fechaVencimiento||"—",
-      saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoy())?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente","","","",""]);
-    (d.pagos||[]).forEach((p)=>filas.push(["  → "+(d.notas||"—"),mon,"","","","","",p.numero,p.fecha,p.metodo,p.monto]));
+    const est   = saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoyStr)?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente";
+    filas.push([d.notas||"—", d.fecha||"—", d.fechaVencimiento||"—", mon, d.total, d.pagado||0, saldo, est, "","","",""]);
+    (d.pagos||[]).forEach((p)=>filas.push(["  ↳ Pago: "+p.numero,"","","","",(p.monto||0),"","", p.numero, p.fecha, p.metodo, p.monto]));
+    gtTotal+=d.total; gtCobrado+=(d.pagado||0); gtSaldo+=saldo;
   });
-  return [{ nombre: cliente.slice(0,31), columnas: cols, filas }];
+  filas.push(["TOTAL GENERAL","","","", gtTotal, gtCobrado, gtSaldo, "", "", "", "", ""]);
+  return [{ nombre: cliente.slice(0,31), columnas: cols, filas, anchos }];
 }
 
 export function sheetsNotasCredito(notas) {
-  return [{ nombre:"Notas de Crédito",
-    columnas:["N°","Fecha","Cliente","Factura Ref.","Motivo","Moneda","Monto","Obs."],
-    filas: notas.map((n)=>[n.numero,n.fecha,n.cliente,n.facturaRef||"—",n.motivo,n.moneda,n.monto,n.notas||"—"]) }];
+  const cols = ["N°","Fecha","Cliente","Factura Ref.","Motivo","Moneda","Monto","Observaciones"];
+  const anchos = [12,12,28,16,20,8,14,24];
+  const sorted = [...notas].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+  const filas = sorted.map((n)=>[n.numero, n.fecha, n.cliente, n.facturaRef||"—", n.motivo, n.moneda, n.monto, n.notas||"—"]);
+  const totCRC = notas.filter(n=>n.moneda==="CRC").reduce((s,n)=>s+(n.monto||0),0);
+  const totUSD = notas.filter(n=>n.moneda==="USD").reduce((s,n)=>s+(n.monto||0),0);
+  filas.push(["TOTAL CRC","","","","","CRC", totCRC,""]);
+  if (totUSD>0) filas.push(["TOTAL USD","","","","","USD", totUSD,""]);
+  return [{ nombre:"Notas de Crédito", columnas:cols, filas, anchos }];
 }
 
 export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
@@ -397,19 +409,63 @@ export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
 }
 
 export function sheetsReporteRecibos(visibles) {
-  return [{ nombre:"Recibos",
-    columnas:["N°","Tipo","Fecha","Cliente","Método","Moneda","Monto","Concepto"],
-    filas: visibles.map((r)=>[r.numero,r.tipo||"Caja",r.fecha,r.cliente,r.metodo,r.moneda,r.monto,r.concepto||r.notas||"—"]) }];
+  const cols = ["N°","Tipo","Fecha","Cliente","Método","Moneda","Monto","Concepto"];
+  const anchos = [12,10,12,28,14,8,14,28];
+  const sorted = [...visibles].sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+
+  // Agrupar por método de pago
+  const metodos = {};
+  sorted.forEach(r => {
+    const k = r.metodo || "Otro";
+    if (!metodos[k]) metodos[k] = [];
+    metodos[k].push(r);
+  });
+
+  const filas = [];
+  let gtCRC=0, gtUSD=0;
+  Object.keys(metodos).sort().forEach(metodo => {
+    const items = metodos[metodo];
+    let subCRC=0, subUSD=0;
+    filas.push([`▸ ${metodo}`, `${items.length} recibo${items.length!==1?"s":""}`, "","","","","",""]);
+    items.forEach(r => {
+      filas.push([r.numero, r.tipo||"Caja", r.fecha, r.cliente, r.metodo, r.moneda, r.monto, r.concepto||r.notas||"—"]);
+      if (r.moneda==="USD") subUSD+=(r.monto||0); else subCRC+=(r.monto||0);
+    });
+    if (subCRC>0) filas.push(["  Subtotal CRC","","","","","CRC",subCRC,""]);
+    if (subUSD>0) filas.push(["  Subtotal USD","","","","","USD",subUSD,""]);
+    filas.push(["","","","","","","",""]);
+    gtCRC+=subCRC; gtUSD+=subUSD;
+  });
+  filas.push(["TOTAL CRC","","","","","CRC",gtCRC,""]);
+  if (gtUSD>0) filas.push(["TOTAL USD","","","","","USD",gtUSD,""]);
+  return [{ nombre:"Recibos", columnas:cols, filas, anchos }];
 }
 
 export function sheetsReporteVencidos(grupos, settings) {
-  const cols = ["Grupo","Cliente","Saldo","Moneda","Total","Cobrado","Vencimiento","Días Vencido"];
+  const cols = ["Cliente","Referencia","Moneda","Total","Cobrado","Saldo","Fecha Vencimiento","Días Vencido"];
+  const anchos = [28,20,8,14,14,14,16,12];
   const filas = [];
-  grupos.forEach((g)=>g.cuentas.forEach((d)=>{
-    const mon=d.moneda||settings.moneda||"CRC";
-    const saldo=Math.max(0,d.total-(d.pagado||0));
-    const dias=Math.max(0,Math.floor((new Date()-new Date(d.fechaVencimiento))/86400000));
-    filas.push([g.label,d.nombre,saldo,mon,d.total,d.pagado||0,d.fechaVencimiento,dias]);
-  }));
-  return [{ nombre:"Cobros Vencidos",columnas:cols,filas }];
+  let gtTotal=0, gtCobrado=0, gtSaldo=0;
+
+  grupos.filter(g=>g.cuentas.length>0).forEach(g => {
+    filas.push([`▸ ${g.label}`, `${g.cuentas.length} cuenta${g.cuentas.length!==1?"s":""}`, "","","","","",""]);
+    let subTotal=0, subCobrado=0, subSaldo=0;
+    const sorted = [...g.cuentas].sort((a,b)=>{
+      const dA=Math.floor((Date.now()-new Date(a.fechaVencimiento))/86400000);
+      const dB=Math.floor((Date.now()-new Date(b.fechaVencimiento))/86400000);
+      return dB-dA;
+    });
+    sorted.forEach(d => {
+      const mon  = d.moneda||settings.moneda||"CRC";
+      const saldo= Math.max(0,d.total-(d.pagado||0));
+      const dias = Math.max(0,Math.floor((Date.now()-new Date(d.fechaVencimiento))/86400000));
+      filas.push(["", d.notas||"—", mon, d.total, d.pagado||0, saldo, d.fechaVencimiento, dias]);
+      subTotal+=d.total; subCobrado+=(d.pagado||0); subSaldo+=saldo;
+    });
+    filas.push([`  Subtotal ${g.label}`,"","", subTotal, subCobrado, subSaldo,"",""]);
+    filas.push(["","","","","","","",""]);
+    gtTotal+=subTotal; gtCobrado+=subCobrado; gtSaldo+=subSaldo;
+  });
+  filas.push(["TOTAL VENCIDO","","", gtTotal, gtCobrado, gtSaldo,"",""]);
+  return [{ nombre:"Cobros Vencidos", columnas:cols, filas, anchos }];
 }
