@@ -62,15 +62,15 @@ const MODULOS = [
     ],
     mapear: (row) => ({
       id:            genId(),
-      nombre:        row["nombre*"] || row["nombre"] || "",
-      codigoInterno: row["codigoInterno"] || row["codigo"] || "",
-      codigoCabys:   row["codigoCabys"] || row["cabys"] || "",
-      precio:        parseFloat(row["precio*"] || row["precio"] || 0),
-      costo:         parseFloat(row["costo"] || 0),
-      stock:         parseFloat(row["stock"] || 0),
-      stockMin:      parseFloat(row["stockMin"] || 0),
-      unidad:        row["unidad"] || "Unid",
-      categoria:     row["categoria"] || "Producto",
+      nombre:        row["nombre*"] || row["nombre"] || row["DESCRIPCION"] || row["Descripción"] || row["NOMBRE ARTICULO"] || row["NOMBRE"] || "",
+      codigoInterno: row["codigoInterno"] || row["codigo"] || row["CODIGO ARTICULO"] || row["CODIGO"] || row["Código"] || "",
+      codigoCabys:   row["codigoCabys"] || row["cabys"] || row["CABYS"] || "",
+      precio:        parseFloat(row["precio*"] || row["precio"] || row["Precio"] || row["PRECIO"] || row["CST CALC. UNI"] || 0),
+      costo:         parseFloat(row["costo"] || row["Costo"] || row["COSTO"] || row["CST CALC. UNI"] || 0),
+      stock:         parseFloat(row["stock"] || row["Stock"] || row["EXISTENCIA"] || row["STOCK"] || 0),
+      stockMin:      parseFloat(row["stockMin"] || row["STOCK MIN"] || row["STOCK MINIMO"] || 0),
+      unidad:        row["unidad"] || row["UNIDAD"] || row["Unidad"] || "Unid",
+      categoria:     row["categoria"] || row["Categoría"] || row["NOMBRE BODEGA"] || row["BODEGA"] || row["CATEGORIA"] || "Producto",
       activo:        true,
       creadoEn:      new Date().toISOString(),
     }),
@@ -149,6 +149,21 @@ const MODULOS = [
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+// Palabras clave que aparecen en filas de encabezados reales
+const HEADER_KEYWORDS = [
+  "codigo","descripcion","existencia","nombre","precio","stock","cliente",
+  "cantidad","monto","fecha","articulo","bodega","total","cedula","unidad",
+  "cabys","costo","proveedor","telefono","correo","direccion","saldo",
+  "factura","concepto","producto","modelo","marca","categoria","tipo",
+];
+
+function scoreHeaderRow(row) {
+  return row.filter(c => {
+    const t = String(c || "").toLowerCase().trim();
+    return t && HEADER_KEYWORDS.some(kw => t.includes(kw));
+  }).length;
+}
+
 function descargarPlantilla(modulo) {
   const encabezado = modulo.columnas;
   const datos      = modulo.ejemplo.map((r) => encabezado.map((col) => r[col] ?? ""));
@@ -164,26 +179,58 @@ function leerExcel(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const wb   = XLSX.read(e.target.result, { type: "array" });
-        const ws   = wb.Sheets[wb.SheetNames[0]];
-        // Leer todas las filas como arrays para detectar la fila de encabezados real
+        const wb      = XLSX.read(e.target.result, { type: "array" });
+        const ws      = wb.Sheets[wb.SheetNames[0]];
         const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
-        // Encontrar la fila de encabezados: primera fila con ≥3 celdas no vacías
+        // 1. Detectar fila de encabezados por keyword scoring (más robusto que contar celdas)
+        //    Escaneamos las primeras 30 filas y elegimos la que más keywords de header tenga.
         let headerIdx = 0;
-        for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
-          const nonEmpty = rawRows[i].filter(c => c && String(c).trim() !== "").length;
-          if (nonEmpty >= 3) { headerIdx = i; break; }
+        let bestScore = 0;
+        for (let i = 0; i < Math.min(rawRows.length, 30); i++) {
+          const score = scoreHeaderRow(rawRows[i]);
+          if (score > bestScore) { bestScore = score; headerIdx = i; }
+        }
+        // Fallback: primera fila con ≥3 celdas no vacías si no encontramos keywords
+        if (bestScore < 2) {
+          for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
+            if (rawRows[i].filter(c => c && String(c).trim() !== "").length >= 3) {
+              headerIdx = i; break;
+            }
+          }
         }
 
         const headers = rawRows[headerIdx].map(h => String(h).trim());
-        const dataRows = rawRows.slice(headerIdx + 1).filter(r =>
-          r.some(c => c && String(c).trim() !== "")
-        );
 
+        // 2. Filas de datos: omitir filas completamente vacías después del header
+        const dataRows = rawRows
+          .slice(headerIdx + 1)
+          .filter(r => r.some(c => c && String(c).trim() !== ""));
+
+        // 3. Propagar columnas de agrupación (BODEGA, GRUPO, SUCURSAL, etc.)
+        //    Patrón típico: la primera fila de cada grupo tiene valor, las siguientes están en blanco.
+        const groupColIdxs = headers
+          .map((h, i) => ({ h: h.toUpperCase(), i }))
+          .filter(({ h }) =>
+            ["BODEGA","GRUPO","SUCURSAL","ALMACEN","DEPARTAMENTO"].some(k => h.includes(k))
+          )
+          .map(({ i }) => i);
+
+        if (groupColIdxs.length > 0) {
+          const lastVal = {};
+          for (const row of dataRows) {
+            for (const j of groupColIdxs) {
+              const v = String(row[j] ?? "").trim();
+              if (v) { lastVal[j] = v; }
+              else if (lastVal[j]) { row[j] = lastVal[j]; }
+            }
+          }
+        }
+
+        // 4. Construir objetos { header: valor }
         const rows = dataRows.map(row => {
           const obj = {};
-          headers.forEach((h, i) => { obj[h] = row[i] ?? ""; });
+          headers.forEach((h, i) => { if (h) obj[h] = row[i] ?? ""; });
           return obj;
         });
 
