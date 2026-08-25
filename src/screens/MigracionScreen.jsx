@@ -355,6 +355,10 @@ function ImportarExcel() {
       setResultado(res);
       setFilas(null);
       setErrors([]);
+      // Notificar a todas las pantallas abiertas que hay datos nuevos
+      window.dispatchEvent(new CustomEvent("organizalo:sync", { detail: { updatedAt: new Date().toISOString() } }));
+      // Empujar al backend para sincronizar con otros dispositivos
+      window.__orgPush?.();
     } catch (err) { alert("Error al guardar: " + err.message); }
     setLoading(false);
   };
