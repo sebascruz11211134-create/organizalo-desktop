@@ -98,8 +98,11 @@ export async function exportExcel(sheets, nombre) {
     const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const blob  = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 
-    // 1. Web Share API — funciona perfecto en Safari PWA (macOS e iOS)
-    if (navigator.share) {
+    // En iOS (touch) usamos Web Share API que muestra "Abrir en Excel", "Guardar en Archivos", etc.
+    // En macOS/desktop usamos link download directo → va a Descargas
+    const esMovil = navigator.maxTouchPoints > 0 && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (esMovil && navigator.share) {
       try {
         const file = new File([blob], fn, { type: blob.type });
         if (navigator.canShare?.({ files: [file] })) {
@@ -108,10 +111,11 @@ export async function exportExcel(sheets, nombre) {
         }
       } catch (shareErr) {
         if (shareErr.name !== "AbortError") console.warn("Share falló:", shareErr);
+        // Si share falla, caemos al link download
       }
     }
 
-    // 2. Link download estándar (Chrome, Firefox, Edge)
+    // Link download — funciona en macOS Safari PWA y todos los browsers desktop
     const url = URL.createObjectURL(blob);
     const a   = document.createElement("a");
     a.href     = url;
