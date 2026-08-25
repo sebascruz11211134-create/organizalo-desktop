@@ -77,7 +77,7 @@ export function CurrencyProvider({ children }) {
     const n = Number(monto) || 0;
 
     if (m === "USD") {
-      const tc = tipoCambio?.compra || 530; // fallback razonable
+      const tc = tipoCambio?.compra || 510; // fallback
       const usd = n / tc;
       return `$${usd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }

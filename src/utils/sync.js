@@ -322,7 +322,7 @@ export function startAutoSync(onSync) {
     .then(r => { setStatus(r.ok ? "idle" : "error"); onSync?.(r); })
     .catch(() => {});
 
-  // Polling cada 30s como red de seguridad
+  // Polling cada 3 min como red de seguridad (el WebSocket cubre tiempo real)
   _interval = setInterval(async () => {
     // Si ya hay un retry loop corriendo, no hacer polling doble
     if (_retrying) return;
@@ -339,7 +339,7 @@ export function startAutoSync(onSync) {
         onSync?.({ ok: false, error: result.error });
       }
     }
-  }, 30_000);
+  }, 180_000);
 }
 
 export function stopAutoSync() {

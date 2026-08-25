@@ -409,29 +409,26 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         </div>
       )}
 
-      {/* ── Sync dot — discreto, sin texto alarmante ────────────────────────── */}
-      {syncStatus !== "idle" && (
+      {/* ── Sync dot — solo visible cuando hay algo que el usuario deba saber ── */}
+      {(syncStatus === "queued" || syncStatus === "offline" || syncStatus === "error") && (
         <div className={`flex items-center justify-center py-1.5 gap-1.5 ${collapsed ? "" : "px-3"}`}>
           <span
             title={
-              syncStatus === "syncing" ? "Sincronizando…"
-              : syncStatus === "queued" ? "Guardando localmente…"
+              syncStatus === "queued"  ? "Guardando localmente…"
               : syncStatus === "offline" ? "Sin conexión"
-              : "Conectando…"
+              : "Sin conexión al servidor"
             }
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-              syncStatus === "syncing" ? "bg-yellow-400 animate-pulse"
-              : syncStatus === "queued" ? "bg-yellow-300 animate-pulse"
-              : syncStatus === "offline" ? "bg-slate-500"
-              : "bg-yellow-400/50 animate-pulse"
+              syncStatus === "queued"  ? "bg-yellow-300 animate-pulse"
+              : syncStatus === "offline" ? "bg-slate-400"
+              : "bg-slate-400"
             }`}
           />
           {!collapsed && (
-            <span className="text-[10px] text-slate-500">
-              {syncStatus === "syncing" ? "Sincronizando…"
-              : syncStatus === "queued" ? "Guardando…"
+            <span className="text-[10px] text-slate-400">
+              {syncStatus === "queued"  ? "Guardando…"
               : syncStatus === "offline" ? "Sin conexión"
-              : "Conectando…"}
+              : "Sin conexión"}
             </span>
           )}
         </div>
