@@ -311,30 +311,49 @@ export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
   const anchos = [30,20,14,16,14,14,16,12,14,12];
   const mkF = (cuentas) => {
     const hoyStr = hoy();
-    // Ordenar: vencidas primero, luego por días vencidos desc
-    const sorted = [...cuentas].sort((a,b)=>{
-      const sA=Math.max(0,a.total-(a.pagado||0));
-      const sB=Math.max(0,b.total-(b.pagado||0));
-      const vA=a.fechaVencimiento&&a.fechaVencimiento<hoyStr&&sA>0?1:0;
-      const vB=b.fechaVencimiento&&b.fechaVencimiento<hoyStr&&sB>0?1:0;
-      if (vA!==vB) return vB-vA;
-      const dA=a.fechaVencimiento?Math.max(0,Math.floor((Date.now()-new Date(a.fechaVencimiento))/86400000)):0;
-      const dB=b.fechaVencimiento?Math.max(0,Math.floor((Date.now()-new Date(b.fechaVencimiento))/86400000)):0;
-      return dB-dA;
+    // Agrupar por cliente, ordenar vencidas primero dentro de cada cliente
+    const grupos = {};
+    cuentas.forEach(d => {
+      const key = (d.nombre || "Sin nombre").trim();
+      if (!grupos[key]) grupos[key] = [];
+      grupos[key].push(d);
     });
-    const filas = sorted.map((d)=>{
-      const saldo   = Math.max(0, d.total-(d.pagado||0));
-      const diasV   = d.fechaVencimiento&&saldo>0 ? Math.max(0,Math.floor((Date.now()-new Date(d.fechaVencimiento))/86400000)) : 0;
-      const estado  = saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoyStr&&saldo>0)?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente";
-      const tramo   = d.bucket || (diasV>120?"Más de 120 días":diasV>90?"91-120 días":diasV>60?"61-90 días":diasV>30?"31-60 días":diasV>0?"0-30 días":"Al día");
-      return [d.nombre, d.notas||"—", d.fecha||"—", d.fechaVencimiento||"—",
-              d.total, d.pagado||0, saldo, diasV||"", tramo, estado];
+    // Ordenar clientes: primero los que tienen facturas vencidas, luego por nombre
+    const clientesOrdenados = Object.keys(grupos).sort((a, b) => {
+      const tieneVencA = grupos[a].some(d => { const s=Math.max(0,d.total-(d.pagado||0)); return s>0&&d.fechaVencimiento&&d.fechaVencimiento<hoyStr; });
+      const tieneVencB = grupos[b].some(d => { const s=Math.max(0,d.total-(d.pagado||0)); return s>0&&d.fechaVencimiento&&d.fechaVencimiento<hoyStr; });
+      if (tieneVencA !== tieneVencB) return tieneVencB ? 1 : -1;
+      return a.localeCompare(b, "es");
     });
-    // Fila de totales
-    const totTotal  = sorted.reduce((s,d)=>s+d.total,0);
-    const totCobrado= sorted.reduce((s,d)=>s+(d.pagado||0),0);
-    const totSaldo  = sorted.reduce((s,d)=>s+Math.max(0,d.total-(d.pagado||0)),0);
-    filas.push(["TOTAL","","","", totTotal, totCobrado, totSaldo, "", "", ""]);
+
+    const filas = [];
+    let gtTotal = 0, gtCobrado = 0, gtSaldo = 0;
+
+    clientesOrdenados.forEach(cliente => {
+      const items = grupos[cliente].sort((a, b) => {
+        const dA = a.fechaVencimiento ? Math.max(0, Math.floor((Date.now()-new Date(a.fechaVencimiento))/86400000)) : 0;
+        const dB = b.fechaVencimiento ? Math.max(0, Math.floor((Date.now()-new Date(b.fechaVencimiento))/86400000)) : 0;
+        return dB - dA;
+      });
+      let subTotal = 0, subCobrado = 0, subSaldo = 0;
+      items.forEach(d => {
+        const saldo  = Math.max(0, d.total-(d.pagado||0));
+        const diasV  = d.fechaVencimiento&&saldo>0 ? Math.max(0,Math.floor((Date.now()-new Date(d.fechaVencimiento))/86400000)) : 0;
+        const estado = saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoyStr&&saldo>0)?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente";
+        const tramo  = d.bucket||(diasV>120?"Más de 120 días":diasV>90?"91-120 días":diasV>60?"61-90 días":diasV>30?"31-60 días":diasV>0?"0-30 días":"Al día");
+        filas.push(["", d.notas||"—", d.fecha||"—", d.fechaVencimiento||"—",
+                    d.total, d.pagado||0, saldo, diasV||"", tramo, estado]);
+        subTotal += d.total; subCobrado += (d.pagado||0); subSaldo += saldo;
+      });
+      // Fila de subtotal del cliente (va al inicio del grupo visualmente — la ponemos al final)
+      filas.splice(filas.length - items.length, 0,
+        [`▸ ${cliente}`, `${items.length} factura${items.length!==1?"s":""}`, "", "", subTotal, subCobrado, subSaldo, "", "", ""]
+      );
+      filas.push(["", "", "", "", "", "", "", "", "", ""]);  // fila vacía separadora
+      gtTotal += subTotal; gtCobrado += subCobrado; gtSaldo += subSaldo;
+    });
+
+    filas.push(["TOTAL GENERAL","","","", gtTotal, gtCobrado, gtSaldo, "", "", ""]);
     return { filas, anchos };
   };
   const crc = mkF(cuentasCRC);
