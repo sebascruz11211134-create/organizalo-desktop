@@ -423,6 +423,7 @@ export default function App() {
           onMobileClose={() => setMobileMenuOpen(false)}
           unreadChat={unreadChat}
           onChatOpen={() => setUnreadChat(0)}
+          syncStatus={syncStatus}
         />
 
         <div className="flex flex-col flex-1 overflow-hidden">

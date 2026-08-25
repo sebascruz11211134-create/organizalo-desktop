@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { RefreshCw, LogOut, ChevronDown, Menu, Users, Pencil, Check, X } from "lucide-react";
+import React, { useState } from "react";
+import { LogOut, ChevronDown, Users, Pencil, Check, X } from "lucide-react";
 import { BACKEND } from "../utils/config.js";
 import { getToken } from "../utils/auth.js";
 
@@ -9,47 +9,6 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [saving,      setSaving]      = useState(false);
   const [errorMsg,    setErrorMsg]    = useState("");
-
-  const isSyncing = syncStatus === "syncing";
-  const isError   = syncStatus === "error";
-  const isOffline = syncStatus === "offline";
-  const isQueued  = syncStatus === "queued";
-
-  const dotColor = isError
-    ? "bg-red-400"
-    : isSyncing
-    ? "bg-yellow-400 animate-pulse"
-    : isQueued
-    ? "bg-orange-400 animate-pulse"
-    : isOffline
-    ? "bg-slate-400"
-    : "bg-green-400";
-
-  const label = {
-    idle:     "Sincronizado",
-    syncing:  "Sincronizando…",
-    queued:   "Guardando localmente…",
-    error:    "Reintentando…",
-    offline:  "Sin conexión",
-  }[syncStatus] ?? "";
-
-  // Banner solo aparece si el estado malo persiste más de 4s
-  // (evita que parpadee en hipos breves de red)
-  const [bannerVisible, setBannerVisible] = useState(false);
-  const bannerTimer = useRef(null);
-  useEffect(() => {
-    const bad = isOffline || isQueued || isError;
-    if (bad) {
-      if (!bannerTimer.current) {
-        bannerTimer.current = setTimeout(() => setBannerVisible(true), 4000);
-      }
-    } else {
-      if (bannerTimer.current) { clearTimeout(bannerTimer.current); bannerTimer.current = null; }
-      setBannerVisible(false);
-    }
-    return () => {};
-  }, [isOffline, isQueued, isError]);
-  const showBanner = bannerVisible;
 
   function abrirEdicion() {
     setNuevoNombre(user?.nombre || "");
@@ -94,18 +53,6 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
         <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight truncate max-w-[160px] sm:max-w-none">{title}</h1>
 
         <div className="no-drag flex items-center gap-4">
-          {/* Sync indicator */}
-          <button
-            onClick={onSync}
-            className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors"
-            title="Sincronizar ahora"
-          >
-            {isSyncing
-              ? <RefreshCw size={11} className="animate-spin text-slate-400" />
-              : <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />}
-            <span className="sync-label">{label}</span>
-          </button>
-
           {/* User menu */}
           {user && (
             <div className="relative">
@@ -173,24 +120,6 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
           )}
         </div>
       </header>
-
-      {/* Banner de sync pendiente */}
-      {showBanner && (
-        <div className={`px-4 py-1.5 text-[11px] font-medium flex items-center gap-2
-          ${isOffline
-            ? "bg-slate-700 text-slate-200"
-            : isQueued
-            ? "bg-orange-50 text-orange-700 border-b border-orange-200"
-            : "bg-red-50 text-red-700 border-b border-red-200"
-          }`}>
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOffline ? "bg-slate-400" : isQueued ? "bg-orange-400 animate-pulse" : "bg-red-400 animate-pulse"}`} />
-          {isOffline
-            ? "Sin conexión — tus cambios están guardados localmente y se sincronizarán al reconectarte."
-            : isQueued
-            ? "Cambios guardados localmente — sincronizando con el servidor…"
-            : "Reintentando conexión con el servidor — tus datos están seguros."}
-        </div>
-      )}
 
       {/* Modal editar perfil */}
       {editando && (

@@ -268,7 +268,7 @@ function GroupItem({ item, collapsed }) {
 }
 
 // ── Sidebar principal ──────────────────────────────────────────────────────────
-export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados, mobileOpen, onMobileClose, unreadChat = 0, onChatOpen }) {
+export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilitados, mobileOpen, onMobileClose, unreadChat = 0, onChatOpen, syncStatus = "idle" }) {
   const esSuperAdmin = userEmail === SUPERADMIN_EMAIL;
   const { moneda, setMoneda, tipoCambio, cargando } = useCurrency();
   const location = useLocation();
@@ -406,6 +406,34 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Sync dot — discreto, sin texto alarmante ────────────────────────── */}
+      {syncStatus !== "idle" && (
+        <div className={`flex items-center justify-center py-1.5 gap-1.5 ${collapsed ? "" : "px-3"}`}>
+          <span
+            title={
+              syncStatus === "syncing" ? "Sincronizando…"
+              : syncStatus === "queued" ? "Guardando localmente…"
+              : syncStatus === "offline" ? "Sin conexión"
+              : "Conectando…"
+            }
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              syncStatus === "syncing" ? "bg-yellow-400 animate-pulse"
+              : syncStatus === "queued" ? "bg-yellow-300 animate-pulse"
+              : syncStatus === "offline" ? "bg-slate-500"
+              : "bg-yellow-400/50 animate-pulse"
+            }`}
+          />
+          {!collapsed && (
+            <span className="text-[10px] text-slate-500">
+              {syncStatus === "syncing" ? "Sincronizando…"
+              : syncStatus === "queued" ? "Guardando…"
+              : syncStatus === "offline" ? "Sin conexión"
+              : "Conectando…"}
+            </span>
+          )}
         </div>
       )}
 
