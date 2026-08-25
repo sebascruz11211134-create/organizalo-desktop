@@ -105,15 +105,32 @@ const MODULOS = [
       const fechaVenc = parsearFechaLatam(
         row["fechaVencimiento (AAAA-MM-DD)"] || row["FECHA VENC"] || row["FECHA VENCIMIENTO"] || row["vencimiento"] || ""
       );
-      const montoFinal = saldo > 0 ? saldo : total;
-      const pagado     = total > saldo && saldo > 0 ? Math.round((total - saldo) * 100) / 100 : 0;
+      // total = monto original de la factura; pagado = lo que ya se abonó; saldo = lo pendiente
+      // CXCScreen calcula saldo = total - pagado, entonces necesitamos: total=TOTAL, pagado=TOTAL-SALDO
+      const montoTotal = total > 0 ? total : saldo;   // TOTAL (factura original)
+      const pagado     = montoTotal > saldo && saldo >= 0
+        ? Math.round((montoTotal - saldo) * 100) / 100
+        : 0;
+      const fechaEmision = parsearFechaLatam(row["FECHA"] || row["fecha"] || row["Fecha"] || "");
+      const diasVencidos = parseInt(String(row["DIA"] || row["DIAS"] || "0").replace(/[^0-9]/g, "")) || 0;
+      // Determinar bucket de vencimiento
+      const v30  = parseFloat(String(row["0 A 30 DIAS"]  || "0").replace(/[^0-9.-]/g,"")) || 0;
+      const v60  = parseFloat(String(row["31 A 60 DIAS"] || "0").replace(/[^0-9.-]/g,"")) || 0;
+      const v90  = parseFloat(String(row["61 A 90 DIAS"] || "0").replace(/[^0-9.-]/g,"")) || 0;
+      const v120 = parseFloat(String(row["91 A 120 DIA"] || row["91 A 120 DIAS"] || "0").replace(/[^0-9.-]/g,"")) || 0;
+      const v120m= parseFloat(String(row["MAS 120 DIAS"] || "0").replace(/[^0-9.-]/g,"")) || 0;
+      const bucket = v120m > 0 ? "Más de 120 días" : v120 > 0 ? "91-120 días" : v90 > 0 ? "61-90 días" : v60 > 0 ? "31-60 días" : v30 > 0 ? "0-30 días" : "Al día";
+
       return {
         id:              genId(),
         _codigo:         codigo,  // interno — para filtrar subtotales
         nombre:          String(nombre).trim(),
-        total:           montoFinal,
+        total:           montoTotal,
         pagado,
+        fecha:           fechaEmision,
         fechaVencimiento:fechaVenc,
+        diasVencidos,
+        bucket,
         moneda:          row["moneda (CRC/USD)"] || row["moneda"] || "CRC",
         notas:           codigo ? `Factura ${codigo}` : (row["notas"] || ""),
         tipo:            "cobrar",
