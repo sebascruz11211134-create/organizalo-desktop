@@ -223,10 +223,11 @@ export async function syncAll({ freshLogin = false } = {}) {
     setStatus("idle");
     return { ok: true, synced: true };
   } catch (err) {
-    console.warn("[Sync] syncAll error:", err.message);
+    const detail = err.response?.data?.error || err.message;
+    console.warn("[Sync] syncAll error:", detail);
     _failCount++;
     if (_failCount >= FAIL_LIMIT) setStatus("error");
-    return { ok: false, error: err.message };
+    return { ok: false, error: detail };
   }
 }
 
