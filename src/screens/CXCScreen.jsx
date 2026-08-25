@@ -348,18 +348,23 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
 }
 
 export default function CXCScreen() {
-  const [debts,    setDebts]    = useState([]);
-  const [settings, setSettings] = useState({});
-  const [busq,     setBusq]     = useState("");
-  const [selected, setSelected] = useState(null); // fila seleccionada
-  const [modal,    setModal]    = useState(null);  // "nueva" | { deuda }
-  const [filtro,   setFiltro]   = useState("todos");
-  const [token,    setToken]    = useState(null);
+  const [debts,       setDebts]       = useState([]);
+  const [settings,    setSettings]    = useState({});
+  const [contactoMap, setContactoMap] = useState({}); // nombre → dias_credito
+  const [busq,        setBusq]        = useState("");
+  const [selected,    setSelected]    = useState(null);
+  const [modal,       setModal]       = useState(null);
+  const [filtro,      setFiltro]      = useState("todos");
+  const [token,       setToken]       = useState(null);
 
   const cargar = useCallback(async () => {
-    const [d, s] = await Promise.all([db.getDebts(), db.getSettings()]);
+    const [d, s, c] = await Promise.all([db.getDebts(), db.getSettings(), db.getContactos()]);
     setDebts(d.filter((x) => (x.tipo || "pagar") === "cobrar"));
     setSettings(s);
+    // Mapa nombre→dias_credito para calcular plazo por cliente
+    const map = {};
+    (c || []).forEach(x => { if (x.nombre) map[x.nombre.toLowerCase()] = x.dias_credito || 0; });
+    setContactoMap(map);
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
@@ -474,11 +479,11 @@ export default function CXCScreen() {
               <th>Cliente</th>
               <th>Referencia</th>
               <th>Total</th>
-              <th>Cobrado</th>
               <th>Saldo</th>
               <th>Emisión</th>
               <th>Vencimiento</th>
-              <th>Días</th>
+              <th className="text-center">Plazo</th>
+              <th className="text-center">Antigüedad</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -489,14 +494,35 @@ export default function CXCScreen() {
               const mon      = d.moneda || settings.moneda || "CRC";
               const saldo    = Math.max(0, d.total - (d.pagado || 0));
               const estado   = ESTADO(d);
-              const isSel    = selected === d.id;
+              const isSel     = selected === d.id;
               const esAnulada = d.estado === "anulada";
-              // Días vencidos: usar el guardado o calcular dinámicamente
+
+              // Plazo: dias_credito del contacto, o diferencia entre emisión y vencimiento, o 30 por defecto
+              const plazo = (() => {
+                const dc = contactoMap[d.nombre?.toLowerCase()];
+                if (dc > 0) return dc;
+                if (d.fecha && d.fechaVencimiento) {
+                  const diff = Math.round((new Date(d.fechaVencimiento) - new Date(d.fecha)) / 86400000);
+                  if (diff > 0) return diff;
+                }
+                return 0;
+              })();
+
+              // Días transcurridos desde la emisión
+              const diasTranscurridos = d.fecha
+                ? Math.floor((Date.now() - new Date(d.fecha)) / 86400000)
+                : 0;
+
+              // Días vencidos: desde la fecha de vencimiento
               const diasVenc = (() => {
                 if (!d.fechaVencimiento || saldo <= 0) return 0;
                 const diff = Math.floor((Date.now() - new Date(d.fechaVencimiento)) / 86400000);
                 return diff > 0 ? diff : 0;
               })();
+
+              // Color de la barra de antigüedad
+              const barColor = diasVenc > 120 ? "bg-red-600" : diasVenc > 60 ? "bg-orange-500" : diasVenc > 30 ? "bg-yellow-500" : diasVenc > 0 ? "bg-yellow-300" : "bg-green-400";
+              const barPct   = plazo > 0 ? Math.min(100, Math.round((diasVenc / plazo) * 100)) : (diasVenc > 0 ? 100 : 0);
 
               return (
                 <React.Fragment key={d.id}>
@@ -504,19 +530,38 @@ export default function CXCScreen() {
                     className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
                     onClick={() => setSelected(isSel ? null : d.id)}
                   >
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
+                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>
+                      <div>{d.nombre}</div>
+                      {d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}
+                    </td>
                     <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
                     <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-yellow-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-600"}`}>{fmtMoney(saldo, mon)}</td>
                     <td className="text-slate-400 text-xs">{fmtDate(d.fecha) || "—"}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                      {fmtDate(d.fechaVencimiento)}
+                      {fmtDate(d.fechaVencimiento) || "—"}
                     </td>
-                    <td className="text-center">
-                      {diasVenc > 0
-                        ? <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${diasVenc > 120 ? "bg-red-100 text-red-700" : diasVenc > 60 ? "bg-orange-100 text-orange-700" : diasVenc > 30 ? "bg-yellow-100 text-yellow-700" : "bg-yellow-50 text-yellow-600"}`}>{diasVenc}d</span>
-                        : <span className="text-xs text-slate-300">—</span>}
+                    {/* Plazo de crédito */}
+                    <td className="text-center text-xs text-slate-500">
+                      {plazo > 0 ? `${plazo}d` : "—"}
+                    </td>
+                    {/* Barra de antigüedad */}
+                    <td className="min-w-[120px]">
+                      {saldo > 0 && d.fechaVencimiento ? (
+                        <div>
+                          <div className="flex justify-between text-[10px] mb-0.5">
+                            <span className={diasVenc > 0 ? "font-bold text-red-600" : "text-slate-400"}>
+                              {diasVenc > 0 ? `Vencida ${diasVenc}d` : "Al día"}
+                            </span>
+                            {plazo > 0 && <span className="text-slate-400">{diasTranscurridos}/{plazo}d</span>}
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(barPct, diasVenc > 0 ? 100 : 0)}%` }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
                     </td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${estado.cls}`}>{estado.label}</span></td>
                   </tr>
@@ -563,9 +608,8 @@ export default function CXCScreen() {
                   <td className="text-slate-700 pl-3 py-2">{visibles.length} registro{visibles.length!==1?"s":""}</td>
                   <td/>
                   <td className="text-slate-800">{fmtMoney(totalFacturas, monPrin)}</td>
-                  <td className="text-yellow-700">{fmtMoney(totalCobrado, monPrin)}</td>
                   <td className="text-red-600">{fmtMoney(totalSaldo, monPrin)}</td>
-                  <td/><td/><td/><td/>
+                  <td/><td/><td/><td/><td/>
                 </tr>
               );
             })()}
