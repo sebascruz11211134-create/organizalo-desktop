@@ -94,21 +94,43 @@ const MODULOS = [
       { "nombre* (cliente)": "Ferretería El Clavo", "total*": 350000, pagado: 100000, "fechaVencimiento (AAAA-MM-DD)": "2026-09-30", "moneda (CRC/USD)": "CRC", notas: "Factura FE-00123" },
       { "nombre* (cliente)": "Juan Pérez",          "total*": 1200,   pagado: 0,      "fechaVencimiento (AAAA-MM-DD)": "2026-08-15", "moneda (CRC/USD)": "USD", notas: "" },
     ],
-    mapear: (row) => ({
-      id:              genId(),
-      nombre:          row["nombre* (cliente)"] || row["nombre"] || row["cliente"] || "",
-      total:           parseFloat(row["total*"] || row["total"] || 0),
-      pagado:          parseFloat(row["pagado"] || 0),
-      fechaVencimiento:row["fechaVencimiento (AAAA-MM-DD)"] || row["vencimiento"] || "",
-      moneda:          row["moneda (CRC/USD)"] || row["moneda"] || "CRC",
-      notas:           row["notas"] || "",
-      tipo:            "cobrar",
-      creadoEn:        new Date().toISOString(),
-    }),
-    validar: (r) => !r.nombre ? "Cliente requerido" : isNaN(r.total) || r.total <= 0 ? "Total inválido" : null,
+    mapear: (row) => {
+      // Saldo pendiente — campo clave del reporte de vencimiento
+      const saldoStr = String(row["SALDO FAC/AJU"] || row["saldo"] || row["SALDO"] || "");
+      const totalStr = String(row["total*"] || row["total"] || row["TOTAL"] || "");
+      const saldo    = parseFloat(saldoStr.replace(/[^0-9.-]/g, "")) || 0;
+      const total    = parseFloat(totalStr.replace(/[^0-9.-]/g, "")) || saldo;
+      const codigo   = String(row["CÓDIGO"] || row["CODIGO"] || row["código"] || row["Código"] || row["codigo"] || "").trim();
+      const nombre   = row["nombre* (cliente)"] || row["nombre"] || row["NOMBRE CLIENTE"] || row["cliente"] || row["CLIENTE"] || "";
+      const fechaVenc = parsearFechaLatam(
+        row["fechaVencimiento (AAAA-MM-DD)"] || row["FECHA VENC"] || row["FECHA VENCIMIENTO"] || row["vencimiento"] || ""
+      );
+      const montoFinal = saldo > 0 ? saldo : total;
+      const pagado     = total > saldo && saldo > 0 ? Math.round((total - saldo) * 100) / 100 : 0;
+      return {
+        id:              genId(),
+        _codigo:         codigo,  // interno — para filtrar subtotales
+        nombre:          String(nombre).trim(),
+        total:           montoFinal,
+        pagado,
+        fechaVencimiento:fechaVenc,
+        moneda:          row["moneda (CRC/USD)"] || row["moneda"] || "CRC",
+        notas:           codigo ? `Factura ${codigo}` : (row["notas"] || ""),
+        tipo:            "cobrar",
+        creadoEn:        new Date().toISOString(),
+      };
+    },
+    validar: (r) => {
+      if (!r.nombre) return "Sin cliente";
+      if (!r._codigo) return "Subtotal (se omite)";
+      if (isNaN(r.total) || r.total <= 0) return "Saldo inválido";
+      return null;
+    },
     guardar: async (items) => {
+      // Limpiar campo interno antes de guardar
+      const limpios  = items.map(({ _codigo, ...rest }) => rest);
       const existing = await db.getDebts();
-      await db.setDebts([...existing, ...items]);
+      await db.setDebts([...existing, ...limpios]);
       return { total: items.length, nuevos: items.length, duplicados: 0 };
     },
     limpiar: async () => { await db.setDebts([]); },
@@ -148,6 +170,23 @@ const MODULOS = [
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+// Parser de fechas DD/MM/YY, DD/MM/YYYY → YYYY-MM-DD
+function parsearFechaLatam(s) {
+  if (!s) return "";
+  const str = String(s).trim();
+  // DD/MM/YYYY
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  // DD/MM/YY
+  m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if (m) {
+    const yr = parseInt(m[3]) >= 50 ? `19${m[3]}` : `20${m[3]}`;
+    return `${yr}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  return "";
+}
 
 // Palabras clave que aparecen en filas de encabezados reales
 const HEADER_KEYWORDS = [
@@ -207,12 +246,13 @@ function leerExcel(file) {
           .slice(headerIdx + 1)
           .filter(r => r.some(c => c && String(c).trim() !== ""));
 
-        // 3. Propagar columnas de agrupación (BODEGA, GRUPO, SUCURSAL, etc.)
+        // 3. Propagar columnas de agrupación (BODEGA, GRUPO, SUCURSAL, NOMBRE CLIENTE, CLIENTE, etc.)
         //    Patrón típico: la primera fila de cada grupo tiene valor, las siguientes están en blanco.
         const groupColIdxs = headers
           .map((h, i) => ({ h: h.toUpperCase(), i }))
           .filter(({ h }) =>
-            ["BODEGA","GRUPO","SUCURSAL","ALMACEN","DEPARTAMENTO"].some(k => h.includes(k))
+            ["BODEGA","GRUPO","SUCURSAL","ALMACEN","DEPARTAMENTO","NOMBRE CLIENTE","NOMBRE PROVEEDOR"].some(k => h.includes(k))
+            || h === "CLIENTE" || h === "PROVEEDOR"
           )
           .map(({ i }) => i);
 
@@ -405,7 +445,7 @@ function ImportarExcel() {
               <thead>
                 <tr>
                   <th className="w-6">#</th>
-                  {Object.keys(filas[0] || {}).filter((k) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo").slice(0, 6).map((k) => (
+                  {Object.keys(filas[0] || {}).filter((k) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo" && k !== "_codigo").slice(0, 6).map((k) => (
                     <th key={k}>{k}</th>
                   ))}
                   <th>Estado</th>
@@ -415,7 +455,7 @@ function ImportarExcel() {
                 {filas.slice(0, 10).map((row, i) => (
                   <tr key={i} className={errors[i] ? "bg-red-50" : ""}>
                     <td className="text-slate-400">{i + 1}</td>
-                    {Object.entries(row).filter(([k]) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo" && k !== "numero").slice(0, 6).map(([k, v]) => (
+                    {Object.entries(row).filter(([k]) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo" && k !== "numero" && k !== "_codigo").slice(0, 6).map(([k, v]) => (
                       <td key={k} className="truncate max-w-[120px]">{String(v)}</td>
                     ))}
                     <td>
