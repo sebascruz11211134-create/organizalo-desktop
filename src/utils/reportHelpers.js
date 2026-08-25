@@ -63,7 +63,6 @@ export async function exportExcel(sheets, nombre) {
   if (window.electronAPI?.excel?.export) {
     return window.electronAPI.excel.export(sheets, nombre);
   }
-  // Fallback web: generar XLSX con SheetJS (importado dinámicamente)
   try {
     const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
     const wb   = XLSX.utils.book_new();
@@ -71,36 +70,59 @@ export async function exportExcel(sheets, nombre) {
       const data = [sheet.columnas, ...sheet.filas];
       const ws   = XLSX.utils.aoa_to_sheet(data);
 
-      // Anchos de columna personalizados
+      // Anchos de columna
       if (sheet.anchos) {
         ws["!cols"] = sheet.anchos.map(w => ({ wch: w }));
       } else {
-        // Anchos automáticos — max de header vs datos
-        const maxW = sheet.columnas.map((h, ci) => {
+        ws["!cols"] = sheet.columnas.map((h, ci) => {
           const vals = sheet.filas.map(r => String(r[ci] ?? "").length);
           return { wch: Math.min(40, Math.max(h.length, ...vals) + 2) };
         });
-        ws["!cols"] = maxW;
       }
 
-      // Formato numérico para celdas con números (fila 2 en adelante)
+      // Formato numérico
       sheet.filas.forEach((row, ri) => {
         row.forEach((val, ci) => {
           if (typeof val === "number") {
-            const cellRef = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
-            if (ws[cellRef]) {
-              ws[cellRef].z = val % 1 !== 0 ? "#,##0.00" : "#,##0";
-            }
+            const ref = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+            if (ws[ref]) ws[ref].z = val % 1 !== 0 ? "#,##0.00" : "#,##0";
           }
         });
       });
 
       XLSX.utils.book_append_sheet(wb, ws, sheet.nombre.slice(0, 31));
     }
-    XLSX.writeFile(wb, `${nombre || "reporte"}.xlsx`);
+
+    // Generar como ArrayBuffer para máxima compatibilidad (Safari PWA, etc.)
+    const fn    = `${nombre || "reporte"}.xlsx`;
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob  = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    // 1. Web Share API — funciona perfecto en Safari PWA (macOS e iOS)
+    if (navigator.share) {
+      try {
+        const file = new File([blob], fn, { type: blob.type });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: fn });
+          return;
+        }
+      } catch (shareErr) {
+        if (shareErr.name !== "AbortError") console.warn("Share falló:", shareErr);
+      }
+    }
+
+    // 2. Link download estándar (Chrome, Firefox, Edge)
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement("a");
+    a.href     = url;
+    a.download = fn;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
   } catch (e) {
     console.error("Error exportando Excel:", e);
-    alert("No se pudo exportar Excel. Intentá desde la app de escritorio.");
+    alert("No se pudo exportar Excel.");
   }
 }
 
