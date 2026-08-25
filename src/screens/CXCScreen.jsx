@@ -476,19 +476,27 @@ export default function CXCScreen() {
               <th>Total</th>
               <th>Cobrado</th>
               <th>Saldo</th>
+              <th>Emisión</th>
               <th>Vencimiento</th>
+              <th>Días</th>
               <th>Estado</th>
             </tr>
           </thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin cuentas por cobrar</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin cuentas por cobrar</td></tr>
             ) : visibles.map((d) => {
               const mon      = d.moneda || settings.moneda || "CRC";
               const saldo    = Math.max(0, d.total - (d.pagado || 0));
               const estado   = ESTADO(d);
               const isSel    = selected === d.id;
               const esAnulada = d.estado === "anulada";
+              // Días vencidos: usar el guardado o calcular dinámicamente
+              const diasVenc = (() => {
+                if (!d.fechaVencimiento || saldo <= 0) return 0;
+                const diff = Math.floor((Date.now() - new Date(d.fechaVencimiento)) / 86400000);
+                return diff > 0 ? diff : 0;
+              })();
 
               return (
                 <React.Fragment key={d.id}>
@@ -501,14 +509,20 @@ export default function CXCScreen() {
                     <td>{fmtMoney(d.total, mon)}</td>
                     <td className="text-yellow-700">{fmtMoney(d.pagado || 0, mon)}</td>
                     <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, mon)}</td>
+                    <td className="text-slate-400 text-xs">{fmtDate(d.fecha) || "—"}</td>
                     <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
                       {fmtDate(d.fechaVencimiento)}
+                    </td>
+                    <td className="text-center">
+                      {diasVenc > 0
+                        ? <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${diasVenc > 120 ? "bg-red-100 text-red-700" : diasVenc > 60 ? "bg-orange-100 text-orange-700" : diasVenc > 30 ? "bg-yellow-100 text-yellow-700" : "bg-yellow-50 text-yellow-600"}`}>{diasVenc}d</span>
+                        : <span className="text-xs text-slate-300">—</span>}
                     </td>
                     <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${estado.cls}`}>{estado.label}</span></td>
                   </tr>
                   {isSel && (
                     <tr>
-                      <td colSpan={7} className="bg-blue-50 px-8 py-3">
+                      <td colSpan={9} className="bg-blue-50 px-8 py-3">
                         <p className="text-xs font-bold text-slate-500 uppercase mb-2">Recibos aplicados</p>
                         {(d.pagos || []).length === 0 ? (
                           <p className="text-xs text-slate-400">Sin pagos registrados.</p>
@@ -538,6 +552,23 @@ export default function CXCScreen() {
                 </React.Fragment>
               );
             })}
+            {/* Fila de totales */}
+            {visibles.length > 0 && (() => {
+              const monPrin = settings.moneda || "CRC";
+              const totalFacturas = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + (d.total || 0), 0);
+              const totalCobrado  = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + (d.pagado || 0), 0);
+              const totalSaldo    = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + Math.max(0, d.total - (d.pagado||0)), 0);
+              return (
+                <tr className="border-t-2 border-slate-300 bg-slate-100 font-bold text-sm">
+                  <td className="text-slate-700 pl-3 py-2">{visibles.length} registro{visibles.length!==1?"s":""}</td>
+                  <td/>
+                  <td className="text-slate-800">{fmtMoney(totalFacturas, monPrin)}</td>
+                  <td className="text-yellow-700">{fmtMoney(totalCobrado, monPrin)}</td>
+                  <td className="text-red-600">{fmtMoney(totalSaldo, monPrin)}</td>
+                  <td/><td/><td/><td/>
+                </tr>
+              );
+            })()}
           </tbody>
         </table>
       </div>
