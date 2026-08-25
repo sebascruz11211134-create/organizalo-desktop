@@ -90,6 +90,14 @@ export async function exportExcel(sheets, nombre) {
         });
       });
 
+      // Fila congelada (header siempre visible al bajar)
+      ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" };
+
+      // Auto-filtros en todas las columnas del header
+      const lastCol = XLSX.utils.encode_col(sheet.columnas.length - 1);
+      const lastRow = sheet.filas.length + 1;
+      ws["!autofilter"] = { ref: `A1:${lastCol}${lastRow}` };
+
       XLSX.utils.book_append_sheet(wb, ws, sheet.nombre.slice(0, 31));
     }
 
@@ -298,7 +306,38 @@ export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
   };
   const crc = mkF(cuentasCRC);
   const usd = mkF(cuentasUSD);
+
+  // Hoja de Resumen por tramo de antigüedad
+  const tramos = ["Al día","0-30 días","31-60 días","61-90 días","91-120 días","Más de 120 días"];
+  const hoyStr2 = hoy();
+  const agrupar = (cuentas) => {
+    const map = {};
+    tramos.forEach(t => { map[t] = { count: 0, saldo: 0, total: 0 }; });
+    cuentas.forEach(d => {
+      const saldo  = Math.max(0, d.total - (d.pagado || 0));
+      const diasV  = d.fechaVencimiento && saldo > 0
+        ? Math.max(0, Math.floor((Date.now() - new Date(d.fechaVencimiento)) / 86400000)) : 0;
+      const tramo  = d.bucket || (diasV > 120 ? "Más de 120 días" : diasV > 90 ? "91-120 días" : diasV > 60 ? "61-90 días" : diasV > 30 ? "31-60 días" : diasV > 0 ? "0-30 días" : "Al día");
+      if (map[tramo]) { map[tramo].count++; map[tramo].saldo += saldo; map[tramo].total += d.total; }
+    });
+    return map;
+  };
+  const resCRC = agrupar(cuentasCRC);
+  const resUSD = agrupar(cuentasUSD);
+  const resFilas = tramos.map(t => [
+    t,
+    resCRC[t].count, resCRC[t].total, resCRC[t].saldo,
+    resUSD[t].count, resUSD[t].total, resUSD[t].saldo,
+  ]);
+  const totCRCSaldo = cuentasCRC.reduce((s,d)=>s+Math.max(0,d.total-(d.pagado||0)),0);
+  const totUSDSaldo = cuentasUSD.reduce((s,d)=>s+Math.max(0,d.total-(d.pagado||0)),0);
+  resFilas.push(["TOTAL",
+    cuentasCRC.length, cuentasCRC.reduce((s,d)=>s+d.total,0), totCRCSaldo,
+    cuentasUSD.length, cuentasUSD.reduce((s,d)=>s+d.total,0), totUSDSaldo,
+  ]);
+
   return [
+    { nombre:"Resumen",          columnas:["Tramo","# Fact ₡","Total ₡","Saldo ₡","# Fact $","Total $","Saldo $"], filas:resFilas, anchos:[18,10,16,16,10,16,16] },
     { nombre:"CXC Colones (₡)", columnas:cols, filas:crc.filas, anchos:crc.anchos },
     { nombre:"CXC Dólares ($)",  columnas:cols, filas:usd.filas, anchos:usd.anchos },
   ];
