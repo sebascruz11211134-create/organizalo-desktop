@@ -148,6 +148,30 @@ const MODULOS = [
       const limpios  = items.map(({ _codigo, ...rest }) => rest);
       const existing = await db.getDebts();
       await db.setDebts([...existing, ...limpios]);
+
+      // Crear eventos de calendario para vencimientos pendientes
+      try {
+        const { getToken }    = await import("../utils/auth");
+        const { crearEvento } = await import("../utils/clienteUtils");
+        const token = await getToken();
+        if (token) {
+          for (const d of limpios) {
+            if (!d.fechaVencimiento) continue;
+            const saldo = Math.max(0, d.total - (d.pagado || 0));
+            if (saldo <= 0) continue;
+            const montoFmt = saldo.toLocaleString("es-CR", { minimumFractionDigits: 0 });
+            await crearEvento({ token, titulo: `💰 Cobro: ${d.nombre}`, descripcion: `Vence ₡${montoFmt}.${d.notas ? ` ${d.notas}` : ""}`, fecha: d.fechaVencimiento, tipo: "recordatorio", color: "#10b981" }).catch(() => {});
+            // Recordatorio 3 días antes
+            const antes = new Date(d.fechaVencimiento);
+            antes.setDate(antes.getDate() - 3);
+            const antesStr = antes.toISOString().slice(0, 10);
+            if (antesStr > new Date().toISOString().slice(0, 10)) {
+              await crearEvento({ token, titulo: `⏰ Cobro próximo: ${d.nombre}`, descripcion: `Vence en 3 días (${d.fechaVencimiento}). ₡${montoFmt}`, fecha: antesStr, tipo: "recordatorio", color: "#f59e0b" }).catch(() => {});
+            }
+          }
+        }
+      } catch {}
+
       return { total: items.length, nuevos: items.length, duplicados: 0 };
     },
     limpiar: async () => { await db.setDebts([]); },
