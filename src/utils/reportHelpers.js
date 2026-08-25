@@ -306,9 +306,9 @@ export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
   const cols = [
     "Cliente","Referencia","Fecha Emisión","Fecha Vencimiento",
     "Total","Cobrado","Saldo Pendiente",
-    "Días Vencido","Tramo","Estado",
+    "Plazo (d)","Días Vencido","Tramo","Estado",
   ];
-  const anchos = [30,20,14,16,14,14,16,12,14,12];
+  const anchos = [30,20,14,16,14,14,16,10,12,14,12];
   const mkF = (cuentas) => {
     const hoyStr = hoy();
     // Agrupar por cliente, ordenar vencidas primero dentro de cada cliente
@@ -339,21 +339,22 @@ export function sheetsReporteCXC(cuentasCRC, cuentasUSD) {
       items.forEach(d => {
         const saldo  = Math.max(0, d.total-(d.pagado||0));
         const diasV  = d.fechaVencimiento&&saldo>0 ? Math.max(0,Math.floor((Date.now()-new Date(d.fechaVencimiento))/86400000)) : 0;
+        const plazo  = d.fecha&&d.fechaVencimiento ? Math.max(0,Math.round((new Date(d.fechaVencimiento)-new Date(d.fecha))/86400000)) : 0;
         const estado = saldo<=0?"Saldada":(d.fechaVencimiento&&d.fechaVencimiento<hoyStr&&saldo>0)?"Vencida":(d.pagado||0)>0?"Parcial":"Pendiente";
         const tramo  = d.bucket||(diasV>120?"Más de 120 días":diasV>90?"91-120 días":diasV>60?"61-90 días":diasV>30?"31-60 días":diasV>0?"0-30 días":"Al día");
         filas.push(["", d.notas||"—", d.fecha||"—", d.fechaVencimiento||"—",
-                    d.total, d.pagado||0, saldo, diasV||"", tramo, estado]);
+                    d.total, d.pagado||0, saldo, plazo||"", diasV||"", tramo, estado]);
         subTotal += d.total; subCobrado += (d.pagado||0); subSaldo += saldo;
       });
       // Fila de subtotal del cliente (va al inicio del grupo visualmente — la ponemos al final)
       filas.splice(filas.length - items.length, 0,
-        [`▸ ${cliente}`, `${items.length} factura${items.length!==1?"s":""}`, "", "", subTotal, subCobrado, subSaldo, "", "", ""]
+        [`▸ ${cliente}`, `${items.length} factura${items.length!==1?"s":""}`, "", "", subTotal, subCobrado, subSaldo, "", "", "", ""]
       );
-      filas.push(["", "", "", "", "", "", "", "", "", ""]);  // fila vacía separadora
+      filas.push(["", "", "", "", "", "", "", "", "", "", ""]);  // fila vacía separadora
       gtTotal += subTotal; gtCobrado += subCobrado; gtSaldo += subSaldo;
     });
 
-    filas.push(["TOTAL GENERAL","","","", gtTotal, gtCobrado, gtSaldo, "", "", ""]);
+    filas.push(["TOTAL GENERAL","","","", gtTotal, gtCobrado, gtSaldo, "", "", "", ""]);
     return { filas, anchos };
   };
   const crc = mkF(cuentasCRC);
