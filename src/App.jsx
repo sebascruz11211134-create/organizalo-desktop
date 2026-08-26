@@ -24,6 +24,7 @@ const CXCScreen             = lazy(() => import("./screens/CXCScreen"));
 const CXPScreen             = lazy(() => import("./screens/CXPScreen"));
 const RecibosScreen         = lazy(() => import("./screens/RecibosScreen"));
 const ConciliacionScreen    = lazy(() => import("./screens/ConciliacionScreen"));
+const ControlBancarioScreen = lazy(() => import("./screens/ControlBancarioScreen"));
 const ImportarCSVScreen     = lazy(() => import("./screens/ImportarCSVScreen"));
 const ContactosScreen       = lazy(() => import("./screens/ContactosScreen"));
 const EmpleadosScreen       = lazy(() => import("./screens/EmpleadosScreen"));
@@ -122,6 +123,7 @@ const TITULOS = {
   "/cxc":               "Cuentas por Cobrar (CXC)",
   "/cxp":               "Cuentas por Pagar (CXP)",
   "/recibos":           "Recibos de caja",
+  "/control-bancario":  "Control Bancario",
   "/conciliacion":      "Conciliación bancaria",
   "/importar-csv":      "Importar estado de cuenta",
   "/contactos":         "Clientes y proveedores",
@@ -455,6 +457,7 @@ export default function App() {
                 <Route path="/cxc"                 element={<CXCScreen />} />
                 <Route path="/cxp"                 element={<CXPScreen />} />
                 <Route path="/recibos"             element={<RecibosScreen />} />
+                <Route path="/control-bancario"    element={<ControlBancarioScreen />} />
                 <Route path="/conciliacion"        element={<ConciliacionScreen />} />
                 <Route path="/importar-csv"        element={<ImportarCSVScreen />} />
                 <Route path="/contactos"           element={<ContactosScreen />} />

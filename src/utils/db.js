@@ -92,8 +92,12 @@ const KEYS = {
   activosFijos:      "@finanzia/activosFijos",
   presupuestos:      "@finanzia/presupuestos",
   proyectos:         "@finanzia/proyectos",
-  tiendaConfig:      "@finanzia/tiendaConfig",
-  portalConfig:      "@finanzia/portalConfig",
+  tiendaConfig:        "@finanzia/tiendaConfig",
+  portalConfig:        "@finanzia/portalConfig",
+  // Control bancario
+  cuentasBancarias:    "@finanzia/cuentasBancarias",
+  notasDebitoBanco:    "@finanzia/notasDebitoBanco",
+  notasCreditoBanco:   "@finanzia/notasCreditoBanco",
 };
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -199,6 +203,14 @@ const db = {
   setTiendaConfig:  (v) => setJSON(KEYS.tiendaConfig, v),
   getPortalConfig:  () => getJSON(KEYS.portalConfig, { activo: false }),
   setPortalConfig:  (v) => setJSON(KEYS.portalConfig, v),
+
+  // Control bancario
+  getCuentasBancarias:  () => getJSON(KEYS.cuentasBancarias, []),
+  setCuentasBancarias:  (v) => setJSON(KEYS.cuentasBancarias, v),
+  getNotasDebitoBanco:  () => getJSON(KEYS.notasDebitoBanco, []),
+  setNotasDebitoBanco:  (v) => setJSON(KEYS.notasDebitoBanco, v),
+  getNotasCreditoBanco: () => getJSON(KEYS.notasCreditoBanco, []),
+  setNotasCreditoBanco: (v) => setJSON(KEYS.notasCreditoBanco, v),
 
   // Planilla mejorada — préstamos a colaboradores y horas semanales
   getPlanillaPrestamos: () => getJSON("@finanzia/planillaPrestamos", []),

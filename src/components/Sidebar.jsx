@@ -97,6 +97,7 @@ const NAV = [
       { label: "CXC — Cobrar",     path: "/cxc",              icon: DollarSign },
       { label: "Recibos",          path: "/recibos",          icon: Receipt },
       { label: "CXP — Pagar",      path: "/cxp",              icon: CreditCard },
+      { label: "Control Bancario",  path: "/control-bancario", icon: Landmark },
       { label: "Conciliación",     path: "/conciliacion",     icon: Landmark },
     ],
   },
