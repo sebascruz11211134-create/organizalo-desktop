@@ -380,7 +380,9 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         <div className="mx-3 my-2 rounded-xl bg-white/5 border border-white/8 px-3 py-2">
           {tipoCambio ? (
             <div className="mb-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Tipo de cambio BCCR</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400 mb-1">
+                Tipo de cambio BCCR{tipoCambio.fallback ? " (aprox.)" : ""}
+              </p>
               <div className="flex justify-between">
                 <div>
                   <p className="text-[9px] text-slate-400">Compra</p>

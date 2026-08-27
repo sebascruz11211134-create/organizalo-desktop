@@ -53,6 +53,22 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
         <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight truncate max-w-[160px] sm:max-w-none">{title}</h1>
 
         <div className="no-drag flex items-center gap-4">
+          {/* Sync dot */}
+          <button
+            onClick={onSync}
+            title={syncStatus === "syncing" ? "Sincronizando…" : syncStatus === "error" ? "Error de sync — clic para reintentar" : "Sincronizado"}
+            className="flex items-center gap-1.5 text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <span className={`w-2 h-2 rounded-full inline-block
+              ${syncStatus === "syncing" ? "bg-yellow-400 animate-pulse" :
+                syncStatus === "error"   ? "bg-red-400" :
+                                           "bg-emerald-400"}`}
+            />
+            <span className="hidden sm:inline">
+              {syncStatus === "syncing" ? "Sincronizando" : syncStatus === "error" ? "Sin sync" : "Sincronizado"}
+            </span>
+          </button>
+
           {/* User menu */}
           {user && (
             <div className="relative">

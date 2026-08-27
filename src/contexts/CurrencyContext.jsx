@@ -51,6 +51,10 @@ export function CurrencyProvider({ children }) {
       }
     } catch (e) {
       console.warn("[CurrencyContext] No se pudo obtener tipo de cambio:", e.message);
+      // Fallback: usar tipo de cambio aproximado para no mostrar vacío
+      if (!tipoCambio) {
+        setTipoCambio({ compra: 517, venta: 527, fecha: new Date().toISOString().slice(0, 10), fallback: true });
+      }
       setError("Sin conexión al BCCR");
     } finally {
       setCargando(false);
