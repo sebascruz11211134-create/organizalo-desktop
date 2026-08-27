@@ -67,6 +67,7 @@ const AsistenciaScreen               = lazy(() => import("./screens/AsistenciaSc
 const OrdenesCompraScreen            = lazy(() => import("./screens/OrdenesCompraScreen"));
 const ReporteHistorialPagosScreen    = lazy(() => import("./screens/ReporteHistorialPagosScreen"));
 const ReporteCobrosClienteScreen     = lazy(() => import("./screens/ReporteCobrosClienteScreen"));
+const NotaDebitoComercialScreen      = lazy(() => import("./screens/NotaDebitoComercialScreen"));
 
 // SUPERADMIN_EMAIL se exporta desde AdminScreen — lo duplicamos aquí para no
 // necesitar un import síncrono de ese módulo pesado.
@@ -123,7 +124,8 @@ const TITULOS = {
   "/cxc":               "Cuentas por Cobrar (CXC)",
   "/cxp":               "Cuentas por Pagar (CXP)",
   "/recibos":           "Recibos de caja",
-  "/control-bancario":  "Control Bancario",
+  "/control-bancario":        "Control Bancario",
+  "/notas-debito-comercial":  "Notas de Débito Comercial (ND-01)",
   "/conciliacion":      "Conciliación bancaria",
   "/importar-csv":      "Importar estado de cuenta",
   "/contactos":         "Clientes y proveedores",
@@ -457,7 +459,8 @@ export default function App() {
                 <Route path="/cxc"                 element={<CXCScreen />} />
                 <Route path="/cxp"                 element={<CXPScreen />} />
                 <Route path="/recibos"             element={<RecibosScreen />} />
-                <Route path="/control-bancario"    element={<ControlBancarioScreen />} />
+                <Route path="/control-bancario"         element={<ControlBancarioScreen />} />
+                <Route path="/notas-debito-comercial"   element={<NotaDebitoComercialScreen />} />
                 <Route path="/conciliacion"        element={<ConciliacionScreen />} />
                 <Route path="/importar-csv"        element={<ImportarCSVScreen />} />
                 <Route path="/contactos"           element={<ContactosScreen />} />

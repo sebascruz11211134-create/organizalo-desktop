@@ -22,8 +22,9 @@ const NAV = [
     label: "Facturación",
     icon: Receipt,
     children: [
-      { label: "Electrónica",    path: "/facturacion",        icon: Receipt },
-      { label: "Cotizaciones",   path: "/cotizaciones",       icon: FileText },
+      { label: "Electrónica",    path: "/facturacion",             icon: Receipt },
+      { label: "Nota Débito (ND-01)", path: "/notas-debito-comercial", icon: FileText },
+      { label: "Cotizaciones",   path: "/cotizaciones",             icon: FileText },
       { label: "Punto de Venta", path: "/pos",                icon: Layers },
       { label: "Pedidos",        path: "/pedidos",            icon: ShoppingCart },
       { label: "Historial",      path: "/facturas-historial", icon: FileText },

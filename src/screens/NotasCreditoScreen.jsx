@@ -2,7 +2,9 @@
  * NotasCreditoScreen — Gestión de Notas de Crédito (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban } from "lucide-react";
+import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban, Send, Loader2 } from "lucide-react";
+import { BACKEND } from "../utils/config.js";
+import { getToken } from "../utils/auth";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -159,6 +161,7 @@ export default function NotasCreditoScreen() {
   const [busq,      setBusq]      = useState("");
   const [modal,     setModal]     = useState(false);
   const [selected,  setSelected]  = useState(null);
+  const [enviando,  setEnviando]  = useState(false);
 
   const cargar = useCallback(async () => {
     const [n, s, f, c] = await Promise.all([db.getNotasCredito(), db.getSettings(), db.getFacturas(), db.getContactos()]);
@@ -195,6 +198,57 @@ export default function NotasCreditoScreen() {
     cargar();
   };
 
+  // ── Enviar NC a Hacienda ────────────────────────────────────────────────────
+  const enviarHacienda = async (nota) => {
+    if (!nota) return;
+    setEnviando(true);
+    try {
+      // Buscar cedula del cliente en contactos
+      const cLower = (nota.cliente || "").toLowerCase();
+      const contacto = contactos.find(c => c.nombre?.toLowerCase() === cLower);
+
+      const token = await getToken();
+      const res = await fetch(`${BACKEND}/api/emision/nota-credito`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          cliente: {
+            nombre: nota.cliente || "Consumidor Final",
+            cedula: contacto?.cedula || undefined,
+            correo: contacto?.email || contacto?.correo || undefined,
+          },
+          // Convertir el monto plano en una línea de detalle para el XML
+          items: [{
+            descripcion:    nota.motivo || "Nota de crédito",
+            cantidad:       1,
+            precioUnitario: nota.monto || 0,
+            tarifaIva:      0, // NC se emiten por el monto bruto (IVA ya calculado en la FE)
+            codigoCabys:    "8399000000000",
+            unidadMedida:   "Servicio",
+          }],
+          moneda:           nota.moneda || "CRC",
+          referenciaNumero: nota.facturaRef || undefined,
+          referenciaRazon:  nota.motivo || "Anulación de comprobante",
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+
+      // Persistir estado Hacienda en la nota local
+      const todas = await db.getNotasCredito();
+      await db.setNotasCredito(todas.map(x => x.id === nota.id
+        ? { ...x, haciendaEstado: json.estado, haciendaClave: json.clave, haciendaConsecutivo: json.numeroConsecutivo }
+        : x
+      ));
+      await cargar();
+      alert(`✅ NC enviada a Hacienda\nEstado: ${json.estado}\nClave: ${json.clave}`);
+    } catch (err) {
+      alert(`❌ Error al enviar a Hacienda:\n${err.message}`);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   const busqL   = busq.trim().toLowerCase();
   const visibles = notas.filter(n =>
     !busqL || n.cliente?.toLowerCase().includes(busqL) || n.numero?.toLowerCase().includes(busqL) || n.motivo?.toLowerCase().includes(busqL)
@@ -224,6 +278,15 @@ export default function NotasCreditoScreen() {
           onClick={() => sel && eliminar(sel)}
           className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Trash2 size={13} /> Eliminar
+        </button>
+        <div className="w-px h-5 bg-slate-500 mx-1" />
+        <button
+          disabled={!sel || enviando || sel.estado === "anulada"}
+          onClick={() => sel && enviarHacienda(sel)}
+          title={sel?.haciendaClave ? `Clave: ${sel.haciendaClave}` : "Enviar NC-01 a Hacienda"}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          {enviando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          {sel?.haciendaEstado ? `Hacienda: ${sel.haciendaEstado}` : "Enviar Hacienda"}
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
         <button onClick={() => printHTML(htmlNotasCredito(visibles, settings))}
@@ -266,12 +329,12 @@ export default function NotasCreditoScreen() {
           <thead>
             <tr>
               <th>N°</th><th>Fecha</th><th>Cliente</th><th>Factura ref.</th>
-              <th>Motivo</th><th>Moneda</th><th>Monto</th><th>Obs.</th>
+              <th>Motivo</th><th>Moneda</th><th>Monto</th><th>Hacienda</th><th>Obs.</th>
             </tr>
           </thead>
           <tbody>
             {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin notas de crédito</td></tr>
+              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin notas de crédito</td></tr>
             ) : visibles.map(n => {
               const isSel = selected === n.id;
               return (
@@ -285,6 +348,11 @@ export default function NotasCreditoScreen() {
                   <td className="text-slate-700">{n.motivo}</td>
                   <td className="text-slate-500">{n.moneda}</td>
                   <td className="font-bold text-red-600">{fmtMoney(n.monto, n.moneda)}</td>
+                  <td>
+                    {n.haciendaEstado
+                      ? <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${n.haciendaEstado === "aceptado" || n.haciendaEstado === "enviado" || n.haciendaEstado === "simulado" ? "bg-green-100 text-green-700" : n.haciendaEstado === "rechazado" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>{n.haciendaEstado}</span>
+                      : <span className="text-slate-300 text-[10px]">—</span>}
+                  </td>
                   <td className="text-slate-400 text-xs">{n.notas || "—"}</td>
                 </tr>
               );
