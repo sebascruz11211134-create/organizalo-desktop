@@ -11,12 +11,14 @@ import {
 import { getToken } from "../utils/auth";
 import { BACKEND } from "../utils/config";
 
+import RockyChannels from "../components/RockyChannels";
+
 const TIPOS = [
   {
     id: "restaurante",
     label: "Restaurante",
     icon: UtensilsCrossed,
-    desc: "Toma pedidos, informa del menú y crea órdenes automáticamente.",
+    desc: "Responde consultas sobre el menú y detecta solicitudes de pedidos.",
     color: "text-orange-500",
     activeBg: "bg-orange-50 border-orange-400",
   },
@@ -24,7 +26,7 @@ const TIPOS = [
     id: "servicios",
     label: "Servicios / Citas",
     icon: CalendarCheck,
-    desc: "Agenda citas y envía confirmaciones automáticas.",
+    desc: "Responde consultas de servicios y detecta solicitudes de citas.",
     color: "text-blue-500",
     activeBg: "bg-blue-50 border-blue-400",
   },
@@ -40,6 +42,9 @@ const TIPOS = [
 
 const DEFAULT_CONFIG = {
   activo: false,
+  correoActivo: false,
+  zonaHoraria: "America/Costa_Rica",
+  modoRespuestas: "borrador",
   tipoNegocio: "general",
   instrucciones: "",
   nombreEmpresa: "",
@@ -84,7 +89,7 @@ export default function RockyConfiguracionScreen() {
       });
       const data = await res.json();
       if (data.ok) {
-        setMensaje({ tipo: "ok", texto: "Configuración guardada. Rocky ya está activo en WhatsApp." });
+        setMensaje({ tipo: "ok", texto: "Configuración guardada. La atención depende de los canales conectados y del modo seleccionado." });
       } else {
         throw new Error(data.error || "Error desconocido");
       }
@@ -112,8 +117,8 @@ export default function RockyConfiguracionScreen() {
             <Sparkles size={20} className="text-yellow-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Rocky IA — WhatsApp</h1>
-            <p className="text-sm text-slate-500">Configura el asistente automático de mensajes</p>
+            <h1 className="text-xl font-bold text-slate-800">Rocky IA — Atención continua</h1>
+            <p className="text-sm text-slate-500">WhatsApp, correo y seguimiento de conversaciones</p>
           </div>
         </div>
 
@@ -154,10 +159,22 @@ export default function RockyConfiguracionScreen() {
         <MessageCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
         <div className="text-sm text-blue-700">
           <p className="font-semibold mb-1">¿Cómo funciona?</p>
-          <p>Cuando alguien te escribe por WhatsApp, Rocky responde automáticamente usando IA. Solo funciona si WhatsApp está conectado en la sección <strong>Rocky IA → WhatsApp</strong>.</p>
+          <p>Rocky recibe mensajes en los canales conectados. Elegí si prepara borradores o responde automáticamente, y guardá la configuración para aplicar los cambios.</p>
         </div>
       </div>
 
+      <RockyChannels />
+      <section className="rounded-xl border border-slate-200 p-4 space-y-3">
+        <label className="block text-sm font-semibold">Modo de atención
+          <select className="block mt-2 border rounded p-2 w-full" value={config.modoRespuestas} onChange={e=>setConfig(c=>({...c,modoRespuestas:e.target.value}))}>
+            <option value="borrador">Preparar borradores para revisar</option><option value="automatico">Responder automáticamente</option>
+          </select>
+        </label>
+        <label className="flex gap-2 text-sm"><input type="checkbox" checked={config.correoActivo===true} onChange={e=>setConfig(c=>({...c,correoActivo:e.target.checked}))}/>Atender también el Gmail conectado</label>
+        <p className="text-xs text-slate-500">La conexión oficial de WhatsApp y Gmail responden consultas con información comercial aprobada. Las solicitudes que requieren cambios en el ERP o adjuntos quedan para revisión.</p>
+        <button className="text-sm underline" onClick={()=>setConfig(c=>({...c,horarioInicio:'',horarioFin:'',zonaHoraria:'America/Costa_Rica'}))}>Atender las 24 horas, todos los días</button>
+        <p className="text-xs text-slate-500">Zona horaria: {config.zonaHoraria}. También se admiten turnos nocturnos que cruzan medianoche.</p>
+      </section>
       {/* Tipo de negocio */}
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-3">Tipo de negocio</label>
@@ -219,70 +236,19 @@ export default function RockyConfiguracionScreen() {
         />
       </div>
 
-      {/* Mensaje de bienvenida */}
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">
-          Mensaje de bienvenida
-          <span className="ml-2 text-xs font-normal text-slate-400">(opcional — para clientes nuevos)</span>
-        </label>
-        <p className="text-xs text-slate-400 mb-2">
-          Se envía automáticamente la primera vez que alguien te escribe por WhatsApp. Rocky responde justo después.
-        </p>
-        <textarea
-          rows={2}
-          value={config.mensajeBienvenida || ""}
-          onChange={e => setConfig(c => ({ ...c, mensajeBienvenida: e.target.value }))}
-          placeholder="Ej: ¡Hola! 👋 Gracias por contactarnos. Soy Rocky, tu asistente virtual. ¿En qué te puedo ayudar?"
-          className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-yellow-400 resize-none"
-        />
-      </div>
-
-      {/* Horario de atención */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Clock size={16} className="text-slate-500" />
-          <span className="text-sm font-semibold text-slate-700">Horario de atención</span>
-          <span className="text-xs text-slate-400">(opcional)</span>
-        </div>
-        <p className="text-xs text-slate-500">
-          Si definís un horario, Rocky solo responderá dentro de ese rango. Fuera del horario enviará el mensaje automático de abajo.
-        </p>
+      <section className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">Horario de atención</h2>
+        <p className="text-xs text-slate-500">Dejá ambos campos vacíos para atender las 24 horas. Fuera del horario los mensajes quedan pendientes hasta el próximo turno.</p>
         <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-xs text-slate-500 mb-1">Hora inicio</label>
-            <input
-              type="time"
-              value={config.horarioInicio || ""}
-              onChange={e => setConfig(c => ({ ...c, horarioInicio: e.target.value }))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs text-slate-500 mb-1">Hora fin</label>
-            <input
-              type="time"
-              value={config.horarioFin || ""}
-              onChange={e => setConfig(c => ({ ...c, horarioFin: e.target.value }))}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-yellow-400"
-            />
-          </div>
+          <label className="flex-1 text-sm">Hora inicio<input type="time" value={config.horarioInicio || ''} onChange={e=>setConfig(c=>({...c,horarioInicio:e.target.value}))} className="block w-full border rounded p-2" /></label>
+          <label className="flex-1 text-sm">Hora fin<input type="time" value={config.horarioFin || ''} onChange={e=>setConfig(c=>({...c,horarioFin:e.target.value}))} className="block w-full border rounded p-2" /></label>
         </div>
-        <div>
-          <label className="block text-xs text-slate-500 mb-1">Mensaje fuera de horario</label>
-          <textarea
-            rows={2}
-            value={config.mensajeFueraHorario || ""}
-            onChange={e => setConfig(c => ({ ...c, mensajeFueraHorario: e.target.value }))}
-            placeholder="Ej: Gracias por escribirnos 🙏 Nuestro horario es de 8am a 6pm. Te contactamos pronto."
-            className="w-full border border-slate-200 rounded-lg p-3 text-sm text-slate-700 focus:outline-none focus:border-yellow-400 resize-none"
-          />
-        </div>
-      </div>
+      </section>
 
       {/* Tip */}
       <div className="flex gap-2 text-xs text-slate-400">
         <Info size={14} className="shrink-0 mt-0.5" />
-        <p>Rocky recuerda los últimos mensajes de cada conversación y responde con contexto. Máximo 3 oraciones por mensaje.</p>
+        <p>La bandeja conserva el estado de cada mensaje. Si atendés una conversación, podés pausar a Rocky para evitar respuestas simultáneas.</p>
       </div>
 
       {/* Guardar */}
