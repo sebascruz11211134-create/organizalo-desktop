@@ -9,4 +9,3 @@ dist-electron/
 release/
 out/
 .DS_Store
-package-lock.json
