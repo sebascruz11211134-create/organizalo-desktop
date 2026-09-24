@@ -3,7 +3,8 @@
  * Reloj entrada/salida, horas trabajadas, resumen mensual
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Clock, UserCheck, Printer, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { Clock, UserCheck, FileSpreadsheet, LogIn, LogOut, Plus, Users, Timer } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Selector, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtDate, genId, hoy, fechaLocal, mesLocal } from "../utils/fmt";
@@ -118,177 +119,100 @@ export default function AsistenciaScreen() {
     exportExcel(rows, `asistencia-${mes}`);
   };
 
+  const trabajandoAhora = resumen.filter(r => r.abierto).length;
+  const horasMes = resumen.reduce((t, r) => t + r.horasTotales, 0);
+  const columnasResumen = [
+    { key: "nombre", titulo: "Empleado", render: r => <b className="text-monki-k">{r.emp.nombre}</b> },
+    { key: "cargo", titulo: "Cargo", render: r => <span className="text-monki-k/55 text-xs">{r.emp.cargo || r.emp.puesto || "—"}</span> },
+    { key: "dias", titulo: "Días trabajados", alinear: "center", render: r => r.diasTrabajados },
+    { key: "horas", titulo: "Horas", alinear: "center", render: r => <b>{fmtHoras(r.horasTotales)}</b> },
+    { key: "hoy", titulo: "Hoy", alinear: "center", render: r => r.abierto ? <Estado tono="exito">Trabajando</Estado> : <Estado>Fuera</Estado> },
+  ];
+  const columnasRegistros = [
+    { key: "emp", titulo: "Empleado", render: r => <b className="text-monki-k">{empleados.find(e => e.id === r.empleadoId)?.nombre || "—"}</b> },
+    { key: "fecha", titulo: "Fecha", render: r => fmtDate(r.fecha) },
+    { key: "entrada", titulo: "Entrada", render: r => <span className="font-mono text-xs">{r.entrada}</span> },
+    { key: "salida", titulo: "Salida", render: r => r.salida ? <span className="font-mono text-xs">{r.salida}</span> : <Estado tono="alerta">Abierto</Estado> },
+    { key: "horas", titulo: "Horas", alinear: "right", render: r => { const h = diffHoras(r.entrada, r.salida); return h ? fmtHoras(h) : "—"; } },
+    { key: "notas", titulo: "Notas", render: r => <span className="text-monki-k/45 text-xs">{r.notas || ""}</span> },
+  ];
+  const registrosOrdenados = [...regFiltrados].sort((a,b) => (b.fecha+b.entrada).localeCompare(a.fecha+a.entrada));
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <Clock size={13} className="text-yellow-400"/>
-        <select value={empSel} onChange={e=>setEmpSel(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5">
-          <option value="todos">Todos los empleados</option>
-          {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-        </select>
-        <label className="text-slate-300 text-xs">Mes:</label>
-        <input type="month" value={mes} onChange={e=>setMes(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5"/>
-        <div className="flex-1"/>
-        <button onClick={exportar}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <FileSpreadsheet size={13}/> Excel
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-
-        {/* ── Tarjetas de empleados con reloj rápido ── */}
+    <Modulo
+      seccion="RRHH"
+      titulo="Control de asistencia"
+      descripcion="Marcá entradas y salidas, y mirá las horas trabajadas de cada persona en el mes."
+      acciones={<Boton variante="secundario" icono={FileSpreadsheet} onClick={exportar}>Excel</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Empleados" valor={empleados.length} icono={Users} delay={40}/>
+          <Indicador etiqueta="Trabajando ahora" valor={trabajandoAhora} icono={Clock} destacado delay={90}/>
+          <Indicador etiqueta="Horas del mes" valor={fmtHoras(horasMes)} icono={Timer} delay={140}/>
+          <Indicador etiqueta="Registros" valor={regFiltrados.length} detalle="En el período" delay={190}/>
+        </Indicadores>
+      }
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-4">
         <div>
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Reloj de hoy — {fmtDate(hoy())}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {empleados.map(({ emp, abierto } = resumen.find(r => r.emp.id === empleados[0]?.id) || {}, idx) => {
-              const info = resumen.find(r => r.emp.id === emp?.id);
-              if (!emp || !info) return null;
-              return (
-                <div key={emp.id} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{emp.nombre}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{emp.cargo || emp.puesto || "Empleado"}</p>
-                    {info.abierto && (
-                      <p className="text-[10px] text-yellow-600 font-semibold mt-1">
-                        🟢 Entrada: {info.abierto.entrada}
-                      </p>
-                    )}
+          <p className="monki-tag text-monki-k/55 mb-2">Reloj de hoy — {fmtDate(hoy())}</p>
+          {empleados.length === 0 ? (
+            <Tarjeta><Vacio icono={Users} titulo="No hay empleados" texto="Agregá tu equipo en RRHH → Empleados para marcar asistencia."/></Tarjeta>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {resumen.map(({ emp, abierto }, i) => (
+                <div key={emp.id} style={{ animationDelay: `${Math.min(i,9)*40}ms` }}
+                  className={`animate-entrar rounded-[18px] border-2 p-4 flex items-center justify-between gap-3 transition-all duration-300 ease-monki ${abierto ? "bg-monki-y border-monki-k shadow-[4px_4px_0_#111]" : "bg-white border-black/10"}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-black ${abierto ? "bg-monki-k text-monki-y" : "bg-monki-cream text-monki-k"}`}>{(emp.nombre||"?").charAt(0).toUpperCase()}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold text-monki-k truncate">{emp.nombre}</p>
+                      <p className="text-xs text-monki-k/55">{emp.cargo || emp.puesto || "Empleado"}</p>
+                      {abierto && <p className="font-mono text-[10px] font-bold mt-0.5 flex items-center gap-1"><span className="monki-pulse"/>Entró {abierto.entrada}</p>}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    {!info.abierto ? (
-                      <button onClick={() => marcarEntrada(emp.id)}
-                        className="flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
-                        <UserCheck size={12}/> Entrada
-                      </button>
-                    ) : (
-                      <button onClick={() => marcarSalida(emp.id)}
-                        className="flex items-center gap-1 bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">
-                        <Clock size={12}/> Salida
-                      </button>
-                    )}
-                    <button onClick={() => { setModal({ empleadoId: emp.id }); setFormFecha(hoy()); setFormHora(horaActual()); }}
-                      className="text-[10px] text-slate-400 hover:text-slate-700 text-center">
-                      + Manual
-                    </button>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {!abierto
+                      ? <Boton tamano="sm" icono={LogIn} onClick={() => marcarEntrada(emp.id)}>Entrada</Boton>
+                      : <Boton tamano="sm" variante="peligro" icono={LogOut} onClick={() => marcarSalida(emp.id)}>Salida</Boton>}
+                    <Boton tamano="sm" variante="fantasma" icono={Plus} onClick={() => { setModal({ empleadoId: emp.id }); setFormFecha(hoy()); setFormHora(horaActual()); }}>Manual</Boton>
                   </div>
                 </div>
-              );
-            })}
-            {empleados.length === 0 && (
-              <p className="col-span-2 text-center text-slate-400 text-sm py-6">
-                No hay empleados registrados. Agregá empleados en la sección Empleados.
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* ── Resumen del mes ── */}
-        <div>
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Resumen — {mes}</h3>
-          <div className="overflow-x-auto">
-            <table className="table-base w-full">
-              <thead><tr>
-                <th>Empleado</th><th>Cargo</th>
-                <th className="text-center">Días trabajados</th>
-                <th className="text-center">Horas totales</th>
-                <th className="text-center">Estado hoy</th>
-              </tr></thead>
-              <tbody>
-                {resumen.map(({ emp, diasTrabajados, horasTotales, abierto }) => (
-                  <tr key={emp.id}>
-                    <td className="font-semibold">{emp.nombre}</td>
-                    <td className="text-slate-500 text-xs">{emp.cargo || emp.puesto || "—"}</td>
-                    <td className="text-center">{diasTrabajados}</td>
-                    <td className="text-center">{fmtHoras(horasTotales)}</td>
-                    <td className="text-center">
-                      {abierto
-                        ? <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-semibold">Trabajando</span>
-                        : <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[10px] font-semibold">Fuera</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <BarraFiltros>
+          <Selector valor={empSel} onCambio={setEmpSel} opciones={[{ value: "todos", label: "Todos los empleados" }, ...empleados.map(e => ({ value: e.id, label: e.nombre }))]}/>
+          <label className="flex items-center gap-2 monki-tag text-monki-k/55">Mes <Entrada type="month" value={mes} onChange={e=>setMes(e.target.value)} className="!w-auto !py-1.5"/></label>
+        </BarraFiltros>
 
-        {/* ── Detalle de registros ── */}
         <div>
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Registros del período</h3>
-          <div className="overflow-x-auto">
-            <table className="table-base w-full">
-              <thead><tr>
-                <th>Empleado</th><th>Fecha</th><th>Entrada</th><th>Salida</th>
-                <th className="text-right">Horas</th><th>Notas</th>
-              </tr></thead>
-              <tbody>
-                {regFiltrados.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-slate-400 py-8">Sin registros en este período</td></tr>
-                )}
-                {regFiltrados
-                  .sort((a,b) => (b.fecha+b.entrada).localeCompare(a.fecha+a.entrada))
-                  .map(r => {
-                    const emp = empleados.find(e => e.id === r.empleadoId);
-                    const horas = diffHoras(r.entrada, r.salida);
-                    return (
-                      <tr key={r.id}>
-                        <td className="font-semibold">{emp?.nombre || "—"}</td>
-                        <td>{fmtDate(r.fecha)}</td>
-                        <td className="text-yellow-600 font-mono text-xs">{r.entrada}</td>
-                        <td className={`font-mono text-xs ${r.salida ? "text-rose-600" : "text-yellow-500"}`}>
-                          {r.salida || "Abierto…"}
-                        </td>
-                        <td className="text-right">{horas ? fmtHoras(horas) : "—"}</td>
-                        <td className="text-slate-400 text-xs">{r.notas || ""}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+          <p className="monki-tag text-monki-k/55 mb-2">Resumen — {mes}</p>
+          <Tabla columnas={columnasResumen} filas={resumen} claveFila={r => r.emp.id} className="!flex-none"
+            vacio={<p className="text-center py-8 text-monki-k/40 text-sm">Sin empleados</p>}/>
+        </div>
+        <div>
+          <p className="monki-tag text-monki-k/55 mb-2">Registros del período</p>
+          <Tabla columnas={columnasRegistros} filas={registrosOrdenados} className="!flex-none"
+            vacio={<p className="text-center py-8 text-monki-k/40 text-sm">Sin registros en este período</p>}/>
         </div>
       </div>
 
-      {/* Modal registro manual */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={()=>setModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e=>e.stopPropagation()}>
-            <h3 className="font-bold text-slate-900 mb-4">Registrar entrada manual</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Empleado</label>
-                <select value={modal.empleadoId} onChange={e=>setModal({...modal, empleadoId:e.target.value})}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
-                  {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-                <input type="date" value={formFecha} onChange={e=>setFormFecha(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Hora de entrada</label>
-                <input type="time" value={formHora} onChange={e=>setFormHora(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
-                <input value={formNotas} onChange={e=>setFormNotas(e.target.value)} placeholder="Opcional"
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
-              </div>
+        <Modal titulo="Registrar entrada manual" subtitulo="Para cuando alguien olvidó marcar" onCerrar={()=>setModal(null)} ancho="max-w-sm"
+          pie={<><Boton variante="fantasma" onClick={()=>setModal(null)}>Cancelar</Boton><Boton icono={UserCheck} onClick={guardarManual}>Guardar</Boton></>}>
+          <div className="space-y-3">
+            <Campo etiqueta="Empleado"><Seleccion value={modal.empleadoId} onChange={e=>setModal({...modal, empleadoId:e.target.value})} opciones={empleados.map(e => ({ value: e.id, label: e.nombre }))}/></Campo>
+            <div className="grid grid-cols-2 gap-3">
+              <Campo etiqueta="Fecha"><Entrada type="date" value={formFecha} onChange={e=>setFormFecha(e.target.value)}/></Campo>
+              <Campo etiqueta="Hora de entrada"><Entrada type="time" value={formHora} onChange={e=>setFormHora(e.target.value)}/></Campo>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">Cancelar</button>
-              <button onClick={guardarManual} className="flex-1 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold">Guardar</button>
-            </div>
+            <Campo etiqueta="Notas"><Entrada value={formNotas} onChange={e=>setFormNotas(e.target.value)} placeholder="Opcional"/></Campo>
           </div>
-        </div>
+        </Modal>
       )}
-    </div>
+    </Modulo>
   );
 }
