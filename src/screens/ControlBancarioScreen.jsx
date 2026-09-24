@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fechaLocal } from "../utils/fmt";
+import { Plus, Landmark, ArrowUpFromLine, ArrowDownToLine, Pencil, Trash2, Ban } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tarjeta, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, Interruptor, useConfirmar } from "../components/ui";
 
 const hoy = () => fechaLocal(new Date());
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -16,6 +18,26 @@ const fmt = (n, mon = "CRC") => {
 const TIPOS_DEBITO = ["Débito bancario", "Transferencia saliente", "Comisión bancaria", "Cheque emitido", "Pago servicios", "Otro"];
 const TIPOS_CREDITO = ["Depósito efectivo", "Depósito cheque", "Transferencia entrante", "SINPE recibido", "Nota crédito banco", "Otro"];
 
+// Casillas de aprobación compartidas por débitos y créditos
+function Aprobacion({ f, set }) {
+  return (
+    <div className="border-t-2 border-black/10 pt-4">
+      <p className="monki-tag text-monki-k/55 mb-3">Flujo de aprobación</p>
+      <div className="grid grid-cols-2 gap-3">
+        {[["hechoPor","Hecho por"],["revisadoPor","Revisado por"],["autorizadoPor","Autorizado por"],["fechaAutorizacion","Fecha autorización"],["numeroAsiento","N° Asiento"],["asientoAnulacion","Asiento Anulación"]].map(([k,l]) => (
+          <Campo key={k} etiqueta={l}><Entrada type={k==="fechaAutorizacion"?"date":"text"} value={f[k]} onChange={e => set(k, e.target.value)}/></Campo>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-6 mt-4">
+        {[["conciliable","Conciliable"],["contabilizado","Contabilizado"],["anulado","Anulado"]].map(([k,l]) => (
+          <Interruptor key={k} activo={!!f[k]} onCambio={v => set(k, v)} etiqueta={l}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+const opcionesCuentas = cuentas => cuentas.map(c => ({ value: c.id, label: `${c.numeroCuenta} — ${c.nombre}` }));
+
 // ── Modal Cuentas ─────────────────────────────────────────────────────────────
 function ModalCuenta({ cuenta, onSave, onClose }) {
   const [f, setF] = useState(cuenta || {
@@ -23,60 +45,19 @@ function ModalCuenta({ cuenta, onSave, onClose }) {
   });
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        <div className="bg-slate-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-          <h2 className="font-bold text-lg">{cuenta ? "Editar cuenta" : "Nueva cuenta bancaria"}</h2>
-          <button onClick={onClose} className="text-slate-300 hover:text-white text-xl">✕</button>
+    <Modal titulo={cuenta ? "Editar cuenta" : "Nueva cuenta bancaria"} onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={() => { if (!f.nombre) return; onSave(f); }}>Guardar</Boton></>}>
+      <div className="space-y-3">
+        <Campo etiqueta="Nombre de la cuenta"><Entrada value={f.nombre} onChange={e => set("nombre", e.target.value)} placeholder="Ej. Corriente Nacional CRC"/></Campo>
+        <Campo etiqueta="Número de cuenta"><Entrada value={f.numeroCuenta} onChange={e => set("numeroCuenta", e.target.value)} placeholder="100-01-164-000481-8"/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Banco"><Entrada value={f.banco} onChange={e => set("banco", e.target.value)} placeholder="Banco Nacional"/></Campo>
+          <Campo etiqueta="Moneda"><Seleccion value={f.moneda} onChange={e => set("moneda", e.target.value)} opciones={[{ value: "CRC", label: "₡ Colones" }, { value: "USD", label: "$ Dólares" }]}/></Campo>
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Nombre de la cuenta</label>
-            <input value={f.nombre} onChange={e => set("nombre", e.target.value)}
-              placeholder="Ej. Corriente Nacional CRC"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Número de cuenta</label>
-            <input value={f.numeroCuenta} onChange={e => set("numeroCuenta", e.target.value)}
-              placeholder="100-01-164-000481-8"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Banco</label>
-              <input value={f.banco} onChange={e => set("banco", e.target.value)}
-                placeholder="Banco Nacional"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Moneda</label>
-              <select value={f.moneda} onChange={e => set("moneda", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="CRC">₡ Colones</option>
-                <option value="USD">$ Dólares</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Saldo inicial</label>
-            <input type="number" value={f.saldoInicial} onChange={e => set("saldoInicial", parseFloat(e.target.value) || 0)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={f.activa} onChange={e => set("activa", e.target.checked)} className="rounded" />
-            Cuenta activa
-          </label>
-        </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
-          <button onClick={() => { if (!f.nombre) return; onSave(f); }}
-            className="px-5 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
-            Guardar
-          </button>
-        </div>
+        <Campo etiqueta="Saldo inicial"><Entrada type="number" value={f.saldoInicial} onChange={e => set("saldoInicial", parseFloat(e.target.value) || 0)}/></Campo>
+        <Interruptor activo={!!f.activa} onCambio={v => set("activa", v)} etiqueta="Cuenta activa"/>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -96,151 +77,38 @@ function ModalDebito({ nota, cuentas, usuarioActivo, onSave, onClose }) {
   const cuenta = cuentas.find(c => c.id === f.cuentaId);
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-4">
-        <div className="bg-slate-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-          <div>
-            <h2 className="font-bold text-lg">Nota de Débito</h2>
-            {cuenta && <p className="text-slate-300 text-xs mt-0.5">{cuenta.numeroCuenta} — {cuenta.banco?.toUpperCase()}</p>}
-          </div>
-          <button onClick={onClose} className="text-slate-300 hover:text-white text-xl">✕</button>
+    <Modal titulo="Nota de Débito" subtitulo={cuenta ? `${cuenta.numeroCuenta} — ${cuenta.banco?.toUpperCase() || ""}` : undefined} onCerrar={onClose} ancho="max-w-2xl"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={() => { if (!f.monto || !f.cuentaId) return; onSave(f); }}>Guardar nota de débito</Boton></>}>
+      <div className="space-y-3">
+        <Campo etiqueta="Cuenta"><Seleccion value={f.cuentaId} onChange={e => set("cuentaId", e.target.value)} opciones={opcionesCuentas(cuentas)}/></Campo>
+        <div className="grid grid-cols-3 gap-3">
+          <Campo etiqueta="N° Nota de Débito"><Entrada value={f.numero} onChange={e => set("numero", e.target.value)}/></Campo>
+          <Campo etiqueta="N° Según Banco"><Entrada value={f.numeroBanco} onChange={e => set("numeroBanco", e.target.value)}/></Campo>
+          <Campo etiqueta="Fecha de Emisión"><Entrada type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)}/></Campo>
         </div>
-        <div className="p-6 space-y-4">
-          {/* Cuenta + Número + Fecha */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-3">
-              <label className="text-xs font-semibold text-slate-500 uppercase">Cuenta</label>
-              <select value={f.cuentaId} onChange={e => set("cuentaId", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                {cuentas.map(c => <option key={c.id} value={c.id}>{c.numeroCuenta} — {c.nombre}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">N° Nota de Débito</label>
-              <input value={f.numero} onChange={e => set("numero", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">N° Según Banco</label>
-              <input value={f.numeroBanco} onChange={e => set("numeroBanco", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Fecha de Emisión</label>
-              <input type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          {/* Tipo + Cheque */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Tipo</label>
-              <select value={f.tipo} onChange={e => set("tipo", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                {TIPOS_DEBITO.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">N° Cheque</label>
-              <input value={f.numeroCheque} onChange={e => set("numeroCheque", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          {/* Monto + Tipo cambio */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Monto ({cuenta?.moneda || "CRC"})</label>
-              <input type="number" value={f.monto} onChange={e => set("monto", parseFloat(e.target.value) || 0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">T.C. Dólar</label>
-              <input type="number" value={f.tipoCambioDolar} onChange={e => set("tipoCambioDolar", parseFloat(e.target.value) || 0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">T.C. Moneda 3</label>
-              <input type="number" value={f.tipoCambioMoneda3} onChange={e => set("tipoCambioMoneda3", parseFloat(e.target.value) || 0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          {/* Girado por + Banco */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Girado Por</label>
-              <input value={f.giradoPor} onChange={e => set("giradoPor", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Banco Destino</label>
-              <input value={f.banco} onChange={e => set("banco", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          {/* Descripción */}
-          {["descripcion", "descripcion2", "descripcion3"].map((k, i) => (
-            <div key={k}>
-              <label className="text-xs font-semibold text-slate-500 uppercase">{i === 0 ? "Descripción" : ""}</label>
-              <input value={f[k]} onChange={e => set(k, e.target.value)} placeholder={i === 0 ? "Concepto del débito..." : ""}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          ))}
-          {/* Flujo de aprobación */}
-          <div className="border-t pt-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Flujo de aprobación</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-slate-500">Hecho por</label>
-                <input value={f.hechoPor} onChange={e => set("hechoPor", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">Revisado por</label>
-                <input value={f.revisadoPor} onChange={e => set("revisadoPor", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">Autorizado por</label>
-                <input value={f.autorizadoPor} onChange={e => set("autorizadoPor", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">Fecha autorización</label>
-                <input type="date" value={f.fechaAutorizacion} onChange={e => set("fechaAutorizacion", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">N° Asiento</label>
-                <input value={f.numeroAsiento} onChange={e => set("numeroAsiento", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-              <div>
-                <label className="text-xs text-slate-500">Asiento Anulación</label>
-                <input value={f.asientoAnulacion} onChange={e => set("asientoAnulacion", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              </div>
-            </div>
-            <div className="flex gap-6 mt-3">
-              {[["conciliable","Conciliable"],["contabilizado","Contabilizado"],["anulado","Anulado"]].map(([k,l]) => (
-                <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={f[k]} onChange={e => set(k, e.target.checked)} className="rounded" />
-                  {l}
-                </label>
-              ))}
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Tipo"><Seleccion value={f.tipo} onChange={e => set("tipo", e.target.value)} opciones={TIPOS_DEBITO}/></Campo>
+          <Campo etiqueta="N° Cheque"><Entrada value={f.numeroCheque} onChange={e => set("numeroCheque", e.target.value)}/></Campo>
         </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
-          <button onClick={() => { if (!f.monto || !f.cuentaId) return; onSave(f); }}
-            className="px-5 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold hover:bg-slate-800">
-            Guardar Nota de Débito
-          </button>
+        <div className="grid grid-cols-3 gap-3">
+          <Campo etiqueta={`Monto (${cuenta?.moneda || "CRC"})`}><Entrada type="number" value={f.monto} onChange={e => set("monto", parseFloat(e.target.value) || 0)}/></Campo>
+          <Campo etiqueta="T.C. Dólar"><Entrada type="number" value={f.tipoCambioDolar} onChange={e => set("tipoCambioDolar", parseFloat(e.target.value) || 0)}/></Campo>
+          <Campo etiqueta="T.C. Moneda 3"><Entrada type="number" value={f.tipoCambioMoneda3} onChange={e => set("tipoCambioMoneda3", parseFloat(e.target.value) || 0)}/></Campo>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Girado Por"><Entrada value={f.giradoPor} onChange={e => set("giradoPor", e.target.value)}/></Campo>
+          <Campo etiqueta="Banco Destino"><Entrada value={f.banco} onChange={e => set("banco", e.target.value)}/></Campo>
+        </div>
+        <Campo etiqueta="Descripción">
+          <div className="space-y-2">
+            {["descripcion", "descripcion2", "descripcion3"].map((k, i) => (
+              <Entrada key={k} value={f[k]} onChange={e => set(k, e.target.value)} placeholder={i === 0 ? "Concepto del débito..." : ""}/>
+            ))}
+          </div>
+        </Campo>
+        <Aprobacion f={f} set={set}/>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -272,158 +140,62 @@ function ModalCredito({ nota, cuentas, usuarioActivo, onSave, onClose }) {
     const ch = p.cheques.filter((_,j)=>j!==i);
     return { ...p, cheques: ch, totalCheques: ch.reduce((s,c)=>s+(parseFloat(c.monto)||0),0) };
   });
+  const celda = "w-full bg-transparent border-2 border-transparent hover:border-black/10 focus:border-monki-k rounded-lg px-2 py-1 text-xs outline-none";
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl my-4">
-        <div className="bg-emerald-700 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-          <div>
-            <h2 className="font-bold text-lg">Nota de Crédito</h2>
-            {cuenta && <p className="text-emerald-200 text-xs mt-0.5">{cuenta.numeroCuenta} — {cuenta.banco?.toUpperCase()}</p>}
-          </div>
-          <button onClick={onClose} className="text-emerald-200 hover:text-white text-xl">✕</button>
+    <Modal titulo="Nota de Crédito" subtitulo={cuenta ? `${cuenta.numeroCuenta} — ${cuenta.banco?.toUpperCase() || ""}` : undefined} onCerrar={onClose} ancho="max-w-2xl"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={() => { if (!f.cuentaId) return; onSave({ ...f, montoTotal }); }}>Guardar nota de crédito</Boton></>}>
+      <div className="space-y-3">
+        <Campo etiqueta="Cuenta"><Seleccion value={f.cuentaId} onChange={e => set("cuentaId", e.target.value)} opciones={opcionesCuentas(cuentas)}/></Campo>
+        <div className="grid grid-cols-3 gap-3">
+          <Campo etiqueta="N° Nota de Crédito"><Entrada value={f.numero} onChange={e => set("numero", e.target.value)}/></Campo>
+          <Campo etiqueta="N° Según Banco"><Entrada value={f.numeroBanco} onChange={e => set("numeroBanco", e.target.value)}/></Campo>
+          <Campo etiqueta="Fecha de Emisión"><Entrada type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)}/></Campo>
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Cuenta</label>
-            <select value={f.cuentaId} onChange={e => set("cuentaId", e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              {cuentas.map(c => <option key={c.id} value={c.id}>{c.numeroCuenta} — {c.nombre}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">N° Nota de Crédito</label>
-              <input value={f.numero} onChange={e => set("numero", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">N° Según Banco</label>
-              <input value={f.numeroBanco} onChange={e => set("numeroBanco", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Fecha de Emisión</label>
-              <input type="date" value={f.fecha} onChange={e => set("fecha", e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Tipo</label>
-            <select value={f.tipo} onChange={e => set("tipo", e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              {TIPOS_CREDITO.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-          {/* Montos */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Monto Efectivo ({cuenta?.moneda || "CRC"})</label>
-              <input type="number" value={f.montoEfectivo} onChange={e => set("montoEfectivo", parseFloat(e.target.value)||0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">Total Cheques</label>
-              <input type="number" value={f.totalCheques} readOnly
-                className="w-full border border-slate-100 bg-slate-50 rounded-lg px-3 py-2 mt-1 text-sm text-slate-500" />
-            </div>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex justify-between items-center">
-            <span className="text-sm font-semibold text-emerald-700">Monto Total</span>
-            <span className="text-lg font-bold text-emerald-700">{fmt(montoTotal, cuenta?.moneda)}</span>
-          </div>
-          {/* Tipo cambio */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">T.C. Dólar</label>
-              <input type="number" value={f.tipoCambioDolar} onChange={e => set("tipoCambioDolar", parseFloat(e.target.value)||0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase">T.C. Moneda 3</label>
-              <input type="number" value={f.tipoCambioMoneda3} onChange={e => set("tipoCambioMoneda3", parseFloat(e.target.value)||0)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-          </div>
-          {/* Depositante */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Depositante</label>
-            <input value={f.depositante} onChange={e => set("depositante", e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase">Observaciones</label>
-            <textarea value={f.observaciones} onChange={e => set("observaciones", e.target.value)} rows={2}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
-          </div>
-          {/* Detalle cheques */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="bg-slate-50 px-4 py-2 flex justify-between items-center">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Detalle de Cheques Depositados</span>
-              <button onClick={addCheque} className="text-xs text-emerald-600 hover:underline font-semibold">+ Agregar cheque</button>
-            </div>
-            {(f.cheques||[]).length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-3">Sin cheques</p>
-            ) : (
-              <table className="w-full text-xs">
-                <thead><tr className="bg-slate-100 text-slate-500">
-                  <th className="px-3 py-2 text-left">Número</th>
-                  <th className="px-3 py-2 text-right">Monto</th>
-                  <th className="px-3 py-2 text-left">Banco</th>
-                  <th className="px-3 py-2 w-8"></th>
-                </tr></thead>
-                <tbody>{(f.cheques||[]).map((ch, i) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="px-2 py-1"><input value={ch.numero} onChange={e => setCheque(i,"numero",e.target.value)}
-                      className="w-full border-0 text-xs px-1 focus:outline-none" /></td>
-                    <td className="px-2 py-1"><input type="number" value={ch.monto} onChange={e => setCheque(i,"monto",e.target.value)}
-                      className="w-full border-0 text-xs px-1 text-right focus:outline-none" /></td>
-                    <td className="px-2 py-1"><input value={ch.banco} onChange={e => setCheque(i,"banco",e.target.value)}
-                      className="w-full border-0 text-xs px-1 focus:outline-none" /></td>
-                    <td className="px-2 py-1 text-center"><button onClick={() => delCheque(i)} className="text-red-400 hover:text-red-600">✕</button></td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            )}
-          </div>
-          {/* Flujo aprobación */}
-          <div className="border-t pt-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Flujo de aprobación</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[["hechoPor","Hecho por"],["revisadoPor","Revisado por"],["autorizadoPor","Autorizado por"],["fechaAutorizacion","Fecha autorización"]].map(([k,l]) => (
-                <div key={k}>
-                  <label className="text-xs text-slate-500">{l}</label>
-                  <input type={k==="fechaAutorizacion"?"date":"text"} value={f[k]} onChange={e => set(k, e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-              ))}
-              {[["numeroAsiento","N° Asiento"],["asientoAnulacion","Asiento Anulación"]].map(([k,l]) => (
-                <div key={k}>
-                  <label className="text-xs text-slate-500">{l}</label>
-                  <input value={f[k]} onChange={e => set(k, e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-1.5 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-6 mt-3">
-              {[["conciliable","Conciliable"],["contabilizado","Contabilizado"],["anulado","Anulado"]].map(([k,l]) => (
-                <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={f[k]} onChange={e => set(k, e.target.checked)} className="rounded" />
-                  {l}
-                </label>
-              ))}
-            </div>
-          </div>
+        <Campo etiqueta="Tipo"><Seleccion value={f.tipo} onChange={e => set("tipo", e.target.value)} opciones={TIPOS_CREDITO}/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta={`Monto Efectivo (${cuenta?.moneda || "CRC"})`}><Entrada type="number" value={f.montoEfectivo} onChange={e => set("montoEfectivo", parseFloat(e.target.value)||0)}/></Campo>
+          <Campo etiqueta="Total Cheques"><Entrada type="number" value={f.totalCheques} readOnly className="bg-monki-cream/60 text-monki-k/60"/></Campo>
         </div>
-        <div className="px-6 pb-5 flex gap-3 justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-slate-200 rounded-lg text-sm hover:bg-slate-50">Cancelar</button>
-          <button onClick={() => { if (!f.cuentaId) return; onSave({ ...f, montoTotal }); }}
-            className="px-5 py-2 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-emerald-800">
-            Guardar Nota de Crédito
-          </button>
+        <div className="bg-monki-k text-white rounded-2xl px-4 py-3 flex justify-between items-center">
+          <span className="monki-tag text-white/70">Monto total</span>
+          <span className="text-lg font-black text-monki-y tabular-nums">{fmt(montoTotal, cuenta?.moneda)}</span>
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="T.C. Dólar"><Entrada type="number" value={f.tipoCambioDolar} onChange={e => set("tipoCambioDolar", parseFloat(e.target.value)||0)}/></Campo>
+          <Campo etiqueta="T.C. Moneda 3"><Entrada type="number" value={f.tipoCambioMoneda3} onChange={e => set("tipoCambioMoneda3", parseFloat(e.target.value)||0)}/></Campo>
+        </div>
+        <Campo etiqueta="Depositante"><Entrada value={f.depositante} onChange={e => set("depositante", e.target.value)}/></Campo>
+        <Campo etiqueta="Observaciones"><AreaTexto value={f.observaciones} onChange={e => set("observaciones", e.target.value)} rows={2}/></Campo>
+        <div className="rounded-2xl border-2 border-black/10 overflow-hidden">
+          <div className="bg-monki-cream/60 px-4 py-2 flex justify-between items-center">
+            <span className="monki-tag text-monki-k/55">Cheques depositados</span>
+            <Boton variante="fantasma" tamano="sm" icono={Plus} onClick={addCheque}>Agregar cheque</Boton>
+          </div>
+          {(f.cheques||[]).length === 0 ? (
+            <p className="text-xs text-monki-k/45 text-center py-3">Sin cheques</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead><tr className="monki-tag text-monki-k/55">
+                <th className="px-3 py-2 text-left">Número</th>
+                <th className="px-3 py-2 text-right">Monto</th>
+                <th className="px-3 py-2 text-left">Banco</th>
+                <th className="px-3 py-2 w-10"></th>
+              </tr></thead>
+              <tbody>{(f.cheques||[]).map((ch, i) => (
+                <tr key={i} className="border-t border-black/5">
+                  <td className="px-2 py-1"><input value={ch.numero} onChange={e => setCheque(i,"numero",e.target.value)} className={celda}/></td>
+                  <td className="px-2 py-1"><input type="number" value={ch.monto} onChange={e => setCheque(i,"monto",e.target.value)} className={celda + " text-right"}/></td>
+                  <td className="px-2 py-1"><input value={ch.banco} onChange={e => setCheque(i,"banco",e.target.value)} className={celda}/></td>
+                  <td className="px-2 py-1 text-center"><BotonIcono icono={Trash2} titulo="Quitar cheque" tono="peligro" onClick={() => delCheque(i)}/></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+        </div>
+        <Aprobacion f={f} set={set}/>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -437,6 +209,7 @@ export default function ControlBancarioScreen() {
   const [modal, setModal] = useState(null); // { tipo, data }
   const [buscar, setBuscar] = useState("");
   const [filtroCuenta, setFiltroCuenta] = useState("todas");
+  const { confirmar, dialogo } = useConfirmar();
 
   const cargar = useCallback(async () => {
     const [c, d, cr, u] = await Promise.all([
@@ -472,7 +245,7 @@ export default function ControlBancarioScreen() {
     setModal(null); cargar();
   };
   const eliminarCuenta = async (id) => {
-    if (!confirm("¿Eliminar esta cuenta?")) return;
+    if (!(await confirmar("Eliminar cuenta", "¿Eliminar esta cuenta?", { peligro: true, boton: "Eliminar" }))) return;
     await db.setCuentasBancarias(cuentas.filter(x=>x.id!==id));
     cargar();
   };
@@ -486,7 +259,7 @@ export default function ControlBancarioScreen() {
     setModal(null); cargar();
   };
   const eliminarDebito = async (id) => {
-    if (!confirm("¿Anular este débito?")) return;
+    if (!(await confirmar("Anular débito", "¿Anular este débito?", { peligro: true, boton: "Anular" }))) return;
     const lista = debitos.map(x => x.id===id ? {...x, anulado:true} : x);
     await db.setNotasDebitoBanco(lista);
     cargar();
@@ -501,7 +274,7 @@ export default function ControlBancarioScreen() {
     setModal(null); cargar();
   };
   const eliminarCredito = async (id) => {
-    if (!confirm("¿Anular esta nota de crédito?")) return;
+    if (!(await confirmar("Anular nota de crédito", "¿Anular esta nota de crédito?", { peligro: true, boton: "Anular" }))) return;
     const lista = creditos.map(x => x.id===id ? {...x, anulado:true} : x);
     await db.setNotasCreditoBanco(lista);
     cargar();
@@ -515,206 +288,114 @@ export default function ControlBancarioScreen() {
     return cuentaOk && busOk;
   });
 
+  const estadoNota = n => (
+    <div className="flex gap-1 flex-wrap">
+      {n.anulado && <Estado tono="peligro">Anulado</Estado>}
+      {n.conciliable && !n.anulado && <Estado tono="neutro">Conciliable</Estado>}
+      {n.contabilizado && <Estado tono="exito">Contabilizado</Estado>}
+    </div>
+  );
+  const columnasNota = (tipo) => [
+    { key: "numero", titulo: "N° Nota", render: n => <span className={`font-mono text-xs ${n.anulado ? "opacity-50" : ""}`}>{n.numero}</span> },
+    { key: "cuenta", titulo: "Cuenta", render: n => <b className="text-monki-k">{cuentas.find(x=>x.id===n.cuentaId)?.nombre || "—"}</b> },
+    { key: "fecha", titulo: "Fecha", render: n => <span className="font-mono text-xs text-monki-k/60">{n.fecha}</span> },
+    { key: "tipo", titulo: "Tipo" },
+    tipo === "debito"
+      ? { key: "giradoPor", titulo: "Girado Por", render: n => n.giradoPor || "—" }
+      : { key: "depositante", titulo: "Depositante", render: n => n.depositante || "—" },
+    { key: "monto", titulo: tipo === "debito" ? "Monto" : "Monto Total", alinear: "right", render: n => {
+      const c = cuentas.find(x=>x.id===n.cuentaId);
+      return tipo === "debito"
+        ? <b className={`text-red-600 ${n.anulado ? "line-through opacity-50" : ""}`}>−{fmt(n.monto, c?.moneda)}</b>
+        : <b className={`text-emerald-700 ${n.anulado ? "line-through opacity-50" : ""}`}>+{fmt(n.montoTotal, c?.moneda)}</b>;
+    } },
+    { key: "estado", titulo: "Estado", render: estadoNota },
+    { key: "acc", titulo: "", alinear: "right", render: n => (
+      <div className="flex justify-end gap-1">
+        <BotonIcono icono={Pencil} titulo="Editar" onClick={() => setModal({ tipo, data:n })}/>
+        {!n.anulado && <BotonIcono icono={Ban} titulo="Anular" tono="peligro" onClick={() => tipo === "debito" ? eliminarDebito(n.id) : eliminarCredito(n.id)}/>}
+      </div>
+    ) },
+  ];
+  const saldoTotal = mon => cuentas.filter(c => c.activa !== false && (c.moneda || "CRC") === mon).reduce((s, c) => s + saldoCuenta(c.id), 0);
+
   return (
-    <div className="flex flex-col h-full bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800">Control Bancario</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Cuentas · Notas de Débito · Notas de Crédito</p>
-        </div>
-        <div className="flex gap-2">
-          {tab === "cuentas" && (
-            <button onClick={() => setModal({ tipo:"cuenta", data:null })}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700">
-              + Nueva cuenta
-            </button>
-          )}
-          {tab === "debitos" && (
-            <button onClick={() => setModal({ tipo:"debito", data:null })} disabled={cuentasActivas.length===0}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-40">
-              + Nota de Débito
-            </button>
-          )}
-          {tab === "creditos" && (
-            <button onClick={() => setModal({ tipo:"credito", data:null })} disabled={cuentasActivas.length===0}
-              className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-semibold hover:bg-emerald-800 disabled:opacity-40">
-              + Nota de Crédito
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-slate-200 px-6">
-        <div className="flex gap-1">
-          {[["cuentas","🏦 Cuentas"],["debitos","📤 Notas de Débito"],["creditos","📥 Notas de Crédito"]].map(([t,l]) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${tab===t ? "border-emerald-600 text-emerald-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Filtros (para débitos y créditos) */}
+    <Modulo
+      seccion="Finanzas"
+      titulo="Control Bancario"
+      descripcion="Cuentas bancarias, notas de débito y notas de crédito con su flujo de aprobación."
+      acciones={<>
+        {tab === "cuentas" && <Boton icono={Plus} onClick={() => setModal({ tipo:"cuenta", data:null })}>Nueva cuenta</Boton>}
+        {tab === "debitos" && <Boton icono={Plus} disabled={cuentasActivas.length===0} onClick={() => setModal({ tipo:"debito", data:null })}>Nota de débito</Boton>}
+        {tab === "creditos" && <Boton icono={Plus} disabled={cuentasActivas.length===0} onClick={() => setModal({ tipo:"credito", data:null })}>Nota de crédito</Boton>}
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Saldo en colones" valor={fmt(saldoTotal("CRC"), "CRC")} icono={Landmark} destacado delay={40}/>
+          <Indicador etiqueta="Saldo en dólares" valor={fmt(saldoTotal("USD"), "USD")} delay={80}/>
+          <Indicador etiqueta="Débitos vigentes" valor={debitos.filter(n => !n.anulado).length} icono={ArrowUpFromLine} delay={120}/>
+          <Indicador etiqueta="Créditos vigentes" valor={creditos.filter(n => !n.anulado).length} icono={ArrowDownToLine} delay={160}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: tab, onCambiar: setTab, items: [
+        { key: "cuentas", label: "Cuentas", cuenta: cuentas.length },
+        { key: "debitos", label: "Notas de débito", cuenta: debitos.length },
+        { key: "creditos", label: "Notas de crédito", cuenta: creditos.length },
+      ] }}
+    >
       {tab !== "cuentas" && (
-        <div className="bg-white border-b border-slate-100 px-6 py-3 flex gap-3">
-          <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar..."
-            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48" />
-          <select value={filtroCuenta} onChange={e => setFiltroCuenta(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="todas">Todas las cuentas</option>
-            {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+        <BarraFiltros>
+          <Buscador valor={buscar} onCambio={setBuscar}/>
+          <Selector valor={filtroCuenta} onCambio={setFiltroCuenta} opciones={[{ value: "todas", label: "Todas las cuentas" }, ...cuentas.map(c => ({ value: c.id, label: c.nombre }))]}/>
+        </BarraFiltros>
+      )}
+
+      {tab === "cuentas" && (
+        <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
+          {cuentas.length === 0 ? (
+            <Tarjeta className="h-full flex items-center justify-center">
+              <Vacio icono={Landmark} titulo="Sin cuentas bancarias" texto="Agregá tu primera cuenta para empezar."
+                accion={<Boton icono={Plus} onClick={() => setModal({ tipo:"cuenta", data:null })}>Nueva cuenta</Boton>}/>
+            </Tarjeta>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {cuentas.map((c, i) => {
+                const saldo = saldoCuenta(c.id);
+                const negativo = saldo < 0;
+                return (
+                  <div key={c.id} style={{ animationDelay: `${Math.min(i,8)*40}ms` }}
+                    className={`animate-entrar bg-white rounded-[18px] border-2 border-black/10 p-5 transition-all duration-300 ease-monki hover:border-monki-k hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#111] ${c.activa===false ? "opacity-60" : ""}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="min-w-0">
+                        <b className="text-monki-k">{c.nombre}</b>
+                        <p className="text-xs text-monki-k/50 font-mono mt-0.5">{c.numeroCuenta}</p>
+                      </div>
+                      <Estado tono={c.moneda==="USD" ? "oscuro" : "alerta"} punto={false}>{c.moneda}</Estado>
+                    </div>
+                    <p className="monki-tag text-monki-k/45 mb-1">{c.banco || "—"}</p>
+                    <p className={`text-[26px] font-black tracking-[-0.03em] tabular-nums ${negativo ? "text-red-600" : "text-monki-k"}`}>{fmt(saldo, c.moneda)}</p>
+                    <p className="text-xs text-monki-k/45 mt-1">Saldo inicial: {fmt(c.saldoInicial, c.moneda)}</p>
+                    <div className="flex gap-2 mt-4 pt-3 border-t-2 border-black/5">
+                      <Boton variante="secundario" tamano="sm" icono={Pencil} className="flex-1" onClick={() => setModal({ tipo:"cuenta", data:c })}>Editar</Boton>
+                      <Boton variante="peligro" tamano="sm" icono={Trash2} className="flex-1" onClick={() => eliminarCuenta(c.id)}>Eliminar</Boton>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Contenido */}
-      <div className="flex-1 overflow-auto p-6">
-        {/* ── TAB CUENTAS ── */}
-        {tab === "cuentas" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cuentas.length === 0 && (
-              <div className="col-span-3 text-center py-16 text-slate-400">
-                <p className="text-4xl mb-3">🏦</p>
-                <p className="font-semibold">Sin cuentas bancarias</p>
-                <p className="text-sm">Agrega tu primera cuenta para empezar</p>
-              </div>
-            )}
-            {cuentas.map(c => {
-              const saldo = saldoCuenta(c.id);
-              const negativo = saldo < 0;
-              return (
-                <div key={c.id} className={`bg-white rounded-xl shadow-sm border ${c.activa===false ? "opacity-60 border-slate-100" : "border-slate-200"} p-5`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-bold text-slate-800">{c.nombre}</p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">{c.numeroCuenta}</p>
-                    </div>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.moneda==="USD" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"}`}>
-                      {c.moneda}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-1">{c.banco}</p>
-                  <p className={`text-2xl font-bold ${negativo ? "text-red-600" : "text-slate-800"}`}>
-                    {fmt(saldo, c.moneda)}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">Saldo inicial: {fmt(c.saldoInicial, c.moneda)}</p>
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                    <button onClick={() => setModal({ tipo:"cuenta", data:c })}
-                      className="flex-1 text-xs py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50">Editar</button>
-                    <button onClick={() => eliminarCuenta(c.id)}
-                      className="flex-1 text-xs py-1.5 border border-red-100 text-red-500 rounded-lg hover:bg-red-50">Eliminar</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {tab === "debitos" && (
+        <Tabla columnas={columnasNota("debito")} filas={filtrar(debitos).sort((a,b)=>b.fecha.localeCompare(a.fecha))}
+          vacio={<Vacio icono={ArrowUpFromLine} titulo="Sin notas de débito"/>}/>
+      )}
+      {tab === "creditos" && (
+        <Tabla columnas={columnasNota("credito")} filas={filtrar(creditos).sort((a,b)=>b.fecha.localeCompare(a.fecha))}
+          vacio={<Vacio icono={ArrowDownToLine} titulo="Sin notas de crédito"/>}/>
+      )}
 
-        {/* ── TAB DÉBITOS ── */}
-        {tab === "debitos" && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            {filtrar(debitos).length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <p className="text-4xl mb-3">📤</p>
-                <p className="font-semibold">Sin notas de débito</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    {["N° Nota","Cuenta","Fecha","Tipo","Girado Por","Monto","Estado",""].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtrar(debitos).sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(n => {
-                    const c = cuentas.find(x=>x.id===n.cuentaId);
-                    return (
-                      <tr key={n.id} className={`hover:bg-slate-50 ${n.anulado ? "opacity-50" : ""}`}>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-600">{n.numero}</td>
-                        <td className="px-4 py-3 text-slate-700">{c?.nombre || "—"}</td>
-                        <td className="px-4 py-3 text-slate-500">{n.fecha}</td>
-                        <td className="px-4 py-3 text-slate-600">{n.tipo}</td>
-                        <td className="px-4 py-3 text-slate-600">{n.giradoPor || "—"}</td>
-                        <td className="px-4 py-3 font-semibold text-red-600">{fmt(n.monto, c?.moneda)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            {n.anulado && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Anulado</span>}
-                            {n.conciliable && !n.anulado && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Conciliable</span>}
-                            {n.contabilizado && <span className="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">Contabilizado</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button onClick={() => setModal({ tipo:"debito", data:n })} className="text-xs text-blue-600 hover:underline">Editar</button>
-                            {!n.anulado && <button onClick={() => eliminarDebito(n.id)} className="text-xs text-red-400 hover:underline">Anular</button>}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-
-        {/* ── TAB CRÉDITOS ── */}
-        {tab === "creditos" && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            {filtrar(creditos).length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <p className="text-4xl mb-3">📥</p>
-                <p className="font-semibold">Sin notas de crédito</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    {["N° Nota","Cuenta","Fecha","Tipo","Depositante","Monto Total","Estado",""].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtrar(creditos).sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(n => {
-                    const c = cuentas.find(x=>x.id===n.cuentaId);
-                    return (
-                      <tr key={n.id} className={`hover:bg-slate-50 ${n.anulado ? "opacity-50" : ""}`}>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-600">{n.numero}</td>
-                        <td className="px-4 py-3 text-slate-700">{c?.nombre || "—"}</td>
-                        <td className="px-4 py-3 text-slate-500">{n.fecha}</td>
-                        <td className="px-4 py-3 text-slate-600">{n.tipo}</td>
-                        <td className="px-4 py-3 text-slate-600">{n.depositante || "—"}</td>
-                        <td className="px-4 py-3 font-semibold text-emerald-600">{fmt(n.montoTotal, c?.moneda)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            {n.anulado && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Anulado</span>}
-                            {n.conciliable && !n.anulado && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Conciliable</span>}
-                            {n.contabilizado && <span className="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">Contabilizado</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button onClick={() => setModal({ tipo:"credito", data:n })} className="text-xs text-blue-600 hover:underline">Editar</button>
-                            {!n.anulado && <button onClick={() => eliminarCredito(n.id)} className="text-xs text-red-400 hover:underline">Anular</button>}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Modales */}
       {modal?.tipo === "cuenta" && (
         <ModalCuenta cuenta={modal.data} onSave={guardarCuenta} onClose={() => setModal(null)} />
       )}
@@ -726,6 +407,7 @@ export default function ControlBancarioScreen() {
         <ModalCredito nota={modal.data} cuentas={cuentasActivas} usuarioActivo={usuario}
           onSave={guardarCredito} onClose={() => setModal(null)} />
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
