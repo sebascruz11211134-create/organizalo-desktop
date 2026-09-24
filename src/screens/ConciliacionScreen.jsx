@@ -1,7 +1,30 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Upload, CheckCircle, XCircle, Minus, RefreshCw, Trash2 } from "lucide-react";
+import { Upload, CheckCircle, XCircle, Minus, RefreshCw, Trash2, Landmark, Link2, Unlink } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Tarjeta, Vacio, Estado, Indicadores, Indicador } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
+
+// ── Zona para soltar el CSV del banco ────────────────────────────────────────
+function ZonaCSV({ arrastrando, setArrastrando, onArchivo, texto }) {
+  return (
+    <div className={`flex-1 min-h-[260px] flex flex-col items-center justify-center gap-4 rounded-[18px] border-2 border-dashed px-6 text-center transition-all duration-300 ease-monki
+      ${arrastrando ? "border-monki-k bg-monki-y scale-[1.01]" : "border-black/20 bg-white"}`}
+      onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
+      onDragLeave={()=>setArrastrando(false)}
+      onDrop={e=>{e.preventDefault();setArrastrando(false);onArchivo(e);}}>
+      <span className="w-14 h-14 rounded-full bg-monki-y flex items-center justify-center shadow-[4px_4px_0_#111] animate-flotar"><Upload size={24}/></span>
+      <div>
+        <p className="font-extrabold text-monki-k">Arrastrá el CSV del banco aquí</p>
+        <p className="text-sm text-monki-k/55 mt-1">{texto}</p>
+        <p className="font-mono text-[11px] text-monki-k/40 mt-2">Columnas: Fecha · Descripción · Monto (· Saldo)</p>
+      </div>
+      <label className="ui-boton inline-flex items-center gap-2 bg-monki-k text-monki-y px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
+        <Upload size={14}/> Elegir archivo CSV
+        <input type="file" accept=".csv,.txt" className="hidden" onChange={onArchivo}/>
+      </label>
+    </div>
+  );
+}
 
 // ── Importar CSV bancario ─────────────────────────────────────────────────────
 function parseFechaCSV(s) {
@@ -62,74 +85,56 @@ function TabImportarCSV() {
     }
   };
 
+  if (filas.length===0) {
+    return (
+      <div className="flex-1 flex flex-col gap-3">
+        <ZonaCSV arrastrando={arrastrando} setArrastrando={setArrastrando} onArchivo={cargarArchivo}
+          texto="Cada fila se registra como ingreso (recibo) o gasto (compra)."/>
+        {resultado && (
+          <div className={`animate-desplegar px-4 py-2.5 rounded-full text-sm font-bold ${resultado.ok?"bg-[#dcfce7] text-[#166534]":"bg-red-100 text-red-700"}`}>
+            {resultado.ok ? `Importado: ${resultado.ingresos} ingresos y ${resultado.gastos} gastos` : `Error: ${resultado.error}`}
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col h-full">
-      {filas.length===0 ? (
-        <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors ${arrastrando?"border-yellow-400 bg-yellow-50":"border-slate-200 bg-slate-50"}`}
-          onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
-          onDragLeave={()=>setArrastrando(false)}
-          onDrop={e=>{e.preventDefault();setArrastrando(false);cargarArchivo(e);}}>
-          <Upload size={36} className="text-slate-300"/>
-          <div className="text-center">
-            <p className="font-semibold text-slate-500">Arrastrá el CSV del banco aquí</p>
-            <p className="text-sm text-slate-400 mt-1">Columnas esperadas: Fecha · Descripción · Monto</p>
-          </div>
-          <label className="flex items-center gap-2 bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-semibold cursor-pointer hover:bg-yellow-700">
-            <Upload size={14}/> Seleccionar archivo CSV
-            <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarArchivo}/>
-          </label>
-          {resultado && (
-            <div className={`px-4 py-2 rounded-lg text-sm font-semibold ${resultado.ok?"bg-yellow-100 text-green-800":"bg-red-100 text-red-700"}`}>
-              {resultado.ok ? `✓ Importado: ${resultado.ingresos} ingresos, ${resultado.gastos} gastos` : `Error: ${resultado.error}`}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col h-full overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border-b text-xs">
-            <span className="font-semibold text-slate-600">{filas.length} filas cargadas</span>
-            <span className="text-slate-400">Verificá los tipos antes de importar</span>
-            <button onClick={importar} disabled={guardando}
-              className="ml-auto bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-yellow-700 disabled:opacity-50">
-              {guardando ? "Importando…" : "Importar todo"}
-            </button>
-            <button onClick={()=>setFilas([])} className="text-slate-400 hover:text-red-500 px-2 py-1.5 rounded hover:bg-red-50">Cancelar</button>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-100 sticky top-0">
-                <tr>
-                  <th className="text-left px-3 py-2">Fecha</th>
-                  <th className="text-left px-3 py-2">Descripción</th>
-                  <th className="text-right px-3 py-2">Monto</th>
-                  <th className="text-center px-3 py-2">Tipo</th>
-                  <th className="px-3 py-2"/>
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map((f,i)=>(
-                  <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-3 py-1.5 font-mono">{f.fecha}</td>
-                    <td className="px-3 py-1.5 max-w-xs truncate">{f.descripcion}</td>
-                    <td className="px-3 py-1.5 text-right font-semibold">{Math.abs(f.monto).toLocaleString("es-CR",{minimumFractionDigits:2})}</td>
-                    <td className="px-3 py-1.5 text-center">
-                      <button onClick={()=>toggleTipo(i)}
-                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${f.tipo==="ingreso"?"bg-yellow-100 text-yellow-700":"bg-red-100 text-red-600"}`}>
-                        {f.tipo==="ingreso"?"Ingreso":"Gasto"}
-                      </button>
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <button onClick={()=>eliminarFila(i)} className="text-slate-300 hover:text-red-400">
-                        <Trash2 size={12}/>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+    <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b-2 border-black/10">
+        <b className="text-monki-k">{filas.length} filas cargadas</b>
+        <span className="text-sm text-monki-k/50">Tocá el tipo para cambiarlo antes de importar.</span>
+        <div className="flex-1"/>
+        <Boton variante="fantasma" tamano="sm" onClick={()=>setFilas([])}>Cancelar</Boton>
+        <Boton tamano="sm" icono={Upload} onClick={importar} cargando={guardando} disabled={guardando}>{guardando ? "Importando…" : "Importar todo"}</Boton>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <table className="ui-tabla w-full text-sm">
+          <thead className="sticky top-0 bg-white z-10">
+            <tr className="monki-tag text-monki-k/50">
+              <th className="text-left px-4 py-2.5 font-medium border-b-2 border-black/10">Fecha</th>
+              <th className="text-left px-4 py-2.5 font-medium border-b-2 border-black/10">Descripción</th>
+              <th className="text-right px-4 py-2.5 font-medium border-b-2 border-black/10">Monto</th>
+              <th className="text-center px-4 py-2.5 font-medium border-b-2 border-black/10">Tipo</th>
+              <th className="border-b-2 border-black/10"/>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((f,i)=>(
+              <tr key={i} className="border-b border-black/5 hover:bg-monki-cream/60 transition-colors">
+                <td className="px-4 py-2 font-mono text-xs">{f.fecha}</td>
+                <td className="px-4 py-2 max-w-xs truncate">{f.descripcion}</td>
+                <td className="px-4 py-2 text-right font-bold tabular-nums">{Math.abs(f.monto).toLocaleString("es-CR",{minimumFractionDigits:2})}</td>
+                <td className="px-4 py-2 text-center">
+                  <button type="button" onClick={()=>toggleTipo(i)} className="ui-boton transition-transform hover:scale-105">
+                    <Estado tono={f.tipo==="ingreso"?"exito":"peligro"}>{f.tipo==="ingreso"?"Ingreso":"Gasto"}</Estado>
+                  </button>
+                </td>
+                <td className="px-2 py-1 text-right"><BotonIcono icono={Trash2} titulo="Quitar" tono="peligro" onClick={()=>eliminarFila(i)}/></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -204,119 +209,83 @@ export default function ConciliacionScreen() {
   ];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-slate-200 px-6 py-2 flex items-center gap-4">
-        <div className="flex gap-1">
-          <button onClick={()=>setTab("conciliar")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab==="conciliar"?"bg-slate-700 text-white":"text-slate-500 hover:bg-slate-100"}`}>
-            Conciliación
-          </button>
-          <button onClick={()=>setTab("importar")}
-            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab==="importar"?"bg-slate-700 text-white":"text-slate-500 hover:bg-slate-100"}`}>
-            Importar CSV
-          </button>
-        </div>
-        {tab==="conciliar" && bancarios.length>0 && (
-          <>
-            <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">{matchCount} conciliados</span>
-            <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">{noMatchCount} sin conciliar</span>
-            <button onClick={autoMatch} className="flex items-center gap-1 text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50">
-              <RefreshCw size={11}/> Auto-conciliar
-            </button>
-          </>
-        )}
-        {tab==="conciliar" && (
-          <label className="ml-auto flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700 cursor-pointer">
-            <Upload size={13}/> Cargar CSV
-            <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarCSV}/>
-          </label>
-        )}
-      </div>
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Conciliación bancaria"
+      descripcion="Compará el estado de cuenta del banco con lo registrado en el sistema."
+      acciones={tab==="conciliar" && <>
+        {bancarios.length>0 && <Boton variante="secundario" icono={RefreshCw} onClick={autoMatch}>Auto-conciliar</Boton>}
+        <label className="ui-boton inline-flex items-center gap-2 bg-monki-k text-monki-y px-5 py-2.5 rounded-full text-[13px] font-bold cursor-pointer transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
+          <Upload size={15}/> Cargar CSV
+          <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarCSV}/>
+        </label>
+      </>}
+      indicadores={tab==="conciliar" && bancarios.length>0 && (
+        <Indicadores>
+          <Indicador etiqueta="Del banco" valor={bancarios.length} detalle="Movimientos cargados" icono={Landmark} delay={40}/>
+          <Indicador etiqueta="Conciliados" valor={matchCount} icono={Link2} destacado delay={90}/>
+          <Indicador etiqueta="Sin conciliar" valor={noMatchCount} detalle="En el banco" icono={Unlink} alerta={noMatchCount>0} delay={140}/>
+          <Indicador etiqueta="Pendientes en sistema" valor={localesNoMatch.length} delay={190}/>
+        </Indicadores>
+      )}
+      pestanas={{ activa: tab, onCambiar: setTab, items: [{key:"conciliar",label:"Conciliación"},{key:"importar",label:"Importar CSV"}] }}
+    >
       {tab==="importar" && <TabImportarCSV />}
 
       {tab==="conciliar" && (bancarios.length===0 ? (
-        /* Drop zone */
-        <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors
-          ${arrastrando?"border-yellow-400 bg-yellow-50":"border-slate-200 bg-slate-50"}`}
-          onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
-          onDragLeave={()=>setArrastrando(false)}
-          onDrop={e=>{e.preventDefault();setArrastrando(false);cargarCSV(e);}}>
-          <Upload size={36} className="text-slate-300"/>
-          <div className="text-center">
-            <p className="font-semibold text-slate-500">Arrastrá el CSV del banco aquí</p>
-            <p className="text-sm text-slate-400 mt-1">O usá el botón de arriba. Formatos: CSV, TXT separado por comas, punto y coma o tabulación.</p>
-            <p className="text-xs text-slate-300 mt-2">Columnas esperadas: Fecha · Descripción · Monto (· Saldo)</p>
-          </div>
-        </div>
+        <ZonaCSV arrastrando={arrastrando} setArrastrando={setArrastrando} onArchivo={cargarCSV}
+          texto="O usá el botón de arriba. Acepta CSV o TXT separado por comas, punto y coma o tabulación."/>
       ) : (
-        <div className="flex-1 overflow-hidden flex gap-0">
-          {/* Columna banco */}
-          <div className="flex-1 flex flex-col border-r border-slate-200 overflow-hidden">
-            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-              <p className="text-xs font-bold text-slate-600 uppercase">Movimientos bancarios ({bancarios.length})</p>
-            </div>
+        <div className="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3">
+          <Tarjeta titulo={`Movimientos del banco (${bancarios.length})`} className="flex-1 min-h-[300px] lg:min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-auto">
               {bancarios.map((b,i)=>{
                 const matchId = matches[i];
                 const local = matchId ? [...recibos,...compras].find(x=>x.id===matchId) : null;
                 return (
-                  <div key={i} className={`px-4 py-2.5 border-b border-slate-100 flex items-center gap-3
-                    ${matchId?"bg-yellow-50":"hover:bg-slate-50"}`}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-700 truncate">{b.descripcion}</p>
-                      <p className="text-[10px] text-slate-400">{b.fecha}</p>
+                  <div key={i} className={`px-4 py-2.5 border-t border-black/5 flex flex-wrap items-center gap-3 transition-colors ${matchId?"bg-[#FFF4B8]":"hover:bg-monki-cream/60"}`}>
+                    <div className="flex-1 min-w-[140px]">
+                      <p className="text-sm font-bold text-monki-k truncate">{b.descripcion}</p>
+                      <p className="font-mono text-[10px] text-monki-k/45">{b.fecha}</p>
                     </div>
-                    <p className={`text-sm font-bold shrink-0 ${b.monto>=0?"text-yellow-700":"text-red-600"}`}>
-                      {fmtMoney(Math.abs(b.monto),"CRC")}
-                    </p>
+                    <p className={`text-sm font-black shrink-0 ${b.monto>=0?"text-monki-k":"text-red-600"}`}>{b.monto<0?"−":""}{fmtMoney(Math.abs(b.monto),"CRC")}</p>
                     {matchId
-                      ? <div className="flex items-center gap-1 text-yellow-600"><CheckCircle size={14}/><span className="text-[10px]">{local?.concepto||local?.proveedor||"✓"}</span>
-                          <button onClick={()=>setMatches(p=>{const n={...p};delete n[i];return n;})} className="ml-1 text-slate-300 hover:text-red-400"><XCircle size={11}/></button>
+                      ? <div className="flex items-center gap-1.5">
+                          <Estado tono="exito">{local?.concepto||local?.proveedor||"Conciliado"}</Estado>
+                          <BotonIcono icono={XCircle} titulo="Deshacer" tono="peligro" onClick={()=>setMatches(p=>{const n={...p};delete n[i];return n;})}/>
                         </div>
                       : <div className="flex items-center gap-1">
-                          <Minus size={14} className="text-slate-300"/>
-                          <select className="text-[10px] border border-slate-200 rounded px-1 py-0.5 max-w-[120px] focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          <Minus size={14} className="text-monki-k/25"/>
+                          <select className="text-xs bg-white border-2 border-black/10 rounded-full px-2.5 py-1 max-w-[170px] cursor-pointer"
                             value="" onChange={e=>e.target.value&&setMatches(p=>({...p,[i]:e.target.value}))}>
                             <option value="">Asignar…</option>
                             {localesNoMatch.map(l=>(
                               <option key={l.id} value={l.id}>{l.concepto||l.proveedor||l.cliente||"—"} {fmtMoney(l.monto||l.total||0,"CRC")}</option>
                             ))}
                           </select>
-                        </div>
-                    }
+                        </div>}
                   </div>
                 );
               })}
             </div>
-          </div>
+          </Tarjeta>
 
-          {/* Columna sistema */}
-          <div className="w-72 flex flex-col overflow-hidden">
-            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-              <p className="text-xs font-bold text-slate-600 uppercase">Sin conciliar en sistema ({localesNoMatch.length})</p>
-            </div>
+          <Tarjeta titulo={`Sin conciliar en el sistema (${localesNoMatch.length})`} className="w-full lg:w-80 shrink-0 min-h-[240px] lg:min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-auto">
               {localesNoMatch.map(l=>(
-                <div key={l.id} className="px-4 py-2.5 border-b border-slate-100 hover:bg-yellow-50">
-                  <p className="text-xs font-semibold text-slate-700 truncate">{l.concepto||l.proveedor||l.cliente||"—"}</p>
+                <div key={l.id} className="px-4 py-2.5 border-t border-black/5 hover:bg-monki-cream/60 transition-colors">
+                  <p className="text-sm font-bold text-monki-k truncate">{l.concepto||l.proveedor||l.cliente||"—"}</p>
                   <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-[10px] text-slate-400">{fmtDate(l.fecha||l.creadoEn)}</p>
-                    <p className={`text-xs font-bold ${(l.monto||l.total||0)>=0?"text-yellow-700":"text-red-600"}`}>
-                      {fmtMoney(Math.abs(l.monto||l.total||0),"CRC")}
-                    </p>
+                    <p className="font-mono text-[10px] text-monki-k/45">{fmtDate(l.fecha||l.creadoEn)}</p>
+                    <p className={`text-sm font-bold ${(l.monto||l.total||0)>=0?"text-monki-k":"text-red-600"}`}>{fmtMoney(Math.abs(l.monto||l.total||0),"CRC")}</p>
                   </div>
                 </div>
               ))}
-              {localesNoMatch.length===0 && (
-                <div className="flex flex-col items-center justify-center h-full text-green-500 gap-2 p-6">
-                  <CheckCircle size={28}/>
-                  <p className="text-xs font-semibold text-center">¡Todo conciliado!</p>
-                </div>
-              )}
+              {localesNoMatch.length===0 && <Vacio icono={CheckCircle} titulo="¡Todo conciliado!"/>}
             </div>
-          </div>
+          </Tarjeta>
         </div>
       ))}
-    </div>
+    </Modulo>
   );
 }
