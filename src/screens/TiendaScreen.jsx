@@ -4,11 +4,25 @@
  * En la próxima versión: deploy en Railway con frontend público.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { ShoppingBag, Save, ExternalLink, Copy, CheckCircle, Globe, Phone, Package } from "lucide-react";
+import { Save, ExternalLink, Copy, CheckCircle, Globe, Phone, Package } from "lucide-react";
+import { Modulo, Boton, Tarjeta, Vacio, Campo, Entrada, AreaTexto, Interruptor } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney } from "../utils/fmt";
 
 import { BACKEND } from "../utils/config.js";
+
+function EnlacePublico({ url, copiado, onCopiar }) {
+  return (
+    <div className="animate-desplegar mt-4 flex items-center gap-2 bg-monki-k text-white rounded-full pl-4 pr-1.5 py-1.5">
+      <Globe size={14} className="text-monki-y shrink-0"/>
+      <span className="font-mono text-xs flex-1 truncate">{url}</span>
+      <button type="button" onClick={onCopiar} title="Copiar enlace" className="ui-boton w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/15">
+        {copiado ? <CheckCircle size={14} className="text-monki-y"/> : <Copy size={14}/>}
+      </button>
+      <a href={url} target="_blank" rel="noreferrer" title="Abrir" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/15"><ExternalLink size={14}/></a>
+    </div>
+  );
+}
 
 export default function TiendaScreen() {
   const [config,    setConfig]    = useState({ activa: false, nombre:"", descripcion:"", sinpe:"", whatsapp:"", colorPrincipal:"#0f172a", moneda:"CRC", mostrarStock:true });
@@ -55,137 +69,68 @@ export default function TiendaScreen() {
   const productosActivos = productos.filter(p=>p.activo!==false && (p.precio||0)>0);
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Tienda en línea</h1>
-            <p className="text-sm text-slate-500">Publicá tu catálogo de productos en una página pública.</p>
-          </div>
-          <button onClick={guardar} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado?"bg-yellow-600 text-white":"bg-yellow-600 text-white hover:bg-yellow-700"}`}>
-            {guardado?<><CheckCircle size={14}/> Guardado</>:<><Save size={14}/> Guardar</>}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto px-8 py-6 grid grid-cols-[1fr_320px] gap-6">
-        {/* Config */}
-        <div className="space-y-6">
-          {/* Activar */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-slate-900">Tienda activa</p>
-                <p className="text-sm text-slate-500 mt-0.5">Cuando está activa, la página es pública y los clientes pueden verla.</p>
+    <Modulo
+      seccion="Ventas"
+      titulo="Tienda en línea"
+      descripcion="Publicá tu catálogo en una página pública y compartilo por WhatsApp."
+      acciones={<Boton icono={guardado ? CheckCircle : Save} onClick={guardar}>{guardado ? "Guardado" : "Guardar"}</Boton>}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_20rem] gap-3">
+          <div className="space-y-3">
+            <div className={`animate-entrar rounded-[18px] border-2 p-5 transition-all duration-300 ease-monki ${config.activa ? "bg-monki-y border-monki-k shadow-[5px_5px_0_#111]" : "bg-white border-black/10"}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[17px] font-black text-monki-k">{config.activa ? "Tu tienda está publicada" : "Tienda apagada"}</p>
+                  <p className="text-sm text-monki-k/60 mt-0.5">Cuando está activa, la página es pública y tus clientes la pueden ver.</p>
+                </div>
+                <Interruptor activo={config.activa} onCambio={v=>u("activa",v)} etiqueta={config.activa ? "Activa" : "Inactiva"}/>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={config.activa} onChange={e=>u("activa",e.target.checked)} className="sr-only peer"/>
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-yellow-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"/>
-              </label>
+              {tiendaUrl && <EnlacePublico url={tiendaUrl} copiado={copiado} onCopiar={copiar}/>}
             </div>
 
-            {tiendaUrl && (
-              <div className="mt-4 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                <Globe size={14} className="text-slate-400 shrink-0"/>
-                <span className="text-xs text-slate-600 flex-1 truncate font-mono">{tiendaUrl}</span>
-                <button onClick={copiar} className="p-1 hover:bg-gray-200 rounded" title="Copiar enlace">
-                  {copiado?<CheckCircle size={13} className="text-yellow-600"/>:<Copy size={13} className="text-slate-400"/>}
-                </button>
-                <a href={tiendaUrl} target="_blank" rel="noreferrer" className="p-1 hover:bg-gray-200 rounded">
-                  <ExternalLink size={13} className="text-slate-400"/>
-                </a>
+            <Tarjeta titulo="Información de la tienda" cuerpo="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Campo etiqueta="Nombre del negocio" className="col-span-2"><Entrada value={config.nombre||""} onChange={e=>u("nombre",e.target.value)}/></Campo>
+                <Campo etiqueta="Teléfono / WhatsApp"><Entrada value={config.whatsapp||""} onChange={e=>u("whatsapp",e.target.value)}/></Campo>
+                <Campo etiqueta="SINPE Móvil"><Entrada value={config.sinpe||""} onChange={e=>u("sinpe",e.target.value)}/></Campo>
+                <Campo etiqueta="Color principal"><Entrada type="color" value={config.colorPrincipal||""} onChange={e=>u("colorPrincipal",e.target.value)} className="h-11 cursor-pointer !p-1.5"/></Campo>
+                <Campo etiqueta="Descripción o eslogan" className="col-span-2"><AreaTexto value={config.descripcion||""} onChange={e=>u("descripcion",e.target.value)} rows={2} placeholder="Describí tu negocio en una línea…"/></Campo>
               </div>
+              <div className="flex flex-wrap gap-x-8 gap-y-3 mt-4">
+                <Interruptor activo={config.mostrarStock} onCambio={v=>u("mostrarStock",v)} etiqueta="Mostrar stock disponible"/>
+                <Interruptor activo={config.moneda==="USD"} onCambio={v=>u("moneda",v?"USD":"CRC")} etiqueta="Precios en dólares"/>
+              </div>
+            </Tarjeta>
+
+            {config.activa && tiendaUrl && (
+              <Tarjeta titulo="Compartir" cuerpo="px-4 pb-4 flex flex-wrap gap-2">
+                <Boton icono={Phone} onClick={whatsappLink}>Compartir por WhatsApp</Boton>
+                <Boton variante="secundario" icono={copiado ? CheckCircle : Copy} onClick={copiar}>{copiado ? "¡Copiado!" : "Copiar enlace"}</Boton>
+              </Tarjeta>
             )}
           </div>
 
-          {/* Info del negocio */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-900 mb-4">Información de la tienda</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ["Nombre del negocio","nombre","text","col-span-2"],
-                ["Teléfono / WhatsApp","whatsapp","text",""],
-                ["SINPE Móvil","sinpe","text",""],
-                ["Color principal","colorPrincipal","color",""],
-              ].map(([lbl,key,type,cls])=>(
-                <label key={key} className={`block ${cls}`}>
-                  <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
-                  <input type={type} value={config[key]||""} onChange={e=>u(key,e.target.value)}
-                    className={`mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 ${type==="color"?"h-10 cursor-pointer":""}`}/>
-                </label>
-              ))}
-              <label className="block col-span-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase">Descripción / Eslogan</span>
-                <textarea value={config.descripcion||""} onChange={e=>u("descripcion",e.target.value)} rows={2}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none"
-                  placeholder="Describí tu negocio en una línea..."/>
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3 mt-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={config.mostrarStock} onChange={e=>u("mostrarStock",e.target.checked)} className="accent-yellow-600"/>
-                <span className="text-sm text-slate-600">Mostrar stock disponible en la tienda</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer ml-4">
-                <input type="checkbox" checked={config.moneda==="USD"} onChange={e=>u("moneda",e.target.checked?"USD":"CRC")} className="accent-yellow-600"/>
-                <span className="text-sm text-slate-600">Mostrar precios en USD</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Acciones rápidas */}
-          {config.activa && tiendaUrl && (
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
-              <h3 className="text-sm font-bold text-slate-900 mb-3">Compartir</h3>
-              <div className="flex gap-3">
-                <button onClick={whatsappLink}
-                  className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-yellow-700">
-                  <Phone size={14}/> Compartir por WhatsApp
-                </button>
-                <button onClick={copiar}
-                  className="flex items-center gap-2 border border-slate-200 text-slate-600 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50">
-                  {copiado?<CheckCircle size={14} className="text-yellow-600"/>:<Copy size={14}/>}
-                  {copiado?"¡Copiado!":"Copiar enlace"}
-                </button>
+          <Tarjeta titulo="Productos en el catálogo" acciones={<span className="font-mono text-xs bg-monki-k text-monki-y px-2 py-0.5 rounded-full">{productosActivos.length}</span>} className="self-start xl:sticky xl:top-0" cuerpo="px-2 pb-2">
+            {productosActivos.length===0 ? (
+              <Vacio icono={Package} titulo="Sin productos con precio" texto="Andá a Inventario → Catálogo y configurá tus productos."/>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto">
+                {productosActivos.map(p=>(
+                  <div key={p.id} className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-monki-cream/60 transition-colors">
+                    <span className="w-8 h-8 bg-monki-y rounded-full flex items-center justify-center shrink-0 text-[12px] font-black">{(p.nombre||"?").charAt(0).toUpperCase()}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-monki-k truncate">{p.nombre}</p>
+                      {config.mostrarStock && p.cantidadEnInventario!==undefined && <p className="font-mono text-[10px] text-monki-k/45">Stock {p.cantidadEnInventario||0}</p>}
+                    </div>
+                    <b className="text-sm shrink-0">{fmtMoney(p.precio||p.precioVenta, config.moneda||"CRC")}</b>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Preview de productos */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 self-start sticky top-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-slate-900">Productos en catálogo</h3>
-            <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{productosActivos.length}</span>
-          </div>
-          {productosActivos.length===0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <Package size={28} className="mx-auto text-slate-300 mb-2"/>
-              <p className="text-sm">Sin productos con precio</p>
-              <p className="text-xs mt-1">Andá a Inventario → Catálogo y configurá tus productos.</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {productosActivos.map(p=>(
-                <div key={p.id} className="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-b-0">
-                  <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                    <Package size={14} className="text-slate-400"/>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{p.nombre}</p>
-                    {config.mostrarStock && p.cantidadEnInventario!==undefined && (
-                      <p className="text-[11px] text-slate-400">Stock: {p.cantidadEnInventario||0}</p>
-                    )}
-                  </div>
-                  <p className="text-sm font-bold text-slate-700 shrink-0">{fmtMoney(p.precio||p.precioVenta, config.moneda||"CRC")}</p>
-                </div>
-              ))}
-            </div>
-          )}
+            )}
+          </Tarjeta>
         </div>
       </div>
-    </div>
+    </Modulo>
   );
 }
