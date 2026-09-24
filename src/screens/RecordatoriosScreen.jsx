@@ -8,7 +8,8 @@
  * - Aquí el usuario configura las reglas y puede enviar recordatorio por WhatsApp
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Bell, BellOff, Send, CheckCircle, AlertTriangle, Clock, Settings } from "lucide-react";
+import { Bell, Send, CheckCircle, AlertTriangle, Clock, Settings, Wallet } from "lucide-react";
+import { Modulo, Boton, Tarjeta, Vacio, Estado, Indicadores, Indicador, Campo, Entrada, Seleccion } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy } from "../utils/fmt";
 
@@ -25,10 +26,10 @@ function diasDiff(fecha) {
 }
 
 function badgeDias(dias) {
-  if (dias < 0)  return { label:`Vencida hace ${Math.abs(dias)}d`, cls:"bg-red-100 text-red-700" };
-  if (dias === 0) return { label:"Vence hoy", cls:"bg-orange-100 text-orange-700" };
-  if (dias <= 7)  return { label:`Vence en ${dias}d`, cls:"bg-yellow-100 text-yellow-700" };
-  return { label:`Vence en ${dias}d`, cls:"bg-slate-100 text-slate-500" };
+  if (dias < 0)  return { label:`Vencida hace ${Math.abs(dias)}d`, tono:"peligro" };
+  if (dias === 0) return { label:"Vence hoy", tono:"oscuro" };
+  if (dias <= 7)  return { label:`Vence en ${dias}d`, tono:"alerta" };
+  return { label:`Vence en ${dias}d`, tono:"neutro" };
 }
 
 export default function RecordatoriosScreen() {
@@ -106,132 +107,72 @@ export default function RecordatoriosScreen() {
   const proximas  = pendientes.filter(d=>d.dias>=0).length;
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Recordatorios de cobro</h1>
-            <p className="text-sm text-slate-500">Enviá recordatorios por WhatsApp a clientes con saldo pendiente.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={notifOS} title="Probar notificación del sistema"
-              className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">
-              <Bell size={14}/> Probar notificación
-            </button>
-            <button onClick={()=>setConfigOpen(c=>!c)}
-              className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">
-              <Settings size={14}/> Configurar
-            </button>
-          </div>
-        </div>
-
-        {/* Resumen */}
-        <div className="flex gap-6 mt-4 pt-3 border-t border-slate-100">
-          {[
-            ["Vencidas", vencidas,  "text-red-700 font-black"],
-            ["Próximas a vencer", proximas, "text-yellow-700 font-black"],
-            ["Total pendiente", fmtMoney(pendientes.reduce((s,d)=>s+(d.saldo||0),0),"CRC"), "text-slate-900 font-black"],
-          ].map(([lbl,val,cls])=>(
-            <div key={lbl}>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase">{lbl}</p>
-              <p className={`text-sm mt-0.5 ${cls}`}>{val}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Panel de configuración desplegable */}
+    <Modulo
+      seccion="Cobros"
+      titulo="Recordatorios de cobro"
+      descripcion="Mandale por WhatsApp un recordatorio a cada cliente con saldo pendiente."
+      acciones={<>
+        <Boton variante="secundario" icono={Bell} onClick={notifOS}>Probar notificación</Boton>
+        <Boton variante={configOpen ? "primario" : "secundario"} icono={Settings} onClick={()=>setConfigOpen(c=>!c)}>Configurar</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Vencidas" valor={vencidas} detalle="Ya pasó la fecha" icono={AlertTriangle} alerta={vencidas>0} delay={40} onClick={()=>setFiltro("vencidas")}/>
+          <Indicador etiqueta="Próximas" valor={proximas} detalle={`En los próximos ${config.diasAviso||7} días`} icono={Clock} delay={90} onClick={()=>setFiltro("proximas")}/>
+          <Indicador etiqueta="Total pendiente" valor={fmtMoney(pendientes.reduce((s,d)=>s+(d.saldo||0),0),"CRC")} icono={Wallet} destacado delay={140}/>
+          <Indicador etiqueta="Enviados hoy" valor={Object.keys(enviados).length} icono={Send} delay={190}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [{key:"todos",label:"Todos"},{key:"vencidas",label:"Vencidas",cuenta:vencidas},{key:"proximas",label:"Próximas",cuenta:proximas}] }}
+    >
       {configOpen && (
-        <div className="bg-blue-50 border-b border-blue-100 px-8 py-4">
-          <h3 className="text-sm font-bold text-slate-900 mb-3">Configuración de recordatorios</h3>
-          <div className="grid grid-cols-4 gap-4">
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Avisar X días antes</span>
-              <input type="number" min="0" max="90" value={config.diasAviso} onChange={e=>setConfig(p=>({...p,diasAviso:parseInt(e.target.value)||7}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">SINPE Móvil</span>
-              <input value={config.sinpe||""} onChange={e=>setConfig(p=>({...p,sinpe:e.target.value}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Plantilla de mensaje</span>
-              <select value={config.plantilla} onChange={e=>setConfig(p=>({...p,plantilla:e.target.value}))}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                {PLANTILLAS.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </label>
-            <div className="flex items-end">
-              <button onClick={guardarConfig} className="w-full bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-                Guardar config
-              </button>
-            </div>
+        <Tarjeta titulo="Configuración de recordatorios" className="animate-desplegar mb-3 !border-monki-k" cuerpo="px-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+            <Campo etiqueta="Avisar días antes"><Entrada type="number" min="0" max="90" value={config.diasAviso} onChange={e=>setConfig(p=>({...p,diasAviso:parseInt(e.target.value)||7}))}/></Campo>
+            <Campo etiqueta="SINPE Móvil"><Entrada value={config.sinpe||""} onChange={e=>setConfig(p=>({...p,sinpe:e.target.value}))}/></Campo>
+            <Campo etiqueta="Plantilla del mensaje"><Seleccion value={config.plantilla} onChange={e=>setConfig(p=>({...p,plantilla:e.target.value}))} opciones={PLANTILLAS.map(t=>({value:t.id,label:t.label}))}/></Campo>
+            <Boton onClick={guardarConfig}>Guardar configuración</Boton>
           </div>
-          <p className="text-xs text-slate-500 mt-2 italic">
-            Vista previa: {generarMensaje({ contacto:{nombre:"Juan"}, saldo:50000, fechaVencimiento: hoy() })}
-          </p>
-        </div>
+          <div className="mt-3 bg-monki-cream rounded-2xl px-4 py-3">
+            <p className="monki-tag text-monki-k/50 mb-1">Vista previa</p>
+            <p className="text-sm text-monki-k/75">{generarMensaje({ contacto:{nombre:"Juan"}, saldo:50000, fechaVencimiento: hoy() })}</p>
+          </div>
+        </Tarjeta>
       )}
 
-      {/* Filtros */}
-      <div className="flex gap-2 px-8 py-3 bg-white border-b border-slate-100">
-        {[["todos","Todos"],["vencidas","Vencidas"],["proximas","Próximas"]].map(([k,lbl])=>(
-          <button key={k} onClick={()=>setFiltro(k)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${filtro===k?"bg-yellow-600 text-white":"text-slate-500 hover:bg-slate-100"}`}>
-            {lbl}
-          </button>
-        ))}
-      </div>
-
-      {/* Lista */}
-      <div className="flex-1 overflow-auto px-6 py-4 space-y-2">
+      <div className="flex-1 overflow-auto space-y-2 -mx-1 px-1 pb-1">
         {pendientes.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
-            <CheckCircle size={40} className="text-green-400"/>
-            <p className="text-lg font-semibold">¡Todo al día!</p>
-            <p className="text-sm">No hay cobros vencidos ni próximos a vencer.</p>
-          </div>
-        ) : pendientes.map(d=>{
+          <Tarjeta className="h-full flex items-center justify-center">
+            <Vacio icono={CheckCircle} titulo="¡Todo al día!" texto="No hay cobros vencidos ni próximos a vencer."/>
+          </Tarjeta>
+        ) : pendientes.map((d,i)=>{
           const badge = badgeDias(d.dias);
           const ya    = enviados[d.id];
           return (
-            <div key={d.id} className={`bg-white border rounded-xl px-5 py-4 flex items-center gap-4
-              ${d.dias<0?"border-red-200":d.dias<=3?"border-orange-200":"border-slate-200"}`}>
-              {/* Ícono estado */}
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0
-                ${d.dias<0?"bg-red-50":d.dias<=3?"bg-orange-50":"bg-slate-50"}`}>
-                {d.dias<0?<AlertTriangle size={16} className="text-red-600"/>:<Clock size={16} className="text-orange-500"/>}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-slate-900 truncate">{d.contacto?.nombre||"Sin nombre"}</p>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+            <div key={d.id} style={{ animationDelay: `${Math.min(i,10)*35}ms` }}
+              className={`animate-entrar bg-white border-2 rounded-[18px] px-4 py-3.5 flex flex-wrap items-center gap-4 transition-all duration-300 ease-monki hover:-translate-y-0.5
+              ${d.dias<0?"border-red-300":"border-black/10 hover:border-black/25"}`}>
+              <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${d.dias<0?"bg-red-100 text-red-600":"bg-monki-y text-monki-k"}`}>
+                {d.dias<0?<AlertTriangle size={17}/>:<Clock size={17}/>}
+              </span>
+              <div className="flex-1 min-w-[160px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-extrabold text-monki-k truncate">{d.contacto?.nombre||"Sin nombre"}</p>
+                  <Estado tono={badge.tono}>{badge.label}</Estado>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">{d.descripcion||"Deuda"} · Vence: {fmtDate(d.fechaVencimiento)}</p>
+                <p className="text-xs text-monki-k/50 mt-0.5">{d.descripcion||"Deuda"} · vence {fmtDate(d.fechaVencimiento)}</p>
               </div>
-
-              {/* Monto */}
               <div className="text-right shrink-0">
-                <p className="font-black text-slate-900">{fmtMoney(d.saldo,"CRC")}</p>
-                {d.monto !== d.saldo && (
-                  <p className="text-[11px] text-slate-400">Total: {fmtMoney(d.monto,"CRC")}</p>
-                )}
+                <p className="text-[17px] font-black text-monki-k">{fmtMoney(d.saldo,"CRC")}</p>
+                {d.monto !== d.saldo && <p className="font-mono text-[10px] text-monki-k/45">Total {fmtMoney(d.monto,"CRC")}</p>}
               </div>
-
-              {/* Botón enviar */}
-              <button onClick={()=>enviarWhatsApp(d)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold shrink-0 transition-all
-                  ${ya?"bg-green-50 text-yellow-700 border border-yellow-300":"bg-yellow-600 text-white hover:bg-yellow-700"}`}>
-                {ya?<><CheckCircle size={13}/> Enviado</>:<><Send size={13}/> WhatsApp</>}
-              </button>
+              {ya
+                ? <Boton variante="secundario" icono={CheckCircle} onClick={()=>enviarWhatsApp(d)}>Enviado</Boton>
+                : <Boton icono={Send} onClick={()=>enviarWhatsApp(d)}>WhatsApp</Boton>}
             </div>
           );
         })}
       </div>
-    </div>
+    </Modulo>
   );
 }
