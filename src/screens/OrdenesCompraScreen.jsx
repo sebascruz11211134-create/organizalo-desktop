@@ -4,17 +4,18 @@
  * "Recibir" → crea entrada en ComprasScreen automáticamente
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, ShoppingCart, Check, X, Trash2, FileSpreadsheet, Printer } from "lucide-react";
+import { Plus, ShoppingCart, Check, X, FileSpreadsheet, Send, FileText, PackageCheck, Ban } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
 const ESTADOS = {
-  borrador:  { label: "Borrador",  cls: "bg-slate-100 text-slate-600" },
-  enviada:   { label: "Enviada",   cls: "bg-blue-100 text-blue-700" },
-  recibida:  { label: "Recibida",  cls: "bg-yellow-100 text-yellow-700" },
-  cancelada: { label: "Cancelada", cls: "bg-red-100 text-red-600" },
+  borrador:  { label: "Borrador",  tono: "neutro" },
+  enviada:   { label: "Enviada",   tono: "oscuro" },
+  recibida:  { label: "Recibida",  tono: "exito" },
+  cancelada: { label: "Cancelada", tono: "peligro" },
 };
 
 // ── Modal crear / editar OC ────────────────────────────────────────────────────
@@ -53,105 +54,67 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
     onSave(); onClose();
   };
 
+  const lineas = form.lineas || [];
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-base font-bold text-slate-900">{esNueva ? "Nueva orden de compra" : "Editar OC"}</h2>
-          <button onClick={onClose}><X size={16} className="text-slate-400"/></button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Proveedor *</label>
-            <select value={form.proveedor} onChange={e => {
+    <Modal titulo={esNueva ? "Nueva orden de compra" : "Editar orden de compra"} subtitulo="Lo que le vas a pedir al proveedor" onCerrar={onClose} ancho="max-w-2xl"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar orden</Boton></>}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Proveedor *">
+            <Seleccion value={form.proveedor} onChange={e => {
               const c = proveedores.find(p => p.nombre === e.target.value);
               u("proveedor", e.target.value);
               if (c) u("cedulaProveedor", c.cedula || "");
-            }} className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
+            }}>
               <option value="">Seleccionar…</option>
               {proveedores.map(p => <option key={p.id}>{p.nombre}</option>)}
-            </select>
-            {!proveedores.length && <input value={form.proveedor} onChange={e=>u("proveedor",e.target.value)}
-              placeholder="Nombre del proveedor" className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula proveedor</label>
-            <input value={form.cedulaProveedor||""} onChange={e=>u("cedulaProveedor",e.target.value)}
-              placeholder="3-000-000000" className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha entrega esperada</label>
-            <input type="date" value={form.fechaEntrega||""} onChange={e=>u("fechaEntrega",e.target.value)}
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm"/>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
-            <select value={form.moneda||"CRC"} onChange={e=>u("moneda",e.target.value)}
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm">
-              <option value="CRC">₡ CRC</option>
-              <option value="USD">$ USD</option>
-            </select>
-          </div>
+            </Seleccion>
+            {!proveedores.length && <Entrada value={form.proveedor} onChange={e=>u("proveedor",e.target.value)} placeholder="Nombre del proveedor" className="mt-2"/>}
+          </Campo>
+          <Campo etiqueta="Cédula del proveedor"><Entrada value={form.cedulaProveedor||""} onChange={e=>u("cedulaProveedor",e.target.value)} placeholder="3-000-000000"/></Campo>
+          <Campo etiqueta="Entrega esperada"><Entrada type="date" value={form.fechaEntrega||""} onChange={e=>u("fechaEntrega",e.target.value)}/></Campo>
+          <Campo etiqueta="Moneda"><Seleccion value={form.moneda||"CRC"} onChange={e=>u("moneda",e.target.value)} opciones={[{value:"CRC",label:"₡ CRC"},{value:"USD",label:"$ USD"}]}/></Campo>
         </div>
 
-        {/* Líneas */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
-          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex gap-2">
-            <input value={linea.producto} onChange={e=>setLinea(p=>({...p,producto:e.target.value}))}
-              placeholder="Producto / descripción" list="prod-list"
-              className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs"/>
-            <datalist id="prod-list">
-              {productos.map(p => <option key={p.id} value={p.nombre}/>)}
-            </datalist>
-            <input type="number" value={linea.cantidad} min={1} onChange={e=>setLinea(p=>({...p,cantidad:e.target.value}))}
-              className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-center" placeholder="Cant."/>
-            <input type="number" value={linea.precioUnit} onChange={e=>setLinea(p=>({...p,precioUnit:e.target.value}))}
-              className="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs" placeholder="Precio unit."/>
-            <button onClick={addLinea} className="bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">+ Agregar</button>
+        <div className="border-2 border-black/10 rounded-2xl overflow-hidden">
+          <div className="bg-monki-cream/60 p-3 flex flex-wrap gap-2 border-b-2 border-black/10">
+            <Entrada value={linea.producto} onChange={e=>setLinea(p=>({...p,producto:e.target.value}))} placeholder="Producto o descripción" list="prod-list" className="flex-1 min-w-[160px]"/>
+            <datalist id="prod-list">{productos.map(p => <option key={p.id} value={p.nombre}/>)}</datalist>
+            <Entrada type="number" value={linea.cantidad} min={1} onChange={e=>setLinea(p=>({...p,cantidad:e.target.value}))} className="!w-20 text-center" placeholder="Cant."/>
+            <Entrada type="number" value={linea.precioUnit} onChange={e=>setLinea(p=>({...p,precioUnit:e.target.value}))} className="!w-28" placeholder="Precio unit."/>
+            <Boton icono={Plus} onClick={addLinea}>Agregar</Boton>
           </div>
-          <table className="w-full text-xs">
-            <thead><tr className="text-slate-400">
-              <th className="px-4 py-2 text-left">Producto</th>
-              <th className="px-4 py-2 text-center">Cant.</th>
-              <th className="px-4 py-2 text-right">Precio unit.</th>
-              <th className="px-4 py-2 text-right">Total</th>
-              <th className="px-4 py-2"/>
+          <table className="ui-tabla w-full text-sm">
+            <thead><tr className="monki-tag text-monki-k/50">
+              <th className="px-4 py-2.5 text-left font-medium">Producto</th>
+              <th className="px-4 py-2.5 text-center font-medium">Cant.</th>
+              <th className="px-4 py-2.5 text-right font-medium">Precio unit.</th>
+              <th className="px-4 py-2.5 text-right font-medium">Total</th>
+              <th className="w-10"/>
             </tr></thead>
             <tbody>
-              {!(form.lineas||[]).length && <tr><td colSpan={5} className="text-center text-slate-400 py-4">Sin productos</td></tr>}
-              {(form.lineas||[]).map(l => (
-                <tr key={l.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2">{l.producto}</td>
+              {!lineas.length && <tr><td colSpan={5} className="text-center text-monki-k/40 py-6">Todavía no agregaste productos.</td></tr>}
+              {lineas.map(l => (
+                <tr key={l.id} className="animate-desplegar border-t border-black/5">
+                  <td className="px-4 py-2 font-semibold">{l.producto}</td>
                   <td className="px-4 py-2 text-center">{l.cantidad}</td>
                   <td className="px-4 py-2 text-right">{fmtMoney(l.precioUnit,settings)}</td>
-                  <td className="px-4 py-2 text-right font-semibold">{fmtMoney(l.cantidad*l.precioUnit,settings)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <button onClick={()=>removeLinea(l.id)} className="text-red-400 hover:text-red-600"><X size={12}/></button>
-                  </td>
+                  <td className="px-4 py-2 text-right font-bold">{fmtMoney(l.cantidad*l.precioUnit,settings)}</td>
+                  <td className="pr-2"><BotonIcono icono={X} titulo="Quitar" tono="peligro" onClick={()=>removeLinea(l.id)}/></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="border-t border-slate-200 px-4 py-3 bg-slate-50 text-xs text-right space-y-1">
-            <p>Subtotal: <span className="font-semibold">{fmtMoney(subtotal,settings)}</span></p>
-            <p>IVA 13%: <span className="font-semibold text-yellow-600">{fmtMoney(iva,settings)}</span></p>
-            <p className="text-sm font-bold text-slate-900">Total: {fmtMoney(total,settings)}</p>
+          <div className="bg-monki-k text-white px-4 py-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-1 text-sm">
+            <span className="text-white/60">Subtotal <b className="text-white">{fmtMoney(subtotal,settings)}</b></span>
+            <span className="text-white/60">IVA 13% <b className="text-white">{fmtMoney(iva,settings)}</b></span>
+            <span className="text-monki-y text-lg font-black">{fmtMoney(total,settings)}</span>
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas / condiciones</label>
-          <textarea value={form.notas||""} onChange={e=>u("notas",e.target.value)} rows={2}
-            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm resize-none"/>
-        </div>
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold">Guardar OC</button>
-        </div>
+        <Campo etiqueta="Notas y condiciones"><AreaTexto value={form.notas||""} onChange={e=>u("notas",e.target.value)} rows={2}/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -182,8 +145,9 @@ export default function OrdenesCompraScreen() {
     setOcs(upd);
   }
 
+  const { confirmar, dialogo } = useConfirmar();
   async function recibirOC(oc) {
-    if (!confirm(`¿Marcar la OC ${oc.numero} como recibida? Se creará una factura de proveedor en Compras.`)) return;
+    if (!(await confirmar("Recibir orden", `¿Marcar la OC ${oc.numero} como recibida? Se creará una factura de proveedor en Compras y se sumará el inventario.`, { boton: "Recibir" }))) return;
     // Crear entrada en ComprasScreen
     const compras = await db.getCompras();
     const nueva = {
@@ -215,93 +179,67 @@ export default function OrdenesCompraScreen() {
 
   const sel = visibles.find(o => o.id === selected);
 
+  const cuenta = e => ocs.filter(o => o.estado === e).length;
+  const bloqueada = o => !o || o.estado === "recibida" || o.estado === "cancelada";
+  const exportar = () => exportExcel(ocs.map(o => ({
+    "N° OC": o.numero, Proveedor: o.proveedor, Fecha: fmtDate(o.fecha),
+    Estado: o.estado, Total: o.total, Moneda: o.moneda,
+  })), "ordenes-compra");
+
+  const columnas = [
+    { key: "numero", titulo: "N.° OC", render: o => <span className="font-mono text-xs font-bold">{o.numero}</span> },
+    { key: "proveedor", titulo: "Proveedor", render: o => <b className="text-monki-k">{o.proveedor}</b> },
+    { key: "fecha", titulo: "Fecha", render: o => fmtDate(o.fecha) },
+    { key: "entrega", titulo: "Entrega esp.", render: o => <span className="text-monki-k/55">{o.fechaEntrega ? fmtDate(o.fechaEntrega) : "—"}</span> },
+    { key: "estado", titulo: "Estado", render: o => { const e = ESTADOS[o.estado] || ESTADOS.borrador; return <Estado tono={e.tono}>{e.label}</Estado>; } },
+    { key: "total", titulo: "Total", alinear: "right", render: o => <b>{fmtMoney(o.total, o.moneda || settings?.moneda || "CRC")}</b> },
+    { key: "notas", titulo: "Notas", render: o => <span className="text-monki-k/45 text-xs block max-w-[160px] truncate">{o.notas||"—"}</span> },
+    { key: "acciones", titulo: "", alinear: "right", render: o => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        {!bloqueada(o) && o.estado !== "enviada" && <BotonIcono icono={Send} titulo="Marcar enviada" onClick={()=>cambiarEstado(o.id,"enviada")}/>}
+        {!bloqueada(o) && <BotonIcono icono={Check} titulo="Recibir" onClick={()=>recibirOC(o)}/>}
+        {o.estado !== "recibida" && o.estado !== "cancelada" && <BotonIcono icono={X} titulo="Cancelar" tono="peligro" onClick={()=>cambiarEstado(o.id,"cancelada")}/>}
+      </div>) },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <Plus size={13}/> Nueva OC
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <button disabled={!sel || sel.estado==="recibida" || sel.estado==="cancelada"}
-          onClick={() => sel && cambiarEstado(sel.id, "enviada")}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          Marcar enviada
-        </button>
-        <button disabled={!sel || sel.estado==="recibida" || sel.estado==="cancelada"}
-          onClick={() => sel && recibirOC(sel)}
-          className="flex items-center gap-1.5 bg-yellow-700 hover:bg-yellow-800 disabled:opacity-30 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <Check size={13}/> Recibir
-        </button>
-        <button disabled={!sel || sel.estado==="recibida"}
-          onClick={() => sel && cambiarEstado(sel.id, "cancelada")}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <X size={13}/> Cancelar
-        </button>
-        <div className="flex-1"/>
-        <select value={filtro} onChange={e=>setFiltro(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5">
-          <option value="todos">Todos</option>
-          <option value="borrador">Borrador</option>
-          <option value="enviada">Enviadas</option>
-          <option value="recibida">Recibidas</option>
-          <option value="cancelada">Canceladas</option>
-        </select>
-        <button onClick={() => exportExcel(ocs.map(o => ({
-          "N° OC": o.numero, Proveedor: o.proveedor, Fecha: fmtDate(o.fecha),
-          Estado: o.estado, Total: o.total, Moneda: o.moneda,
-        })), "ordenes-compra")} className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <FileSpreadsheet size={13}/> Excel
-        </button>
-      </div>
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto p-4">
-        {/* KPIs */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { label: "Borradores",  val: ocs.filter(o=>o.estado==="borrador").length,  color: "slate" },
-            { label: "Enviadas",    val: ocs.filter(o=>o.estado==="enviada").length,   color: "blue" },
-            { label: "Recibidas",   val: ocs.filter(o=>o.estado==="recibida").length,  color: "emerald" },
-            { label: "Canceladas",  val: ocs.filter(o=>o.estado==="cancelada").length, color: "red" },
-          ].map(k => (
-            <div key={k.label} className="bg-white border border-slate-200 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-slate-400 uppercase font-medium">{k.label}</p>
-              <p className="text-2xl font-bold text-slate-800">{k.val}</p>
-            </div>
-          ))}
+    <Modulo
+      seccion="Compras"
+      titulo="Órdenes de compra"
+      descripcion="Pedidos a proveedores. Al recibirlos se crea la compra y se suma el inventario."
+      acciones={<>
+        <Boton variante="secundario" icono={FileSpreadsheet} onClick={exportar}>Excel</Boton>
+        <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva orden</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Borradores" valor={cuenta("borrador")} icono={FileText} delay={40} onClick={()=>setFiltro("borrador")}/>
+          <Indicador etiqueta="Enviadas" valor={cuenta("enviada")} detalle="Esperando entrega" icono={Send} destacado delay={90} onClick={()=>setFiltro("enviada")}/>
+          <Indicador etiqueta="Recibidas" valor={cuenta("recibida")} icono={PackageCheck} delay={140} onClick={()=>setFiltro("recibida")}/>
+          <Indicador etiqueta="Canceladas" valor={cuenta("cancelada")} icono={Ban} delay={190} onClick={()=>setFiltro("cancelada")}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [
+        { key: "todos", label: "Todas", cuenta: ocs.length },
+        { key: "borrador", label: "Borrador" }, { key: "enviada", label: "Enviadas" },
+        { key: "recibida", label: "Recibidas" }, { key: "cancelada", label: "Canceladas" },
+      ] }}
+    >
+      <Tabla columnas={columnas} filas={visibles} seleccionada={selected}
+        onFila={o=>setSelected(s=>s===o.id?null:o.id)}
+        vacio={<Vacio icono={ShoppingCart} titulo={ocs.length ? "Nada en este estado" : "Todavía no hay órdenes de compra"}
+          texto={ocs.length ? "Probá con otra pestaña." : "Creá una orden para pedirle productos a un proveedor."}
+          accion={!ocs.length && <Boton icono={Plus} onClick={()=>setModal("nueva")}>Nueva orden</Boton>}/>}/>
+      {sel && (
+        <div className="animate-desplegar mt-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.numero}</b><span className="text-white/60">{sel.proveedor}</span>
+          <div className="flex-1"/>
+          <Boton variante="secundario" tamano="sm" icono={Send} disabled={bloqueada(sel)} onClick={()=>cambiarEstado(sel.id,"enviada")}>Marcar enviada</Boton>
+          <Boton variante="amarillo" tamano="sm" icono={Check} disabled={bloqueada(sel)} onClick={()=>recibirOC(sel)}>Recibir</Boton>
+          <Boton variante="peligro" tamano="sm" icono={X} disabled={!sel || sel.estado==="recibida"} onClick={()=>cambiarEstado(sel.id,"cancelada")}>Cancelar</Boton>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="table-base w-full">
-            <thead><tr>
-              <th>N° OC</th><th>Proveedor</th><th>Fecha</th><th>Entrega esp.</th>
-              <th>Estado</th><th className="text-right">Total</th><th>Notas</th>
-            </tr></thead>
-            <tbody>
-              {visibles.length === 0 && <tr><td colSpan={7} className="text-center text-slate-400 py-10">Sin órdenes de compra</td></tr>}
-              {visibles.map(o => {
-                const est = ESTADOS[o.estado] || ESTADOS.borrador;
-                return (
-                  <tr key={o.id} onClick={()=>setSelected(s=>s===o.id?null:o.id)}
-                    className={`cursor-pointer ${selected===o.id?"bg-yellow-50 ring-1 ring-inset ring-yellow-300":""}`}>
-                    <td className="font-mono text-xs font-bold">{o.numero}</td>
-                    <td className="font-semibold">{o.proveedor}</td>
-                    <td>{fmtDate(o.fecha)}</td>
-                    <td className="text-slate-500">{o.fechaEntrega ? fmtDate(o.fechaEntrega) : "—"}</td>
-                    <td><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${est.cls}`}>{est.label}</span></td>
-                    <td className="text-right font-semibold">{fmtMoney(o.total, o.moneda || settings?.moneda || "CRC")}</td>
-                    <td className="text-slate-400 text-xs max-w-[150px] truncate">{o.notas||"—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal */}
+      )}
       {modal && (
         <OCModal
           oc={modal === "nueva" ? null : modal}
@@ -309,6 +247,7 @@ export default function OrdenesCompraScreen() {
           onClose={() => setModal(null)} onSave={cargar}
         />
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
