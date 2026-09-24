@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Search, X, Check, Wrench, Receipt } from "lucide-react";
+import { Plus, Trash2, X, Check, Wrench, Receipt, Edit2, Stethoscope, PackageCheck } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import { useNavigate } from "react-router-dom";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
@@ -7,16 +8,16 @@ import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { reducirInventario } from "../utils/clienteUtils";
 
 const ESTADOS = {
-  recibido:   { label:"Recibido",    cls:"bg-slate-100 text-slate-600" },
-  diagnostico:{ label:"Diagnóstico", cls:"bg-blue-100 text-blue-700" },
-  reparacion: { label:"Reparación",  cls:"bg-yellow-100 text-yellow-700" },
-  listo:      { label:"Listo",       cls:"bg-green-100 text-yellow-700" },
-  entregado:  { label:"Entregado",   cls:"bg-slate-100 text-slate-500" },
+  recibido:   { label:"Recibido",    tono:"neutro" },
+  diagnostico:{ label:"Diagnóstico", tono:"oscuro" },
+  reparacion: { label:"Reparación",  tono:"alerta" },
+  listo:      { label:"Listo",       tono:"exito" },
+  entregado:  { label:"Entregado",   tono:"neutro" },
 };
 
 function Badge({ estado }) {
   const e = ESTADOS[estado] || ESTADOS.recibido;
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.cls}`}>{e.label}</span>;
+  return <Estado tono={e.tono}>{e.label}</Estado>;
 }
 
 function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
@@ -59,139 +60,78 @@ function FormOrden({ orden, contactos, productos, onGuardar, onCancelar }) {
     setBusqMat(""); setShowMat(false);
   };
 
+  const totalSugerido = (parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0);
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="font-bold text-slate-800">{orden ? `OT-${orden.numero}` : "Nueva orden de trabajo"}</h2>
-          <button onClick={onCancelar}><X size={18} className="text-slate-400"/></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {/* Cliente */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="relative">
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Cliente</label>
-              <input value={f.busq} onChange={e=>{setF(p=>({...p,busq:e.target.value,cliente:e.target.value}));setShowC(true);}}
-                onFocus={()=>setShowC(true)} onBlur={()=>setTimeout(()=>setShowC(false),150)}
-                placeholder="Nombre o CLI-XXXX…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-              {showC && filtrados.length>0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-28 overflow-auto">
-                  {filtrados.map(c=>(
-                    <button key={c.id} onMouseDown={()=>setF(p=>({...p,cliente:c.nombre,busq:c.nombre,telefono:c.telefono||""}))}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b last:border-0">
-                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
-                      <span className="font-semibold">{c.nombre}</span>
-                      <span className="text-slate-400 ml-1">{c.telefono}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Teléfono</label>
-              <input value={f.telefono} onChange={u("telefono")} placeholder="8888-8888"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Equipo / vehículo / artículo</label>
-            <input value={f.equipo} onChange={u("equipo")} placeholder="Marca, modelo, serie…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Problema reportado</label>
-            <textarea value={f.problema} onChange={u("problema")} rows={2} placeholder="Qué falla el cliente reporta…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none"/>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Diagnóstico técnico</label>
-            <textarea value={f.diagnostico} onChange={u("diagnostico")} rows={2} placeholder="Diagnóstico y trabajo a realizar…"
-              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none"/>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Técnico</label>
-              <input value={f.tecnico} onChange={u("tecnico")} placeholder="Nombre…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Estado</label>
-              <select value={f.estado} onChange={u("estado")}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Entrega estimada</label>
-              <input type="date" value={f.fechaEntrega} onChange={u("fechaEntrega")}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Mano de obra (₡)</label>
-              <input type="number" value={f.manoObra} onChange={u("manoObra")} min="0" placeholder="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right"/>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Repuestos (₡)</label>
-              <input type="number" value={f.repuestos} onChange={u("repuestos")} min="0" placeholder="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right"/>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Total (₡)</label>
-              <input type="number" value={f.total||((parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0))} onChange={u("total")} min="0"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right font-bold"/>
-            </div>
-          </div>
-
-          {/* Materiales usados → reduce inventario */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">🔧 Materiales / repuestos del inventario</label>
-            <div className="relative">
-              <input value={busqMat}
-                onChange={e=>{setBusqMat(e.target.value);setShowMat(true);}}
-                onFocus={()=>setShowMat(true)} onBlur={()=>setTimeout(()=>setShowMat(false),150)}
-                placeholder="Buscar en catálogo de productos…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-              {showMat && prodsFilt.length > 0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-36 overflow-auto">
-                  {prodsFilt.map(p=>(
-                    <button key={p.id} onMouseDown={()=>agregarMaterial(p)}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b last:border-0 flex justify-between">
-                      <span className="font-semibold">{p.nombre}</span>
-                      <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {materiales.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {materiales.map((m,i)=>(
-                  <div key={i} className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-1.5">
-                    <span className="flex-1 text-sm text-slate-700">{m.descripcion}</span>
-                    <input type="number" min="0.01" step="any" value={m.cantidad}
-                      onChange={e=>setMateriales(materiales.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
-                      className="w-16 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none"/>
-                    <button onClick={()=>setMateriales(materiales.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
-                  </div>
+    <Modal titulo={orden ? `OT-${orden.numero}` : "Nueva orden de trabajo"} subtitulo="Equipo, diagnóstico y costo de la reparación" onCerrar={onCancelar}
+      pie={<><Boton variante="fantasma" onClick={onCancelar}>Cancelar</Boton>
+        <Boton icono={Check} onClick={()=>onGuardar({ id:orden?.id||genId(), numero:orden?.numero||Date.now().toString().slice(-5), ...f, manoObra:parseFloat(f.manoObra)||0, repuestos:parseFloat(f.repuestos)||0, total:parseFloat(f.total)||(parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0), materiales, creadoEn:orden?.creadoEn||new Date().toISOString() })}>Guardar orden</Boton></>}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <Campo etiqueta="Cliente">
+              <Entrada value={f.busq} onChange={e=>{setF(p=>({...p,busq:e.target.value,cliente:e.target.value}));setShowC(true);}}
+                onFocus={()=>setShowC(true)} onBlur={()=>setTimeout(()=>setShowC(false),150)} placeholder="Nombre o CLI-XXXX…"/>
+            </Campo>
+            {showC && filtrados.length>0 && (
+              <div className="animate-desplegar absolute top-full left-0 w-full mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-36 overflow-auto">
+                {filtrados.map(c=>(
+                  <button key={c.id} type="button" onMouseDown={()=>setF(p=>({...p,cliente:c.nombre,busq:c.nombre,telefono:c.telefono||""}))}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                    {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-cream px-1.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                    <span className="font-semibold">{c.nombre}</span>
+                  </button>
                 ))}
-                <p className="text-[10px] text-yellow-600">⚠ Al marcar como Entregada se descontará el stock</p>
               </div>
             )}
           </div>
+          <Campo etiqueta="Teléfono"><Entrada value={f.telefono} onChange={u("telefono")} placeholder="8888-8888"/></Campo>
         </div>
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
-          <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
-          <button onClick={()=>onGuardar({ id:orden?.id||genId(), numero:orden?.numero||Date.now().toString().slice(-5), ...f, manoObra:parseFloat(f.manoObra)||0, repuestos:parseFloat(f.repuestos)||0, total:parseFloat(f.total)||(parseFloat(f.manoObra)||0)+(parseFloat(f.repuestos)||0), materiales, creadoEn:orden?.creadoEn||new Date().toISOString() })}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
-            <Check size={14}/> Guardar
-          </button>
+        <Campo etiqueta="Equipo, vehículo o artículo"><Entrada value={f.equipo} onChange={u("equipo")} placeholder="Marca, modelo, serie…"/></Campo>
+        <Campo etiqueta="Problema reportado"><AreaTexto value={f.problema} onChange={u("problema")} rows={2} placeholder="Qué falla reporta el cliente…"/></Campo>
+        <Campo etiqueta="Diagnóstico técnico"><AreaTexto value={f.diagnostico} onChange={u("diagnostico")} rows={2} placeholder="Diagnóstico y trabajo a realizar…"/></Campo>
+        <div className="grid grid-cols-3 gap-3">
+          <Campo etiqueta="Técnico"><Entrada value={f.tecnico} onChange={u("tecnico")} placeholder="Nombre…"/></Campo>
+          <Campo etiqueta="Estado"><Seleccion value={f.estado} onChange={u("estado")} opciones={Object.entries(ESTADOS).map(([k,v])=>({value:k,label:v.label}))}/></Campo>
+          <Campo etiqueta="Entrega estimada"><Entrada type="date" value={f.fechaEntrega} onChange={u("fechaEntrega")}/></Campo>
+        </div>
+        <div className="grid grid-cols-3 gap-3 bg-monki-cream rounded-2xl p-3">
+          <Campo etiqueta="Mano de obra (₡)"><Entrada type="number" value={f.manoObra} onChange={u("manoObra")} min="0" placeholder="0" className="text-right"/></Campo>
+          <Campo etiqueta="Repuestos (₡)"><Entrada type="number" value={f.repuestos} onChange={u("repuestos")} min="0" placeholder="0" className="text-right"/></Campo>
+          <Campo etiqueta="Total (₡)"><Entrada type="number" value={f.total||totalSugerido} onChange={u("total")} min="0" className="text-right font-black !border-monki-k"/></Campo>
+        </div>
+        <div>
+          <div className="relative">
+            <Campo etiqueta="Materiales del inventario" ayuda="Se descuentan del stock cuando la orden se entrega.">
+              <Entrada value={busqMat} onChange={e=>{setBusqMat(e.target.value);setShowMat(true);}}
+                onFocus={()=>setShowMat(true)} onBlur={()=>setTimeout(()=>setShowMat(false),150)} placeholder="Buscar en el catálogo de productos…"/>
+            </Campo>
+            {showMat && prodsFilt.length > 0 && (
+              <div className="animate-desplegar absolute top-[72px] left-0 w-full bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-36 overflow-auto">
+                {prodsFilt.map(p=>(
+                  <button key={p.id} type="button" onMouseDown={()=>agregarMaterial(p)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0 flex justify-between">
+                    <span className="font-semibold">{p.nombre}</span><span className="font-mono text-[11px] text-monki-k/50">Stock {p.stock ?? "—"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {materiales.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {materiales.map((m,i)=>(
+                <div key={i} className="animate-desplegar flex items-center gap-2 bg-monki-cream rounded-xl pl-3 pr-1 py-1">
+                  <span className="flex-1 text-sm font-semibold">{m.descripcion}</span>
+                  <input type="number" min="0.01" step="any" value={m.cantidad}
+                    onChange={e=>setMateriales(materiales.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
+                    className="w-20 bg-white border-2 border-black/10 rounded-lg px-2 py-1 text-sm text-right"/>
+                  <BotonIcono icono={X} titulo="Quitar" tono="peligro" onClick={()=>setMateriales(materiales.filter((_,j)=>j!==i))}/>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -238,8 +178,9 @@ export default function OrdenesTrabajoScreen() {
     navigate("/facturacion");
   };
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar orden?")) return;
+    if (!(await confirmar("Eliminar orden", "¿Eliminar esta orden de trabajo? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     const all = await db.getOrdenes();
     await db.setOrdenes(all.filter(x=>x.id!==id));
     cargar();
@@ -250,66 +191,53 @@ export default function OrdenesTrabajoScreen() {
     (o.cliente?.toLowerCase().includes(busq.toLowerCase())||o.equipo?.toLowerCase().includes(busq.toLowerCase()))
   );
 
+  const nueva = () => { setEditando(null); setForm(true); };
+  const cuenta = e => ordenes.filter(o => o.estado === e).length;
+  const columnas = [
+    { key: "numero", titulo: "Orden", render: o => (
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Wrench size={14} className="text-monki-k"/></span>
+        <span className="font-mono text-xs font-bold">OT-{o.numero}</span>
+      </div>) },
+    { key: "cliente", titulo: "Cliente", render: o => <b className="text-monki-k">{o.cliente || "—"}</b> },
+    { key: "equipo", titulo: "Equipo y problema", render: o => <div className="max-w-[260px]"><p className="font-semibold truncate">{o.equipo || "—"}</p><p className="text-xs text-monki-k/50 truncate">{o.problema}</p></div> },
+    { key: "tecnico", titulo: "Técnico", render: o => <span className="text-monki-k/60">{o.tecnico || "—"}</span> },
+    { key: "estado", titulo: "Estado", render: o => <Badge estado={o.estado}/> },
+    { key: "fecha", titulo: "Fecha", render: o => fmtDate(o.fecha) },
+    { key: "total", titulo: "Total", alinear: "right", render: o => <b>{fmtMoney(o.total||0,"CRC")}</b> },
+    { key: "acciones", titulo: "", alinear: "right", render: o => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        <BotonIcono icono={Receipt} titulo="Facturar" onClick={()=>facturarOT(o)}/>
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>{setEditando(o);setForm(true);}}/>
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(o.id)}/>
+      </div>) },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
+    <Modulo
+      seccion="Operaciones"
+      titulo="Órdenes de trabajo"
+      descripcion="Reparaciones y servicios: del ingreso del equipo hasta la entrega y la factura."
+      acciones={<Boton icono={Plus} onClick={nueva}>Nueva orden</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="En diagnóstico" valor={cuenta("diagnostico")+cuenta("recibido")} detalle="Recibidas o revisando" icono={Stethoscope} delay={40} onClick={()=>setFiltroEst("diagnostico")}/>
+          <Indicador etiqueta="En reparación" valor={cuenta("reparacion")} icono={Wrench} destacado delay={90} onClick={()=>setFiltroEst("reparacion")}/>
+          <Indicador etiqueta="Listas" valor={cuenta("listo")} detalle="Avisá al cliente" icono={Check} delay={140} onClick={()=>setFiltroEst("listo")}/>
+          <Indicador etiqueta="Entregadas" valor={cuenta("entregado")} icono={PackageCheck} delay={190} onClick={()=>setFiltroEst("entregado")}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtroEst, onCambiar: setFiltroEst, items: [{ key:"todos", label:"Todas", cuenta: ordenes.length }, ...Object.entries(ESTADOS).map(([key,v])=>({ key, label: v.label }))] }}
+    >
+      <BarraFiltros resumen={`${filtradas.length} órdenes`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por cliente o equipo…"/>
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={filtradas} onFila={o=>{setEditando(o);setForm(true);}}
+        vacio={<Vacio icono={Wrench} titulo={ordenes.length ? "Sin resultados" : "Todavía no hay órdenes de trabajo"}
+          texto={ordenes.length ? "Probá con otra búsqueda o estado." : "Registrá el primer equipo que te dejan para reparar."}
+          accion={!ordenes.length && <Boton icono={Plus} onClick={nueva}>Nueva orden</Boton>}/>}/>
       {form && <FormOrden orden={editando} contactos={contactos} productos={productos} onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}}/>}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Cliente o equipo…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-        </div>
-        <select value={filtroEst} onChange={e=>setFiltroEst(e.target.value)}
-          className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
-          <option value="todos">Todos los estados</option>
-          {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-        </select>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-slate-400">{filtradas.length} órdenes</span>
-          <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700">
-            <Plus size={14}/> Nueva OT
-          </button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-auto p-6">
-        {filtradas.length===0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-            <Wrench size={40} className="text-slate-200"/><p className="text-sm">No hay órdenes de trabajo.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filtradas.map(o=>(
-              <div key={o.id} className="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-4 hover:border-yellow-300 group">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                  <Wrench size={16} className="text-slate-500"/>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-bold text-sm">OT-{o.numero}</span>
-                    <Badge estado={o.estado}/>
-                    <span className="text-xs text-slate-400">{o.cliente}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 truncate">{o.equipo} · {o.problema}</p>
-                  {o.tecnico && <p className="text-[10px] text-slate-400">Técnico: {o.tecnico}</p>}
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-sm">{fmtMoney(o.total||0,"CRC")}</p>
-                  <p className="text-[10px] text-slate-400">{fmtDate(o.fecha)}</p>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                  <button onClick={()=>facturarOT(o)}
-                    className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-yellow-50 text-yellow-600 font-semibold">
-                    <Receipt size={12}/> Facturar
-                  </button>
-                  <button onClick={()=>{setEditando(o);setForm(true);}} className="text-xs px-2 py-1 rounded hover:bg-slate-100 text-slate-500">Editar</button>
-                  <button onClick={()=>eliminar(o.id)} className="p-1.5 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
