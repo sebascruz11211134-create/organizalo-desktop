@@ -406,3 +406,120 @@ button.bg-blue-600, button.bg-blue-500, button.bg-blue-700 {
 
 /* Kit de interfaz: el buscador marca el foco en su borde de píldora, no en el input */
 input.ui-sin-foco:not([type=checkbox]):not([type=radio]):focus { box-shadow: none !important; border-color: transparent !important; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PANTALLAS AÚN SIN MIGRAR AL KIT: sus piezas viejas (barra negra, tabla
+   table-base, modal con encabezado oscuro, etiquetas grises) toman el mismo
+   aspecto que los componentes de src/components/ui, para que todo el ERP se
+   vea igual mientras se migra pantalla por pantalla.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Barra de acciones superior → barra negra flotante redondeada */
+.monki-pantalla > div > div.bg-slate-700:first-child {
+  margin: 16px 24px 10px;
+  border-radius: 18px;
+  border: 0 !important;
+  padding: 9px 12px !important;
+  box-shadow: 0 12px 26px -16px rgba(17,17,17,.6);
+  animation: entrar .4s var(--monki-ease) both;
+}
+@media (max-width: 767px) {
+  .monki-pantalla > div > div.bg-slate-700:first-child { margin: 12px 12px 8px; }
+}
+/* Franja de conteo bajo la barra */
+.monki-pantalla > div > div.bg-slate-50.border-b,
+.monki-pantalla > div > div.bg-slate-700:first-child + div.border-b:not(.bg-blue-50) {
+  background: transparent !important; border: 0 !important;
+  padding: 2px 28px 8px !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace; letter-spacing: .04em;
+}
+/* Franja "Seleccionado" → píldora amarilla */
+.monki-pantalla > div > div.bg-blue-50.border-b {
+  margin: 0 24px 10px; border-radius: 999px; border: 0 !important;
+  background: var(--monki-y) !important; padding: 7px 16px !important;
+  animation: desplegar .3s var(--monki-ease) both;
+}
+
+/* Tablas viejas → tarjeta blanca con encabezados mono */
+.monki-pantalla > div > div.flex-1.overflow-auto:has(> table:not(.ui-tabla)) {
+  margin: 0 24px 20px;
+  background: #fff;
+  border: 2px solid rgba(17,17,17,.1);
+  border-radius: 18px;
+}
+@media (max-width: 767px) {
+  .monki-pantalla > div > div.flex-1.overflow-auto:has(> table:not(.ui-tabla)) { margin: 0 12px 16px; }
+}
+.monki-pantalla table:not(.ui-tabla) thead,
+.monki-pantalla table:not(.ui-tabla) thead tr { background: #fff !important; }
+.monki-pantalla table:not(.ui-tabla) thead th {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 11px !important; font-weight: 600 !important;
+  text-transform: uppercase; letter-spacing: .1em !important;
+  color: rgba(17,17,17,.55) !important;
+  background: #fff !important;
+  padding-top: 12px !important; padding-bottom: 12px !important;
+  border-bottom: 2px solid rgba(17,17,17,.1) !important;
+  white-space: nowrap;
+}
+.monki-pantalla table:not(.ui-tabla) tbody td { border-color: rgba(17,17,17,.05) !important; color: rgba(17,17,17,.85); }
+.monki-pantalla table:not(.ui-tabla) tbody tr { transition: background-color .15s; }
+.monki-pantalla table:not(.ui-tabla) tbody tr:hover td { background: rgba(244,241,230,.6) !important; }
+.monki-pantalla table:not(.ui-tabla) tbody tr.bg-blue-100 td,
+.monki-pantalla table:not(.ui-tabla) tbody tr.bg-blue-50 td { background: #FFF4B8 !important; }
+
+/* Modales viejos → mismo marco que el Modal del kit */
+.monki-pantalla div.fixed.inset-0:not(:has(> [role=dialog])) {
+  background: rgba(17,17,17,.5) !important;
+  backdrop-filter: blur(4px);
+}
+.monki-pantalla div.fixed.inset-0:not(:has(> [role=dialog])) > div.bg-white {
+  border: 2px solid var(--monki-k);
+  border-radius: 22px !important;
+  box-shadow: 8px 8px 0 var(--monki-k) !important;
+  overflow: hidden;
+  animation: entrar .35s var(--monki-ease) both;
+}
+.monki-pantalla div.fixed.inset-0 > div.bg-white > div.bg-slate-700:first-child {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 20px 24px 8px !important;
+}
+.monki-pantalla div.fixed.inset-0 > div.bg-white > div.bg-slate-700:first-child :is(h2, h3) {
+  color: var(--monki-k) !important; font-size: 20px !important; font-weight: 900 !important; letter-spacing: -.03em;
+}
+.monki-pantalla div.fixed.inset-0 > div.bg-white > div.bg-slate-700:first-child button {
+  color: rgba(17,17,17,.55) !important; width: 32px; height: 32px; border-radius: 999px;
+}
+.monki-pantalla div.fixed.inset-0 > div.bg-white > div.bg-slate-700:first-child button:hover { background: rgba(17,17,17,.06); color: var(--monki-k) !important; }
+
+/* Etiquetas de formulario grises → etiqueta mono de la web */
+.monki-pantalla label.uppercase, .monki-pantalla p.uppercase.font-bold.text-slate-400 {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 11px !important; font-weight: 500 !important;
+  letter-spacing: .1em !important;
+  color: rgba(17,17,17,.6) !important;
+}
+/* Campos viejos → mismo campo que el kit */
+.monki-pantalla :is(input, select, textarea):is(.border-gray-300, .border-slate-200, .border-slate-300, .border-gray-200):not(.ui-sin-foco) {
+  border: 2px solid rgba(17,17,17,.1) !important;
+  border-radius: 12px !important;
+  background-color: #fff;
+  transition: border-color .2s;
+}
+.monki-pantalla :is(input, select, textarea):is(.border-gray-300, .border-slate-200, .border-slate-300, .border-gray-200):hover { border-color: rgba(17,17,17,.25) !important; }
+/* Botones secundarios con borde gris → píldora con borde negro */
+.monki-pantalla button:is(.border-slate-200, .border-gray-300):is(.rounded, .rounded-lg, .rounded-md) {
+  border: 2px solid var(--monki-k) !important; border-radius: 999px !important;
+  color: var(--monki-k) !important; font-weight: 700;
+  transition: background-color .2s, color .2s;
+}
+.monki-pantalla button:is(.border-slate-200, .border-gray-300):is(.rounded, .rounded-lg, .rounded-md):hover { background: var(--monki-k) !important; color: var(--monki-y) !important; }
+/* Botones de acción cuadrados → píldora */
+.monki-pantalla button:is(.bg-yellow-600, .bg-yellow-700, .bg-red-600, .bg-red-500):is(.rounded, .rounded-lg, .rounded-md) { border-radius: 999px !important; }
+/* Tarjetas blancas con borde → radio y borde del kit */
+.monki-pantalla div.bg-white.border:is(.rounded, .rounded-lg, .rounded-xl) {
+  border-radius: 18px !important;
+  border-width: 2px !important; border-color: rgba(17,17,17,.1) !important;
+}
