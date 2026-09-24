@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Trash2, X, Check, Package } from "lucide-react";
+import { Plus, Trash2, Check, Package, Edit2, LayoutGrid, List, AlertTriangle, Tags } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Tarjeta, Modal, Campo, Entrada, Seleccion, AreaTexto, Interruptor, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, genId } from "../utils/fmt";
@@ -29,131 +30,54 @@ function FormProducto({ prod, onGuardar, onCancelar }) {
     ? (((parseFloat(f.precio)-parseFloat(f.precioCompra))/parseFloat(f.precioCompra))*100).toFixed(1)
     : null;
 
+  const Seccion = ({ titulo, children }) => (
+    <div><p className="monki-tag text-monki-k/45 mb-2">{titulo}</p>{children}</div>
+  );
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="font-bold text-slate-800">{prod ? "Editar producto" : "Nuevo producto"}</h2>
-          <button onClick={onCancelar}><X size={18} className="text-slate-400 hover:text-slate-700"/></button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {/* Info básica */}
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Nombre *</label>
-              <input value={f.nombre} onChange={u("nombre")} placeholder="Nombre del producto o servicio"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Descripción</label>
-              <textarea value={f.descripcion} onChange={u("descripcion")} rows={2}
-                placeholder="Descripción detallada…"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 resize-none" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Categoría</label>
-                <select value={f.categoria} onChange={u("categoria")}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                  {CATEGORIAS.map(c=><option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase block mb-1">Unidad de medida</label>
-                <select value={f.unidad} onChange={u("unidad")}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                  {UNIDADES.map(u=><option key={u}>{u}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Códigos */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold text-slate-400 uppercase">Códigos</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Cód. interno</label>
-                <input value={f.codigoInterno} onChange={u("codigoInterno")} placeholder="SKU-001"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Código barras</label>
-                <input value={f.codigoBarras} onChange={u("codigoBarras")} placeholder="7XXXXXXXXXX"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">CABYS</label>
-                <input value={f.codigoCabys} onChange={u("codigoCabys")} placeholder="Hacienda"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-              </div>
-            </div>
-          </div>
-
-          {/* Precios */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold text-slate-400 uppercase">Precios</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Precio venta *</label>
-                <input type="number" value={f.precio} onChange={u("precio")} min="0" step="any" placeholder="0"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Precio compra</label>
-                <input type="number" value={f.precioCompra} onChange={u("precioCompra")} min="0" step="any" placeholder="0"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-right" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">% IVA</label>
-                <select value={f.pctIVA} onChange={e=>setF(p=>({...p,pctIVA:Number(e.target.value)}))}
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                  <option value={0}>0% Exento</option>
-                  <option value={4}>4%</option>
-                  <option value={8}>8%</option>
-                  <option value={13}>13%</option>
-                </select>
-              </div>
-            </div>
-            {margen && (
-              <p className="text-xs text-yellow-600 font-semibold">Margen: {margen}% · Precio con IVA: {fmtMoney(parseFloat(f.precio)*(1+f.pctIVA/100),"CRC")}</p>
-            )}
-          </div>
-
-          {/* Stock */}
-          <div className="space-y-2">
-            <h3 className="text-xs font-bold text-slate-400 uppercase">Inventario</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Stock actual</label>
-                <input type="number" value={f.stock} onChange={u("stock")} min="0" placeholder="—"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-center" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-slate-400 uppercase block mb-1">Stock mínimo</label>
-                <input type="number" value={f.stockMin} onChange={u("stockMin")} min="0" placeholder="—"
-                  className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 text-center" />
-              </div>
-              <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={f.activo} onChange={u("activo")} className="rounded" />
-                  <span className="text-slate-600 font-medium">Activo</span>
-                </label>
-              </div>
-            </div>
+    <Modal titulo={prod ? "Editar producto" : "Nuevo producto"} subtitulo="Producto o servicio que vendés" onCerrar={onCancelar}
+      pie={<><Boton variante="fantasma" onClick={onCancelar}>Cancelar</Boton>
+        <Boton icono={Check} onClick={()=>onGuardar({ id:prod?.id||genId(), ...f, precio:parseFloat(f.precio)||0, precioCompra:parseFloat(f.precioCompra)||0, stock:f.stock!==""?Number(f.stock):null, stockMin:f.stockMin!==""?Number(f.stockMin):null })}>Guardar producto</Boton></>}>
+      <div className="space-y-5">
+        <div className="space-y-3">
+          <Campo etiqueta="Nombre *"><Entrada value={f.nombre} onChange={u("nombre")} placeholder="Nombre del producto o servicio"/></Campo>
+          <Campo etiqueta="Descripción"><AreaTexto value={f.descripcion} onChange={u("descripcion")} rows={2} placeholder="Descripción detallada…"/></Campo>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo etiqueta="Categoría"><Seleccion value={f.categoria} onChange={u("categoria")} opciones={CATEGORIAS}/></Campo>
+            <Campo etiqueta="Unidad de medida"><Seleccion value={f.unidad} onChange={u("unidad")} opciones={UNIDADES}/></Campo>
           </div>
         </div>
-
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
-          <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
-          <button onClick={()=>onGuardar({ id:prod?.id||genId(), ...f, precio:parseFloat(f.precio)||0, precioCompra:parseFloat(f.precioCompra)||0, stock:f.stock!==""?Number(f.stock):null, stockMin:f.stockMin!==""?Number(f.stockMin):null })}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
-            <Check size={14}/> Guardar producto
-          </button>
-        </div>
+        <Seccion titulo="Códigos">
+          <div className="grid grid-cols-3 gap-2">
+            <Campo etiqueta="Interno"><Entrada value={f.codigoInterno} onChange={u("codigoInterno")} placeholder="SKU-001" className="font-mono"/></Campo>
+            <Campo etiqueta="Barras"><Entrada value={f.codigoBarras} onChange={u("codigoBarras")} placeholder="7XXXXXXXXXX" className="font-mono"/></Campo>
+            <Campo etiqueta="CABYS"><Entrada value={f.codigoCabys} onChange={u("codigoCabys")} placeholder="Hacienda" className="font-mono"/></Campo>
+          </div>
+        </Seccion>
+        <Seccion titulo="Precios">
+          <div className="grid grid-cols-3 gap-2">
+            <Campo etiqueta="Venta *"><Entrada type="number" value={f.precio} onChange={u("precio")} min="0" step="any" placeholder="0" className="text-right"/></Campo>
+            <Campo etiqueta="Compra"><Entrada type="number" value={f.precioCompra} onChange={u("precioCompra")} min="0" step="any" placeholder="0" className="text-right"/></Campo>
+            <Campo etiqueta="IVA">
+              <Seleccion value={f.pctIVA} onChange={e=>setF(p=>({...p,pctIVA:Number(e.target.value)}))}
+                opciones={[{value:0,label:"0% Exento"},{value:4,label:"4%"},{value:8,label:"8%"},{value:13,label:"13%"}]}/>
+            </Campo>
+          </div>
+          {margen && (
+            <div className="animate-desplegar mt-2 flex flex-wrap gap-2">
+              <Estado tono="oscuro">Margen {margen}%</Estado>
+              <Estado tono="alerta">Con IVA {fmtMoney(parseFloat(f.precio)*(1+f.pctIVA/100),"CRC")}</Estado>
+            </div>
+          )}
+        </Seccion>
+        <Seccion titulo="Inventario">
+          <div className="grid grid-cols-3 gap-2 items-end">
+            <Campo etiqueta="Stock actual"><Entrada type="number" value={f.stock} onChange={u("stock")} min="0" placeholder="—" className="text-center"/></Campo>
+            <Campo etiqueta="Stock mínimo"><Entrada type="number" value={f.stockMin} onChange={u("stockMin")} min="0" placeholder="—" className="text-center"/></Campo>
+            <div className="pb-2"><Interruptor activo={f.activo} onCambio={v=>setF(p=>({...p,activo:v}))} etiqueta="Activo"/></div>
+          </div>
+        </Seccion>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -178,8 +102,9 @@ export default function CatalogoScreen() {
     cargar(); setForm(false); setEditando(null);
   };
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar este producto?")) return;
+    if (!(await confirmar("Eliminar producto", "¿Eliminar este producto del catálogo? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     const all = await db.getProductos();
     await db.setProductos(all.filter(x=>x.id!==id));
     cargar();
@@ -193,107 +118,90 @@ export default function CatalogoScreen() {
 
   const stockBajo = productos.filter(p => p.stock!=null && p.stockMin!=null && p.stock<=p.stockMin).length;
 
-  return (
-    <div className="flex flex-col h-full">
-      {form && <FormProducto prod={editando} onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}} />}
+  const bajo = p => p.stock!=null && p.stockMin!=null && p.stock<=p.stockMin;
+  const nuevo = () => { setEditando(null); setForm(true); };
+  const editar = p => { setEditando(p); setForm(true); };
+  const categoriasUsadas = new Set(productos.map(p=>p.categoria).filter(Boolean)).size;
+  const columnas = [
+    { key: "nombre", titulo: "Producto", render: p => (
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0 text-[12px] font-black">{(p.nombre||"?").charAt(0).toUpperCase()}</span>
+        <b className="text-monki-k">{p.nombre}</b>
+      </div>) },
+    { key: "categoria", titulo: "Categoría", render: p => <span className="text-monki-k/60">{p.categoria||"—"}</span> },
+    { key: "codigo", titulo: "Código", render: p => <span className="font-mono text-xs text-monki-k/50">{p.codigoInterno||p.codigoBarras||"—"}</span> },
+    { key: "precio", titulo: "Precio", alinear: "right", render: p => <b>{fmtMoney(p.precio||0,"CRC")}</b> },
+    { key: "iva", titulo: "IVA", alinear: "center", render: p => <span className="text-monki-k/55">{p.pctIVA ?? 13}%</span> },
+    { key: "stock", titulo: "Stock", alinear: "center", render: p => p.stock!=null ? (bajo(p) ? <Estado tono="peligro">{p.stock} · bajo</Estado> : <b>{p.stock}</b>) : <span className="text-monki-k/30">—</span> },
+    { key: "acciones", titulo: "", alinear: "right", render: p => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>editar(p)}/>
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(p.id)}/>
+      </div>) },
+  ];
 
-      {/* Barra */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3 flex-wrap">
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar producto, código…"
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-yellow-400 w-56" />
-        </div>
-        <select value={catFiltro} onChange={e=>setCatFiltro(e.target.value)}
-          className="text-sm border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
-          <option>Todos</option>
-          {CATEGORIAS.map(c=><option key={c}>{c}</option>)}
-        </select>
-        {stockBajo>0 && (
-          <span className="text-xs bg-yellow-100 text-yellow-700 font-bold px-2.5 py-1 rounded-full">⚠️ {stockBajo} con stock bajo</span>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-slate-400">{filtrados.length} productos</span>
-          <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-            {["grid","tabla"].map(v=>(
-              <button key={v} onClick={()=>setVista(v)}
-                className={`px-2.5 py-1 text-xs font-semibold transition-colors ${vista===v?"bg-yellow-600 text-white":"text-slate-500 hover:bg-slate-50"}`}>
-                {v==="grid"?"⊞":"☰"}
-              </button>
+  return (
+    <Modulo
+      seccion="Inventario"
+      titulo="Catálogo"
+      descripcion="Todo lo que vendés, con precios, códigos y margen."
+      acciones={<Boton icono={Plus} onClick={nuevo}>Nuevo producto</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Productos" valor={productos.length} detalle={`${productos.filter(p=>p.activo!==false).length} activos`} icono={Package} delay={40}/>
+          <Indicador etiqueta="Categorías" valor={categoriasUsadas} icono={Tags} delay={90}/>
+          <Indicador etiqueta="Stock bajo" valor={stockBajo} detalle={stockBajo ? "Revisá y reponé" : "Todo en orden"} icono={AlertTriangle} alerta={stockBajo>0} delay={140}/>
+          <Indicador etiqueta="Precio promedio" valor={fmtMoney(productos.length ? productos.reduce((t,p)=>t+(parseFloat(p.precio)||0),0)/productos.length : 0,"CRC")} destacado delay={190}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${filtrados.length} de ${productos.length}`}
+        derecha={
+          <div className="flex bg-white rounded-full border-2 border-black/10 p-0.5">
+            {[["grid",LayoutGrid,"Tarjetas"],["tabla",List,"Tabla"]].map(([v,Icono,t])=>(
+              <button key={v} type="button" title={t} onClick={()=>setVista(v)}
+                className={`ui-boton w-8 h-8 rounded-full flex items-center justify-center transition-colors ${vista===v?"bg-monki-k text-monki-y":"text-monki-k/50 hover:text-monki-k"}`}><Icono size={14}/></button>
             ))}
           </div>
-          <button onClick={()=>{setEditando(null);setForm(true);}}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700">
-            <Plus size={14}/> Nuevo producto
-          </button>
-        </div>
-      </div>
+        }>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar producto o código…"/>
+        <Selector valor={catFiltro} onCambio={setCatFiltro} opciones={["Todos", ...CATEGORIAS]}/>
+      </BarraFiltros>
 
-      {/* Contenido */}
-      <div className="flex-1 overflow-auto p-6">
-        {filtrados.length===0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-            <Package size={40} className="text-slate-200"/>
-            <p className="text-sm">No hay productos en el catálogo.</p>
-          </div>
-        ) : vista==="grid" ? (
-          <div className="grid grid-cols-4 gap-4">
-            {filtrados.map(p => (
-              <div key={p.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:border-yellow-300 hover:shadow-sm group transition-all">
-                <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center mb-3">
-                  <span className="text-yellow-700 font-black text-xl">{(p.nombre||"?").charAt(0)}</span>
+      {vista==="tabla" ? (
+        <Tabla columnas={columnas} filas={filtrados} onFila={editar}
+          vacio={<Vacio icono={Package} titulo="No hay productos" texto="Probá con otra búsqueda o agregá uno nuevo." accion={<Boton icono={Plus} onClick={nuevo}>Nuevo producto</Boton>}/>}/>
+      ) : filtrados.length===0 ? (
+        <Tarjeta className="flex-1 flex items-center justify-center">
+          <Vacio icono={Package} titulo={productos.length ? "Sin resultados" : "El catálogo está vacío"} texto={productos.length ? "Probá con otra búsqueda o categoría." : "Agregá tu primer producto o servicio."}
+            accion={!productos.length && <Boton icono={Plus} onClick={nuevo}>Nuevo producto</Boton>}/>
+        </Tarjeta>
+      ) : (
+        <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {filtrados.map((p,i) => (
+              <div key={p.id} onClick={()=>editar(p)} style={{ animationDelay: `${Math.min(i,12)*30}ms` }}
+                className="animate-entrar group cursor-pointer bg-white border-2 border-black/10 rounded-[18px] p-4 transition-all duration-300 ease-monki hover:border-monki-k hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#111]">
+                <div className="flex items-start justify-between mb-3">
+                  <span className="w-11 h-11 rounded-full bg-monki-y flex items-center justify-center text-monki-k font-black text-lg">{(p.nombre||"?").charAt(0).toUpperCase()}</span>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e=>e.stopPropagation()}>
+                    <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>editar(p)}/>
+                    <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(p.id)}/>
+                  </div>
                 </div>
-                <p className="font-bold text-sm text-slate-800 truncate">{p.nombre}</p>
-                <p className="text-xs text-slate-400 truncate mb-2">{p.categoria} {p.codigoInterno && `· ${p.codigoInterno}`}</p>
-                <p className="text-base font-black text-yellow-700">{fmtMoney(p.precio||0,"CRC")}</p>
-                {p.stock!=null && (
-                  <p className={`text-[10px] font-semibold mt-0.5 ${p.stockMin!=null&&p.stock<=p.stockMin?"text-red-500":"text-slate-400"}`}>
-                    Stock: {p.stock} {p.stockMin!=null&&p.stock<=p.stockMin?"⚠️":""}
-                  </p>
-                )}
-                <div className="flex gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={()=>{setEditando(p);setForm(true);}} className="flex-1 text-xs py-1 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600">Editar</button>
-                  <button onClick={()=>eliminar(p.id)} className="p-1 rounded-lg hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
+                <p className="font-extrabold text-[15px] text-monki-k truncate">{p.nombre}</p>
+                <p className="text-xs text-monki-k/45 truncate mb-2">{p.categoria}{p.codigoInterno && ` · ${p.codigoInterno}`}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-[18px] font-black tracking-[-0.02em] text-monki-k">{fmtMoney(p.precio||0,"CRC")}</p>
+                  {p.stock!=null && (bajo(p) ? <Estado tono="peligro">Stock {p.stock}</Estado> : <span className="font-mono text-[10px] text-monki-k/45">Stock {p.stock}</span>)}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <table className="w-full text-sm bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr className="text-[11px] font-bold text-slate-500 uppercase">
-                <th className="text-left px-4 py-2.5">Nombre</th>
-                <th className="text-left px-4 py-2.5">Categoría</th>
-                <th className="text-left px-4 py-2.5">Código</th>
-                <th className="text-right px-4 py-2.5">Precio</th>
-                <th className="text-center px-4 py-2.5">IVA</th>
-                <th className="text-center px-4 py-2.5">Stock</th>
-                <th className="w-20"/>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtrados.map(p=>(
-                <tr key={p.id} className="hover:bg-slate-50 group">
-                  <td className="px-4 py-2.5 font-semibold">{p.nombre}</td>
-                  <td className="px-4 py-2.5 text-slate-500">{p.categoria||"—"}</td>
-                  <td className="px-4 py-2.5 text-slate-400 text-xs">{p.codigoInterno||p.codigoBarras||"—"}</td>
-                  <td className="px-4 py-2.5 text-right font-bold text-yellow-700">{fmtMoney(p.precio||0,"CRC")}</td>
-                  <td className="px-4 py-2.5 text-center text-slate-500">{p.pctIVA||13}%</td>
-                  <td className={`px-4 py-2.5 text-center font-semibold ${p.stock!=null&&p.stockMin!=null&&p.stock<=p.stockMin?"text-red-500":"text-slate-600"}`}>
-                    {p.stock!=null?p.stock:"—"}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                      <button onClick={()=>{setEditando(p);setForm(true);}} className="text-xs px-2 py-0.5 rounded border border-slate-200 hover:bg-slate-100 text-slate-500">Editar</button>
-                      <button onClick={()=>eliminar(p.id)} className="p-1 hover:bg-red-50 text-red-400 rounded"><Trash2 size={11}/></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+      {form && <FormProducto prod={editando} onGuardar={guardar} onCancelar={()=>{setForm(false);setEditando(null);}} />}
+      {dialogo}
+    </Modulo>
   );
 }
