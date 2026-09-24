@@ -1,4 +1,4 @@
-import { getAutorSync } from "../utils/auth";
+import { getAutorSync, getCurrentUserSync } from "../utils/auth";
 /**
  * FacturacionScreen — Factura electrónica Hacienda v4.4 (desktop)
  *
@@ -17,9 +17,9 @@ import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
-import { reducirInventario, crearCXC } from "../utils/clienteUtils";
+import { guardarFacturaVenta } from "../utils/efectosVenta";
 
-import { BACKEND } from "../utils/config.js";
+import { emitir, etiquetaEstado, camposFactura, idempotencyFactura, facturaReintentable, reintentarFactura, emisionesEnCurso, registrarEmision, quitarEmision, propietarioDe } from "../utils/comprobantes";
 
 // ── Constantes Hacienda ───────────────────────────────────────────────────────
 const TIPOS_DOC = [
@@ -259,6 +259,8 @@ export default function FacturacionScreen() {
   const [empleados,  setEmpleados]  = useState([]);
   const [sending,    setSending]    = useState(false);
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
+  const propietario = propietarioDe(getCurrentUserSync());
+  const [enCurso,    setEnCurso]    = useState(() => emisionesEnCurso(propietario)); // emisiones que quedaron a medias
   const [authToken,  setAuthToken]  = useState(null);
   const [proyectoId, setProyectoId] = useState("");
   const [activeTab, setActiveTab] = useState("lineas"); // tab activo en móvil
@@ -390,63 +392,9 @@ export default function FacturacionScreen() {
     setCedulaError("");
   };
 
-  // ── Asiento contable automático por factura ──────────────────────────────
-  const crearAsientoFactura = async (factura) => {
-    try {
-      const asientos = await db.getAsientos();
-      const num  = `AJ-${String(asientos.length + 1).padStart(5, "0")}`;
-      const sub  = parseFloat(factura.subtotal  || 0);
-      const iva  = parseFloat(factura.totalIVA  || 0);
-      const tot  = parseFloat(factura.total     || 0);
-      if (tot <= 0) return;
-
-      const lineas = [];
-      if (factura.condPago === "02") {
-        lineas.push({ cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: tot, haber: 0 });
-      } else {
-        lineas.push({ cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: tot, haber: 0 });
-      }
-      if (sub > 0) lineas.push({ cuentaCodigo: "4101", cuentaNombre: "Ingresos por ventas", debe: 0, haber: sub });
-      if (iva > 0) lineas.push({ cuentaCodigo: "2301", cuentaNombre: "IVA por pagar",       debe: 0, haber: iva });
-
-      const totalDebe  = lineas.reduce((s, l) => s + l.debe,  0);
-      const totalHaber = lineas.reduce((s, l) => s + l.haber, 0);
-      if (Math.abs(totalDebe - totalHaber) > 0.02) return;
-
-      await db.setAsientos([...asientos, {
-        id: genId(), numero: num, estado: "confirmado", autoGenerado: true,
-        descripcion: `Factura ${factura.numero} — ${factura.cliente?.nombre || "Consumidor Final"}`,
-        fecha: factura.fecha, totalDebe, totalHaber, lineas,
-        facturaRef: factura.numero, creadoEn: new Date().toISOString(), creadoPor: getAutorSync(),
-      }]);
-    } catch (e) {
-      console.warn("[Facturacion] No se pudo crear asiento:", e.message);
-    }
-  };
-
+  // Guarda la factura y aplica inventario, CxC y asiento una sola vez (ver efectosVenta.js).
   const guardarLocal = async (factura) => {
-    const all = await db.getFacturas();
-    await db.setFacturas([...all, factura]);
-
-    // ── Conexiones lógicas ───────────────────────────────────────────────────
-    // 1. Reducir inventario por los productos vendidos
-    await reducirInventario(factura.lineas);
-
-    // 2. Si es a crédito (condPago "02"), crear CXC + evento calendario
-    if (factura.condPago === "02") {
-      await crearCXC({
-        cliente:    factura.cliente,
-        total:      factura.total,
-        moneda:     factura.moneda,
-        plazo:      factura.plazo || 30,
-        facturaRef: factura.numero,
-        token:      authToken,
-      });
-    }
-
-    // 3. Asiento contable automático
-    await crearAsientoFactura(factura);
-
+    await guardarFacturaVenta(factura, authToken);
     cargar();
   };
 
@@ -503,36 +451,100 @@ export default function FacturacionScreen() {
         })),
         moneda:     f.moneda,
         tipoCambio: f.moneda === "USD" ? (settings.tipoCambio || 600) : 1,
+        tipoDoc:    f.tipoDoc, // "04" = tiquete; antes no se enviaba y todo salía como factura
       };
-      const res = await fetch(`${BACKEND}/api/invoices`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+      const intento = { ...f, payload };
+      // Se anota ANTES de llamar al backend: si la app se cierra a la mitad se
+      // puede reanudar con la misma Idempotency-Key (no se crea otra factura).
+      try {
+        registrarEmision(intento, propietario);
+      } catch (err) {
+        alert(`No se pudo preparar la emisión en este equipo (${err.message}). No se envió nada; intentá de nuevo.`);
+        return;
+      }
+      const r = await emitir("/api/invoices", payload, { token: authToken, idempotencyKey: idempotencyFactura(intento) });
+      if (await procesarResultado(intento, r)) resetForm();
+    } finally {
+      setSending(false);
+      setEnCurso(emisionesEnCurso(propietario));
+    }
+  };
 
-      // El backend devuelve: { clave, numeroConsecutivo, estado, modoSimulacion, respuestaHacienda, ... }
-      const guardada = {
-        ...f,
-        estado:             json.estado || "enviado",
-        clave:              json.clave,
-        numeroConsecutivo:  json.numeroConsecutivo,
-        modoSimulacion:     json.modoSimulacion,
-        haciendaRes:        json.respuestaHacienda,
-      };
+  // Guarda la factura según la respuesta. Devuelve false si el backend la
+  // rechazó por validación (no se guardó nada allá) para dejar el formulario.
+  const procesarResultado = async (intento, r) => {
+    if (!r.ok && !r.comprobante && r.status && r.status < 500) {
+      quitarEmision(intento.id);
+      alert(`${r.error}${r.faltantes?.length ? `\n\nFalta: ${r.faltantes.join(", ")}` : ""}`);
+      return false;
+    }
+    // Inventario, CxC y asiento se aplican una sola vez aunque el envío falle;
+    // los reintentos actualizan esta misma factura.
+    const { propietario: _p, ...datos } = intento;
+    // Si la factura ya existe localmente (p. ej. al reanudar), sus datos
+    // fiscales mandan: un error de red no reemplaza un estado conocido.
+    const local = (await db.getFacturas()).find(x => x.id === intento.id);
+    const factura = { ...datos, ...(local || {}) };
+    const guardada = { ...factura, ...camposFactura(r, factura) };
+    try {
       await guardarLocal(guardada);
-      setEnviada(guardada);
-      resetForm();
     } catch (err) {
-      // Si falla la conexión, guardar como pendiente para reenvío
-      const guardada = { ...f, estado: "pendiente", error: err.message };
-      await guardarLocal(guardada);
-      setEnviada(guardada);
-      alert(`Guardada localmente. Se enviará cuando haya conexión.\n${err.message}`);
+      // El comprobante ya existe en el backend: NO se deja volver a emitir este
+      // formulario (crearía otra clave). Se muestra el resultado, la emisión
+      // sigue en la cola para "Reanudar" y se puede completar el registro.
+      setEnviada({ ...guardada, errorLocal: err.message });
+      alert(`${etiquetaEstado(guardada.estado)}, pero no se pudo completar el registro local (${err.message}).\n\nNo la vuelvas a emitir: usá "Completar registro".`);
+      return true;
+    }
+    quitarEmision(intento.id);
+    setEnviada(guardada);
+    if (!r.ok) alert(`${etiquetaEstado(guardada.estado)}\n${r.error}\n\nLa factura quedó guardada. Usá "Reintentar envío" (aquí o en el historial); no la vuelvas a emitir.`);
+    return true;
+  };
+
+  // Completa el registro local (inventario, CxC, asiento) de una factura ya emitida.
+  const completarRegistro = async (factura) => {
+    setSending(true);
+    try {
+      const { errorLocal: _e, ...limpia } = factura;
+      await guardarLocal(limpia);
+      quitarEmision(limpia.id);
+      setEnviada(limpia);
+    } catch (err) {
+      alert(`Todavía no se pudo completar el registro: ${err.message}`);
+    } finally {
+      setSending(false);
+      setEnCurso(emisionesEnCurso(propietario));
+    }
+  };
+
+  // Reanuda una emisión que quedó a medias (app cerrada durante el envío).
+  const reanudarEmision = async (intento) => {
+    if (!propietario || intento.propietario !== propietario) return; // solo la cuenta que la inició
+    const local = (await db.getFacturas()).find(x => x.id === intento.id);
+    // Ya tiene comprobante confirmado y no hay nada que reenviar: solo completar lo local.
+    if (local?.haciendaId && !facturaReintentable(local)) return completarRegistro(local);
+    setSending(true);
+    try {
+      const r = local?.haciendaId
+        ? (await reintentarFactura(local, authToken)).r
+        : await emitir("/api/invoices", intento.payload, { token: authToken, idempotencyKey: idempotencyFactura(intento) });
+      await procesarResultado(intento, r);
+    } finally {
+      setSending(false);
+      setEnCurso(emisionesEnCurso(propietario));
+    }
+  };
+
+  // Retoma una factura guardada que quedó a medias, con la misma clave.
+  const reintentarEnvio = async (factura) => {
+    setSending(true);
+    try {
+      const { r, campos } = await reintentarFactura(factura, authToken);
+      const actualizada = { ...factura, ...campos };
+      await guardarLocal(actualizada);
+      setEnviada(actualizada);
+      if (!r.ok) alert(`${etiquetaEstado(actualizada.estado)}\n${r.error}`);
     } finally {
       setSending(false);
     }
@@ -615,12 +627,9 @@ export default function FacturacionScreen() {
 
   // ── Banner de confirmación ────────────────────────────────────────────────
   if (enviada) {
-    const esEnviada  = ["enviado","simulado","aceptada"].includes(enviada.estado);
-    const estadoLabel = enviada.estado === "simulado"  ? "Simulada (modo prueba)" :
-                        enviada.estado === "enviado"   ? "Enviada a Hacienda ✓" :
-                        enviada.estado === "aceptada"  ? "Aceptada por Hacienda ✓" :
-                        enviada.estado === "guardada"  ? "Guardada como borrador" :
-                        "Pendiente de envío";
+    const esEnviada  = ["enviado","simulado","aceptado","aceptada"].includes(enviada.estado);
+    const estadoLabel = etiquetaEstado(enviada.estado);
+    const puedeReintentar = facturaReintentable(enviada);
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 fade-in overflow-y-auto py-6 px-4">
         <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-yellow-100" : "bg-yellow-100"}`}>
@@ -662,6 +671,29 @@ export default function FacturacionScreen() {
           </div>
         )}
 
+        {enviada.errorLocal && (
+          <div className="w-full max-w-md bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900">
+            La factura se emitió, pero falta completar inventario, CxC o asiento: {enviada.errorLocal}
+          </div>
+        )}
+        {enviada.error && (
+          <div className="w-full max-w-md bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+            {enviada.error}
+          </div>
+        )}
+        {enviada.errorLocal && (
+          <button onClick={() => completarRegistro(enviada)} disabled={sending}
+            className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-50">
+            {sending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Completar registro
+          </button>
+        )}
+        {!enviada.errorLocal && puedeReintentar && (
+          <button onClick={() => reintentarEnvio(enviada)} disabled={sending}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
+            {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Reintentar envío
+          </button>
+        )}
+
         {/* QR de SINPE */}
         <div className="flex flex-col items-center gap-1 border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
           <SinpeQR
@@ -693,6 +725,23 @@ export default function FacturacionScreen() {
 
   return (
     <div className="flex flex-col h-full">
+
+      {enCurso.length > 0 && (
+        <div className="px-4 py-2 bg-amber-50 border-b border-amber-300 text-xs text-amber-900 space-y-1 shrink-0">
+          <p className="font-semibold">⚠ {enCurso.length === 1 ? "Una factura no terminó" : `${enCurso.length} facturas no terminaron`} de emitirse (se cerró la app o se cortó la conexión). Reanudala: no se va a duplicar.</p>
+          {enCurso.map(i => (
+            <div key={i.id} className="flex items-center gap-3">
+              <span className="font-mono">{i.numero}</span>
+              <span>{i.cliente?.nombre || "Consumidor Final"}</span>
+              <span className="font-semibold">{fmtMoney(i.total, i.moneda)}</span>
+              <button onClick={() => reanudarEmision(i)} disabled={sending}
+                className="ml-auto bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white px-2 py-0.5 rounded font-semibold">
+                Reanudar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── TOOLBAR OSCURO ──────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">

@@ -3,8 +3,8 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban, Send, Loader2 } from "lucide-react";
-import { BACKEND } from "../utils/config.js";
 import { getToken } from "../utils/auth";
+import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada } from "../utils/comprobantes";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -208,10 +208,10 @@ export default function NotasCreditoScreen() {
       const contacto = contactos.find(c => c.nombre?.toLowerCase() === cLower);
 
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/emision/nota-credito`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
+      // Si el backend ya tiene la nota (id guardado), siempre se retoma esa, nunca se crea otra.
+      const r = nota.haciendaId
+        ? await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token })
+        : await emitir("/api/emision/nota-credito", {
           cliente: {
             nombre: nota.cliente || "Consumidor Final",
             cedula: contacto?.cedula || undefined,
@@ -229,19 +229,14 @@ export default function NotasCreditoScreen() {
           moneda:           nota.moneda || "CRC",
           referenciaNumero: nota.facturaRef || undefined,
           referenciaRazon:  nota.motivo || "Anulación de comprobante",
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+        }, { token, idempotencyKey: `nc-${nota.id}` });
 
-      // Persistir estado Hacienda en la nota local
+      // Persistir estado Hacienda en la nota local (también si falló: guarda el id para reenviar)
       const todas = await db.getNotasCredito();
-      await db.setNotasCredito(todas.map(x => x.id === nota.id
-        ? { ...x, haciendaEstado: json.estado, haciendaClave: json.clave, haciendaConsecutivo: json.numeroConsecutivo }
-        : x
-      ));
+      await db.setNotasCredito(todas.map(x => x.id === nota.id ? { ...x, ...camposHacienda(r, nota) } : x));
       await cargar();
-      alert(`✅ NC enviada a Hacienda\nEstado: ${json.estado}\nClave: ${json.clave}`);
+      if (r.ok) alert(`✅ NC enviada a Hacienda\nEstado: ${r.comprobante.estado}\nClave: ${r.comprobante.clave}`);
+      else alert(`❌ ${etiquetaEstado(r.comprobante?.estado || "sin_conexion")}\n${r.error}${r.comprobante ? "\n\nLa nota quedó guardada: usá \"Enviar\" de nuevo para reintentar con la misma clave." : ""}`);
     } catch (err) {
       alert(`❌ Error al enviar a Hacienda:\n${err.message}`);
     } finally {
@@ -281,12 +276,14 @@ export default function NotasCreditoScreen() {
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
         <button
-          disabled={!sel || enviando || sel.estado === "anulada"}
+          disabled={!sel || enviando || sel.estado === "anulada" || yaEnviada(sel)}
           onClick={() => sel && enviarHacienda(sel)}
           title={sel?.haciendaClave ? `Clave: ${sel.haciendaClave}` : "Enviar NC-01 a Hacienda"}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           {enviando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          {sel?.haciendaEstado ? `Hacienda: ${sel.haciendaEstado}` : "Enviar Hacienda"}
+          {!sel?.haciendaEstado ? "Enviar Hacienda"
+            : !yaEnviada(sel) ? "Reintentar envío"
+            : `Hacienda: ${etiquetaEstado(sel.haciendaEstado)}`}
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
         <button onClick={() => printHTML(htmlNotasCredito(visibles, settings))}

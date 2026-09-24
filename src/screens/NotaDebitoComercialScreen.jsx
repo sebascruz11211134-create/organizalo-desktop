@@ -12,8 +12,8 @@ import { Plus, Trash2, Send, Loader2, Search, X, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
-import { BACKEND } from "../utils/config.js";
 import { getToken, getAutorSync } from "../utils/auth";
+import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada } from "../utils/comprobantes";
 
 // ── Constantes Hacienda ───────────────────────────────────────────────────────
 const TIPOS_IVA = [
@@ -148,10 +148,10 @@ export default function NotaDebitoComercialScreen() {
     setEnviando(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/emision/nota-debito`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
+      // Si el backend ya tiene la nota (id guardado), siempre se retoma esa, nunca se crea otra.
+      const r = nota.haciendaId
+        ? await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token })
+        : await emitir("/api/emision/nota-debito", {
           cliente: {
             nombre: nota.cliente?.nombre || "Consumidor Final",
             cedula: nota.cliente?.cedula || undefined,
@@ -168,21 +168,15 @@ export default function NotaDebitoComercialScreen() {
           moneda:           nota.moneda || "CRC",
           referenciaNumero: nota.facturaRef || undefined,
           referenciaRazon:  nota.motivo || "Cargo adicional",
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Error ${res.status}`);
+        }, { token, idempotencyKey: `nd-${nota.id}` });
 
+      // Guardar el resultado también si falló: conserva el id para reenviar.
+      const campos = camposHacienda(r, nota);
       const todas = JSON.parse(localStorage.getItem("@finanzia/notasDebitoComercial") || "[]");
-      await guardarNotasLocal(todas.map(x => x.id === nota.id
-        ? { ...x, haciendaEstado: json.estado, haciendaClave: json.clave, haciendaConsecutivo: json.numeroConsecutivo }
-        : x
-      ));
-      setNotas(prev => prev.map(x => x.id === nota.id
-        ? { ...x, haciendaEstado: json.estado, haciendaClave: json.clave }
-        : x
-      ));
-      alert(`✅ ND enviada a Hacienda\nEstado: ${json.estado}\nClave: ${json.clave}`);
+      await guardarNotasLocal(todas.map(x => x.id === nota.id ? { ...x, ...campos } : x));
+      setNotas(prev => prev.map(x => x.id === nota.id ? { ...x, ...campos } : x));
+      if (r.ok) alert(`✅ ND enviada a Hacienda\nEstado: ${r.comprobante.estado}\nClave: ${r.comprobante.clave}`);
+      else alert(`❌ ${etiquetaEstado(r.comprobante?.estado || "sin_conexion")}\n${r.error}${r.comprobante ? "\n\nLa nota quedó guardada: usá \"Enviar\" de nuevo para reintentar con la misma clave." : ""}`);
     } catch (err) {
       alert(`❌ Error al enviar a Hacienda:\n${err.message}`);
     } finally {
@@ -214,12 +208,14 @@ export default function NotaDebitoComercialScreen() {
         </button>
         <div className="w-px h-5 bg-slate-500 mx-1" />
         <button
-          disabled={!sel || enviando || sel.estado === "anulada"}
+          disabled={!sel || enviando || sel.estado === "anulada" || yaEnviada(sel)}
           onClick={() => sel && enviarHacienda(sel)}
           title={sel?.haciendaClave ? `Clave: ${sel.haciendaClave}` : "Enviar ND-01 a Hacienda"}
           className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           {enviando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          {sel?.haciendaEstado ? `Hacienda: ${sel.haciendaEstado}` : "Enviar Hacienda"}
+          {!sel?.haciendaEstado ? "Enviar Hacienda"
+            : !yaEnviada(sel) ? "Reintentar envío"
+            : `Hacienda: ${etiquetaEstado(sel.haciendaEstado)}`}
         </button>
         <div className="flex-1" />
         <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">

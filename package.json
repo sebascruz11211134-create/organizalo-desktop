@@ -1,12 +1,12 @@
 {
   "name": "organizalo-desktop",
   "version": "1.0.0",
-  "description": "Organ\u00edzalo.AI \u2014 Sistema de gesti\u00f3n empresarial web",
+  "description": "Organízalo.AI — Sistema de gestión empresarial web",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --import ./test/_register.mjs --test test/*.test.mjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
