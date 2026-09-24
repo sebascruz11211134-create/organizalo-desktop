@@ -403,3 +403,6 @@ div.bg-slate-700 button.bg-blue-600, div.bg-slate-700 button.bg-blue-500, div.bg
 button.bg-blue-600, button.bg-blue-500, button.bg-blue-700 {
   background-color: var(--monki-k) !important; color: var(--monki-y) !important; border-radius: 999px !important;
 }
+
+/* Kit de interfaz: el buscador marca el foco en su borde de píldora, no en el input */
+input.ui-sin-foco:not([type=checkbox]):not([type=radio]):focus { box-shadow: none !important; border-color: transparent !important; }

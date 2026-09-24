@@ -3,7 +3,8 @@
  * Pestañas: Productos | Movimientos | Kardex
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, X, Edit2, Package, Trash2, FileSpreadsheet, ArrowUpCircle, ArrowDownCircle, SlidersHorizontal } from "lucide-react";
+import { Plus, Edit2, Package, Trash2, FileSpreadsheet, SlidersHorizontal, AlertTriangle, Coins, ArrowLeftRight } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, Interruptor, Tarjeta, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -84,49 +85,22 @@ function ProductoModal({ prod, onClose, onSave }) {
     onSave(); onClose();
   };
 
+  const campos = [["Nombre *","nombre","text","col-span-2"],["Código interno","codigoInterno","text",""],["Código CABYS","codigoCabys","text",""],["Precio de venta","precio","number",""],["Costo","costo","number",""],["Stock actual","stock","number",""],["Stock mínimo","stockMin","number",""]];
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">{esNuevo ? "Nuevo producto" : "Editar producto"}</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400 hover:text-slate-700"/></button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[["Nombre *","nombre","text","col-span-2"],["Código interno","codigoInterno","text",""],["Código CABYS","codigoCabys","text",""],["Precio de venta","precio","number",""],["Costo","costo","number",""],["Stock actual","stock","number",""],["Stock mínimo","stockMin","number",""]].map(([label,key,type,cls]) => (
-            <label key={key} className={`block ${cls}`}>
-              <span className="text-xs font-semibold text-slate-500 uppercase">{label}</span>
-              <input type={type} value={form[key]??""} onChange={e=>u(key,e.target.value)} step={type==="number"?"any":undefined} min={type==="number"?"0":undefined}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </label>
-          ))}
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Categoría</span>
-            <select value={form.categoria} onChange={e=>u("categoria",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              {CATEGORIAS.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Unidad</span>
-            <select value={form.unidad} onChange={e=>u("unidad",e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              {UNIDADES.map(u=><option key={u} value={u}>{u}</option>)}
-            </select>
-          </label>
-          <label className="block col-span-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
-            <textarea value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} rows={2}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-          <label className="flex items-center gap-2 col-span-2">
-            <input type="checkbox" checked={form.activo} onChange={e=>u("activo",e.target.checked)} className="rounded"/>
-            <span className="text-sm text-slate-700">Activo</span>
-          </label>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
-        </div>
+    <Modal titulo={esNuevo ? "Nuevo producto" : "Editar producto"} subtitulo={esNuevo ? "Agregalo a tu inventario" : form.nombre} onCerrar={onClose}
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar producto</Boton></>}>
+      <div className="grid grid-cols-2 gap-3">
+        {campos.map(([label,key,type,cls]) => (
+          <Campo key={key} etiqueta={label} className={cls}>
+            <Entrada type={type} value={form[key]??""} onChange={e=>u(key,e.target.value)} step={type==="number"?"any":undefined} min={type==="number"?"0":undefined}/>
+          </Campo>
+        ))}
+        <Campo etiqueta="Categoría"><Seleccion value={form.categoria} onChange={e=>u("categoria",e.target.value)} opciones={CATEGORIAS}/></Campo>
+        <Campo etiqueta="Unidad"><Seleccion value={form.unidad} onChange={e=>u("unidad",e.target.value)} opciones={UNIDADES}/></Campo>
+        <Campo etiqueta="Descripción" className="col-span-2"><AreaTexto value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} rows={2}/></Campo>
+        <div className="col-span-2"><Interruptor activo={form.activo !== false} onCambio={v=>u("activo",v)} etiqueta="Producto activo"/></div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -164,95 +138,53 @@ function ModalMovimiento({ productos, onClose, onGuardar }) {
     } finally { setGuardando(false); }
   };
 
-  const tipoColor = tipo==="Entrada" ? "bg-yellow-500" : tipo==="Salida" ? "bg-rose-500" : "bg-yellow-500";
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className={`${tipoColor} rounded-t-2xl px-5 py-4 flex items-center justify-between`}>
-          <h2 className="text-white font-bold text-base">Nuevo movimiento de inventario</h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white"><X size={18}/></button>
-        </div>
-        <div className="p-5 space-y-4">
-          {/* Tipo */}
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Tipo</label>
-            <div className="grid grid-cols-3 gap-2 mt-1">
-              {["Entrada","Salida","Ajuste"].map(t=>(
-                <button key={t} onClick={()=>handleTipo(t)}
-                  className={`py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${tipo===t ? t==="Entrada"?"border-yellow-500 bg-yellow-50 text-yellow-700":t==="Salida"?"border-rose-500 bg-rose-50 text-rose-700":"border-yellow-500 bg-yellow-50 text-yellow-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>
-                  {t}
+    <Modal titulo="Nuevo movimiento" subtitulo="Entrada, salida o ajuste de inventario" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={handleGuardar} cargando={guardando}>Guardar movimiento</Boton></>}>
+      <div className="space-y-4">
+        <Campo etiqueta="Tipo" ayuda={tipo==="Entrada"?"Sube el stock del producto":tipo==="Salida"?"Baja el stock del producto":"Establece el stock exacto (ideal para conteo físico)"}>
+          <div className="grid grid-cols-3 gap-2">
+            {["Entrada","Salida","Ajuste"].map(t=>(
+              <button key={t} type="button" onClick={()=>handleTipo(t)}
+                className={`ui-boton py-2 rounded-full text-sm font-bold transition-all duration-300 ease-monki ${tipo===t ? "bg-monki-k text-monki-y" : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </Campo>
+        <div className="relative">
+          <Campo etiqueta="Producto">
+            <Entrada value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowDrop(true);setProdSel(null);}}
+              onFocus={()=>setShowDrop(true)} onBlur={()=>setTimeout(()=>setShowDrop(false),150)} placeholder="Buscar producto…"/>
+          </Campo>
+          {showDrop && filtrados.length>0 && (
+            <div className="animate-desplegar absolute top-full left-0 right-0 mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-44 overflow-auto">
+              {filtrados.map(p=>(
+                <button key={p.id} type="button" onMouseDown={()=>seleccionar(p)}
+                  className="w-full flex justify-between text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                  <span className="font-semibold">{p.nombre}</span>
+                  <span className="font-mono text-[11px] text-monki-k/50">Stock {p.stock??"—"}</span>
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">
-              {tipo==="Entrada"?"Sube el stock del producto":tipo==="Salida"?"Baja el stock del producto":"Establece el stock exacto (ideal para conteo físico)"}
-            </p>
-          </div>
-          {/* Producto */}
-          <div className="relative">
-            <label className="text-xs font-bold text-slate-500 uppercase">Producto</label>
-            <input value={busqProd} onChange={e=>{setBusqProd(e.target.value);setShowDrop(true);setProdSel(null);}}
-              onFocus={()=>setShowDrop(true)} onBlur={()=>setTimeout(()=>setShowDrop(false),150)}
-              placeholder="Buscar producto…"
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-            {showDrop && filtrados.length>0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-20 max-h-40 overflow-auto">
-                {filtrados.map(p=>(
-                  <button key={p.id} onMouseDown={()=>seleccionar(p)}
-                    className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b border-gray-50 last:border-0">
-                    <span className="font-semibold">{p.nombre}</span>
-                    <span className="text-slate-400 ml-2">Stock: {p.stock??"—"}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* Cantidad / Stock final */}
-          {tipo==="Ajuste" ? (
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">Stock final correcto</label>
-              {prodSel && <p className="text-[10px] text-slate-400">Stock actual: {prodSel.stock??"—"}</p>}
-              <input type="number" min="0" step="any" value={stockFinal} onChange={e=>setStockFinal(e.target.value)} placeholder="Ej: 50"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-            </div>
-          ) : (
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">Cantidad</label>
-              <input type="number" min="0.01" step="any" value={cantidad} onChange={e=>setCantidad(e.target.value)} placeholder="Ej: 10"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-            </div>
           )}
-          {/* Motivo */}
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase">Motivo</label>
-            <select value={motivo} onChange={e=>setMotivo(e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
-              {MOTIVOS[tipo].map(m=><option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-          {/* Nota + Fecha */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
-              <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">Nota (opcional)</label>
-              <input value={nota} onChange={e=>setNota(e.target.value)} placeholder="Referencia…"
-                className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"/>
-            </div>
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50">Cancelar</button>
-            <button onClick={handleGuardar} disabled={guardando} className={`flex-1 py-2.5 rounded-lg text-white text-sm font-semibold disabled:opacity-50 ${tipoColor}`}>
-              {guardando?"Guardando…":"Guardar movimiento"}
-            </button>
-          </div>
+        </div>
+        {tipo==="Ajuste" ? (
+          <Campo etiqueta="Stock final correcto" ayuda={prodSel ? `Stock actual: ${prodSel.stock??"—"}` : undefined}>
+            <Entrada type="number" min="0" step="any" value={stockFinal} onChange={e=>setStockFinal(e.target.value)} placeholder="Ej: 50"/>
+          </Campo>
+        ) : (
+          <Campo etiqueta="Cantidad">
+            <Entrada type="number" min="0.01" step="any" value={cantidad} onChange={e=>setCantidad(e.target.value)} placeholder="Ej: 10"/>
+          </Campo>
+        )}
+        <Campo etiqueta="Motivo"><Seleccion value={motivo} onChange={e=>setMotivo(e.target.value)} opciones={MOTIVOS[tipo]}/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Fecha"><Entrada type="date" value={fecha} onChange={e=>setFecha(e.target.value)}/></Campo>
+          <Campo etiqueta="Nota (opcional)"><Entrada value={nota} onChange={e=>setNota(e.target.value)} placeholder="Referencia…"/></Campo>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -297,8 +229,9 @@ export default function InventarioScreen() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (p) => {
-    if (!confirm(`¿Eliminar "${p.nombre}"?`)) return;
+    if (!(await confirmar("Eliminar producto", `¿Eliminar "${p.nombre}" del inventario? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getProductos();
     await db.setProductos(todos.filter(x => x.id !== p.id));
     cargar();
@@ -327,235 +260,144 @@ export default function InventarioScreen() {
     exportExcel(rows, `kardex-${prodKardex?.nombre?.replace(/\s/g,"-")}`);
   };
 
-  // ── Tab Selector ────────────────────────────────────────────────────────────
-  const TABS = [
-    { key: "productos",    label: "Productos" },
-    { key: "movimientos",  label: "Movimientos" },
-    { key: "kardex",       label: "Kardex" },
+  const moneda = settings.moneda || "CRC";
+  const bajoMinimo = productos.filter(p=>(p.stock||0)<=(p.stockMin||0)&&p.activo!==false);
+  const valorInventario = productos.reduce((t,p)=>t+(parseFloat(p.stock)||0)*(parseFloat(p.costo)||0),0);
+  const signo = m => m.tipo==="Entrada"?`+${m.cant ?? m.cantidad}`:m.tipo==="Salida"?`-${m.cant ?? m.cantidad}`:`=${m.saldo ?? m.stockFinal}`;
+  const tonoMov = t => t==="Entrada" ? "exito" : t==="Salida" ? "peligro" : "alerta";
+
+  const columnasProductos = [
+    { key: "codigo", titulo: "Código", render: p => <span className="font-mono text-xs text-monki-k/50">{p.codigoInterno||"—"}</span> },
+    { key: "nombre", titulo: "Producto", render: p => (
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Package size={14} className="text-monki-k"/></span>
+        <div className="min-w-0"><p className="font-bold text-monki-k truncate">{p.nombre}</p><p className="text-[11px] text-monki-k/45">{p.categoria||"—"}</p></div>
+      </div>) },
+    { key: "cabys", titulo: "CABYS", render: p => <span className="font-mono text-xs text-monki-k/50">{p.codigoCabys||"—"}</span> },
+    { key: "precio", titulo: "Precio", alinear: "right", render: p => <span className="font-bold">{fmtMoney(p.precio,moneda)}</span> },
+    { key: "costo", titulo: "Costo", alinear: "right", render: p => p.costo ? fmtMoney(p.costo,moneda) : "—" },
+    { key: "stock", titulo: "Stock", alinear: "right", render: p => {
+      const bajo = (p.stock||0)<=(p.stockMin||0)&&p.activo!==false;
+      return <span className="inline-flex items-center gap-1.5 justify-end">{bajo && <Estado tono="peligro" punto={false}>Bajo</Estado>}<b className={bajo?"text-red-600":""}>{p.stock??"—"}</b><span className="text-[11px] text-monki-k/40">{p.unidad||"Unid"}</span></span>;
+    } },
+    { key: "min", titulo: "Mín.", alinear: "right", render: p => <span className="text-monki-k/45">{p.stockMin??0}</span> },
+    { key: "estado", titulo: "Estado", render: p => p.activo===false ? <Estado>Inactivo</Estado> : <Estado tono="exito">Activo</Estado> },
+    { key: "acciones", titulo: "", alinear: "right", render: p => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>setModal(p)}/>
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(p)}/>
+      </div>) },
   ];
 
+  const columnasMovs = [
+    { key: "fecha", titulo: "Fecha", render: m => fmtDate(m.fecha) },
+    { key: "producto", titulo: "Producto", render: m => <b>{m.productoNombre}</b> },
+    { key: "tipo", titulo: "Tipo", render: m => <Estado tono={tonoMov(m.tipo)}>{m.tipo}</Estado> },
+    { key: "motivo", titulo: "Motivo", render: m => <span className="text-monki-k/60">{m.motivo}</span> },
+    { key: "cantidad", titulo: "Cantidad", alinear: "right", render: m => <b className={m.tipo==="Salida"?"text-red-600":""}>{signo(m)}</b> },
+    { key: "nota", titulo: "Nota", render: m => <span className="text-monki-k/45">{m.nota||"—"}</span> },
+  ];
+
+  const columnasKardex = [
+    { key: "fecha", titulo: "Fecha", render: m => fmtDate(m.fecha) },
+    { key: "tipo", titulo: "Tipo", render: m => <Estado tono={tonoMov(m.tipo)}>{m.tipo}</Estado> },
+    { key: "origen", titulo: "Origen", render: m => <span className="text-monki-k/60">{m.origen}</span> },
+    { key: "ref", titulo: "Referencia", render: m => <span className="font-mono text-xs">{m.ref}</span> },
+    { key: "detalle", titulo: "Detalle", render: m => <span className="text-monki-k/60 truncate block max-w-[200px]">{m.detalle}</span> },
+    { key: "cantidad", titulo: "Cantidad", alinear: "right", render: m => <b className={m.tipo==="Salida"?"text-red-600":""}>{signo(m)}</b> },
+    { key: "saldo", titulo: "Saldo", alinear: "right", render: m => <b>{m.saldo}</b> },
+  ];
+
+  const acciones = tab === "productos"
+    ? <Boton icono={Plus} onClick={()=>setModal({})}>Nuevo producto</Boton>
+    : tab === "movimientos"
+      ? <Boton icono={Plus} onClick={()=>setShowModalMov(true)}>Nuevo movimiento</Boton>
+      : prodKardex && <Boton variante="secundario" icono={FileSpreadsheet} onClick={exportarKardex}>Exportar Excel</Boton>;
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Tab bar */}
-      <div className="flex shrink-0 bg-white border-b border-gray-200 px-4">
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors mr-1
-              ${tab===t.key ? "border-yellow-500 text-yellow-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-            {t.label}
-            {t.key==="productos" && <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{productos.length}</span>}
-            {t.key==="movimientos" && <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{manuales.length}</span>}
-          </button>
-        ))}
-      </div>
-
-      {/* ── TAB: PRODUCTOS ────────────────────────────────────────────────────── */}
-      {tab === "productos" && (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 md:px-6 py-3 bg-white border-b border-gray-200 flex-wrap">
-            <div className="flex items-center gap-2 flex-1 min-w-0 bg-gray-100 rounded-lg px-3 py-2">
-              <Search size={14} className="text-slate-400 shrink-0"/>
-              <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar producto…" className="bg-transparent text-sm flex-1 outline-none min-w-0"/>
-            </div>
-            <select value={cat} onChange={e=>setCat(e.target.value)} className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none">
-              {categorias.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-            <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-              <Plus size={15}/> Nuevo producto
-            </button>
-          </div>
-          <div className="flex gap-4 px-4 md:px-6 py-2 bg-gray-50 border-b border-gray-200 text-xs text-slate-500">
-            <span>{productos.length} productos</span>
-            <span className="text-yellow-600 font-semibold">{productos.filter(p=>(p.stock||0)<=(p.stockMin||0)&&p.activo!==false).length} bajo mínimo</span>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <table className="table-base">
-              <thead><tr>
-                <th>Código</th><th>Nombre</th><th>Categoría</th><th>CABYS</th>
-                <th>Precio venta</th><th>Costo</th><th>Stock</th><th>Mín.</th><th>Unidad</th><th></th>
-              </tr></thead>
-              <tbody>
-                {visibles.length===0 ? (
-                  <tr><td colSpan={10} className="text-center py-16 text-slate-400">{productos.length===0?"Sin productos. Creá el primero →":"Sin resultados."}</td></tr>
-                ) : visibles.map(p => {
-                  const bajo = (p.stock||0)<=(p.stockMin||0)&&p.activo!==false;
-                  return (
-                    <tr key={p.id} className={p.activo===false?"opacity-40":""}>
-                      <td className="text-xs font-mono text-slate-400">{p.codigoInterno||"—"}</td>
-                      <td className="font-semibold text-slate-900"><div className="flex items-center gap-2"><Package size={13} className="text-yellow-600 shrink-0"/>{p.nombre}</div></td>
-                      <td className="text-slate-500 text-xs">{p.categoria||"—"}</td>
-                      <td className="text-xs font-mono text-slate-400">{p.codigoCabys||"—"}</td>
-                      <td className="text-yellow-700 font-semibold">{fmtMoney(p.precio,settings.moneda||"CRC")}</td>
-                      <td className="text-slate-500">{p.costo?fmtMoney(p.costo,settings.moneda||"CRC"):"—"}</td>
-                      <td className={`font-bold ${bajo?"text-red-600":"text-slate-700"}`}>{p.stock??"—"}{bajo&&<span className="ml-1 text-xs text-red-500">⚠</span>}</td>
-                      <td className="text-slate-400">{p.stockMin??0}</td>
-                      <td className="text-slate-400 text-xs">{p.unidad||"Unid"}</td>
-                      <td><div className="flex items-center gap-1">
-                        <button onClick={()=>setModal(p)} className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700"><Edit2 size={13}/></button>
-                        <button onClick={()=>eliminar(p)} className="p-1.5 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
-                      </div></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <Modulo
+      seccion="Inventario"
+      titulo="Inventario"
+      descripcion="Productos, existencias y cada movimiento que las cambia."
+      acciones={acciones}
+      indicadores={tab !== "kardex" && (
+        <Indicadores>
+          <Indicador etiqueta="Productos" valor={productos.length} detalle={`${productos.filter(p=>p.activo!==false).length} activos`} icono={Package} delay={40}/>
+          <Indicador etiqueta="Bajo mínimo" valor={bajoMinimo.length} detalle={bajoMinimo.length ? "Revisá y reponé" : "Todo en orden"} icono={AlertTriangle} alerta={bajoMinimo.length>0} delay={90}
+            onClick={bajoMinimo.length ? ()=>{setTab("productos");setCat("Todos");setBusq("");} : undefined}/>
+          <Indicador etiqueta="Valor al costo" valor={fmtMoney(valorInventario,moneda)} detalle="Stock × costo" icono={Coins} destacado delay={140}/>
+          <Indicador etiqueta="Movimientos" valor={manuales.length} detalle="Registrados a mano" icono={ArrowLeftRight} delay={190} onClick={()=>setTab("movimientos")}/>
+        </Indicadores>
       )}
+      pestanas={{ activa: tab, onCambiar: setTab, items: [
+        { key: "productos", label: "Productos", cuenta: productos.length },
+        { key: "movimientos", label: "Movimientos", cuenta: manuales.length },
+        { key: "kardex", label: "Kardex" },
+      ] }}
+    >
+      {tab === "productos" && (<>
+        <BarraFiltros resumen={`${visibles.length} de ${productos.length}`}>
+          <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por nombre o código…"/>
+          <Selector valor={cat} onCambio={setCat} opciones={categorias}/>
+        </BarraFiltros>
+        <Tabla columnas={columnasProductos} filas={visibles} onFila={p=>setModal(p)}
+          vacio={<Vacio icono={Package} titulo={productos.length===0 ? "Todavía no hay productos" : "Sin resultados"}
+            texto={productos.length===0 ? "Creá tu primer producto para empezar a controlar el inventario." : "Probá con otra búsqueda o categoría."}
+            accion={productos.length===0 && <Boton icono={Plus} onClick={()=>setModal({})}>Nuevo producto</Boton>}/>}/>
+      </>)}
 
-      {/* ── TAB: MOVIMIENTOS ─────────────────────────────────────────────────── */}
       {tab === "movimientos" && (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex items-center justify-between px-4 md:px-6 py-3 bg-white border-b border-gray-200">
-            <p className="text-sm text-slate-500">{manuales.length} movimientos manuales registrados</p>
-            <button onClick={()=>setShowModalMov(true)}
-              className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-700">
-              <Plus size={15}/> Nuevo movimiento
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto">
-            <table className="table-base">
-              <thead><tr>
-                <th>Fecha</th><th>Producto</th><th>Tipo</th><th>Motivo</th>
-                <th className="text-right">Cantidad</th><th>Nota</th>
-              </tr></thead>
-              <tbody>
-                {manuales.length===0 ? (
-                  <tr><td colSpan={6} className="text-center py-16 text-slate-400">
-                    <div className="flex flex-col items-center gap-3">
-                      <SlidersHorizontal size={36} className="text-slate-200"/>
-                      <p>Sin movimientos aún. Usá "+ Nuevo movimiento" para registrar una entrada, salida o ajuste.</p>
-                    </div>
-                  </td></tr>
-                ) : [...manuales].reverse().map(m => (
-                  <tr key={m.id}>
-                    <td>{fmtDate(m.fecha)}</td>
-                    <td className="font-semibold">{m.productoNombre}</td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold
-                        ${m.tipo==="Entrada"?"bg-yellow-100 text-yellow-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-yellow-100 text-yellow-700"}`}>
-                        {m.tipo}
-                      </span>
-                    </td>
-                    <td className="text-slate-500 text-xs">{m.motivo}</td>
-                    <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-yellow-700":m.tipo==="Salida"?"text-rose-600":"text-yellow-700"}`}>
-                      {m.tipo==="Entrada"?`+${m.cantidad}`:m.tipo==="Salida"?`-${m.cantidad}`:`=${m.stockFinal}`}
-                    </td>
-                    <td className="text-slate-400 text-xs">{m.nota||"—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Tabla columnas={columnasMovs} filas={[...manuales].reverse()}
+          vacio={<Vacio icono={SlidersHorizontal} titulo="Sin movimientos todavía"
+            texto="Registrá entradas, salidas o ajustes de conteo físico."
+            accion={<Boton icono={Plus} onClick={()=>setShowModalMov(true)}>Nuevo movimiento</Boton>}/>}/>
       )}
 
-      {/* ── TAB: KARDEX ──────────────────────────────────────────────────────── */}
       {tab === "kardex" && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Panel izquierdo */}
-          <div className="w-52 md:w-64 border-r border-slate-200 flex flex-col bg-white shrink-0">
-            <div className="p-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2">
-                <Search size={13} className="text-slate-400"/>
-                <input value={busqK} onChange={e=>setBusqK(e.target.value)} placeholder="Buscar…"
-                  className="flex-1 bg-transparent text-xs focus:outline-none text-slate-700"/>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {prodsFiltK.length===0 && <p className="text-center text-slate-400 text-xs py-8">Sin productos</p>}
+        <div className="flex-1 min-h-0 flex gap-3">
+          <Tarjeta className="w-60 shrink-0 flex flex-col min-h-0">
+            <div className="p-3"><Buscador valor={busqK} onCambio={setBusqK} className="!min-w-0 !max-w-none"/></div>
+            <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
+              {prodsFiltK.length===0 && <p className="text-center text-monki-k/40 text-xs py-8">Sin productos</p>}
               {prodsFiltK.map(p=>(
-                <button key={p.id} onClick={()=>setSelected(p.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${selected===p.id?"bg-yellow-50 border-l-2 border-l-yellow-600":""}`}>
-                  <p className="text-xs font-semibold text-slate-800 truncate">{p.nombre}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Stock: {p.stock??"—"} {p.unidad||""}</p>
+                <button key={p.id} type="button" onClick={()=>setSelected(p.id)}
+                  className={`ui-boton w-full text-left px-3 py-2 rounded-xl transition-all duration-200 ${selected===p.id?"bg-monki-k text-monki-y":"hover:bg-monki-cream"}`}>
+                  <p className="text-[13px] font-bold truncate">{p.nombre}</p>
+                  <p className={`font-mono text-[10px] mt-0.5 ${selected===p.id?"text-monki-y/70":"text-monki-k/45"}`}>Stock {p.stock??"—"} {p.unidad||""}</p>
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Panel derecho */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 flex-wrap">
-              <Package size={13} className="text-yellow-400"/>
-              <span className="text-white text-xs font-semibold">{prodKardex ? prodKardex.nombre : "Seleccioná un producto"}</span>
-              {prodKardex && <>
-                <div className="w-px h-5 bg-slate-500 mx-1"/>
-                <label className="text-slate-300 text-xs">Desde:</label>
-                <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1"/>
-                <label className="text-slate-300 text-xs">Hasta:</label>
-                <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1"/>
-                <div className="flex-1"/>
-                <button onClick={exportarKardex} className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold">
-                  <FileSpreadsheet size={13}/> Excel
-                </button>
-              </>}
-            </div>
-
+          </Tarjeta>
+          <div className="flex-1 min-w-0 flex flex-col min-h-0">
             {!prodKardex ? (
-              <div className="flex-1 flex items-center justify-center text-slate-400">
-                <div className="text-center">
-                  <Package size={40} className="mx-auto mb-3 text-slate-200"/>
-                  <p className="text-sm font-medium">Seleccioná un producto del panel izquierdo</p>
-                </div>
+              <Tarjeta className="flex-1 flex items-center justify-center">
+                <Vacio icono={Package} titulo="Elegí un producto" texto="Seleccioná un producto de la lista para ver todos sus movimientos."/>
+              </Tarjeta>
+            ) : (<>
+              <BarraFiltros>
+                <span className="text-[18px] font-black tracking-[-0.03em] text-monki-k mr-2">{prodKardex.nombre}</span>
+                <label className="flex items-center gap-2 monki-tag text-monki-k/55">Desde <Entrada type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="!w-auto !py-1.5"/></label>
+                <label className="flex items-center gap-2 monki-tag text-monki-k/55">Hasta <Entrada type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="!w-auto !py-1.5"/></label>
+              </BarraFiltros>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <Indicador etiqueta="Entradas" valor={`+${totalEntradas}`}/>
+                <Indicador etiqueta="Salidas" valor={`-${totalSalidas}`}/>
+                <Indicador etiqueta="Stock actual" valor={prodKardex.stock??"—"} destacado/>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border-b border-slate-200">
-                  <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
-                    <p className="text-[10px] text-slate-400 uppercase font-medium">Entradas</p>
-                    <p className="text-xl font-bold text-yellow-700">+{totalEntradas}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
-                    <p className="text-[10px] text-slate-400 uppercase font-medium">Salidas</p>
-                    <p className="text-xl font-bold text-rose-600">-{totalSalidas}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-3 border border-slate-200 text-center">
-                    <p className="text-[10px] text-slate-400 uppercase font-medium">Stock actual</p>
-                    <p className="text-xl font-bold text-slate-800">{prodKardex.stock??"—"}</p>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-4">
-                  <div className="overflow-x-auto">
-                    <table className="table-base w-full">
-                      <thead><tr>
-                        <th>Fecha</th><th>Tipo</th><th>Origen</th><th>Referencia</th>
-                        <th>Detalle</th><th className="text-right">Cantidad</th><th className="text-right">Saldo</th>
-                      </tr></thead>
-                      <tbody>
-                        {movimientos.length===0 && (
-                          <tr><td colSpan={7} className="text-center text-slate-400 py-10">Sin movimientos en el período</td></tr>
-                        )}
-                        {movimientos.map((m,i)=>(
-                          <tr key={i}>
-                            <td>{fmtDate(m.fecha)}</td>
-                            <td><span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${m.tipo==="Entrada"?"bg-yellow-100 text-yellow-700":m.tipo==="Salida"?"bg-rose-100 text-rose-700":"bg-yellow-100 text-yellow-700"}`}>{m.tipo}</span></td>
-                            <td className="text-slate-500 text-xs">{m.origen}</td>
-                            <td className="font-mono text-xs">{m.ref}</td>
-                            <td className="text-slate-600 max-w-[160px] truncate text-xs">{m.detalle}</td>
-                            <td className={`text-right font-bold ${m.tipo==="Entrada"?"text-yellow-700":m.tipo==="Salida"?"text-rose-600":"text-yellow-700"}`}>
-                              {m.tipo==="Entrada"?`+${m.cant}`:m.tipo==="Salida"?`-${m.cant}`:`=${m.saldo}`}
-                            </td>
-                            <td className="text-right font-semibold">{m.saldo}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
+              <Tabla columnas={columnasKardex} filas={movimientos} claveFila={m=>`${m.fecha}-${m.ref}-${m.tipo}-${m.detalle}`}
+                vacio={<Vacio titulo="Sin movimientos en el período" texto="Cambiá las fechas para ver más."/>}/>
+            </>)}
           </div>
         </div>
       )}
 
-      {/* Modales */}
       {modal !== null && (
         <ProductoModal prod={Object.keys(modal).length>0?modal:null} onClose={()=>setModal(null)} onSave={cargar}/>
       )}
       {showModalMov && (
         <ModalMovimiento productos={productos} onClose={()=>setShowModalMov(false)} onGuardar={()=>{setShowModalMov(false);cargar();}}/>
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
