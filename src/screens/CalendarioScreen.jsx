@@ -13,13 +13,15 @@ import { fetchWithTimeout } from "../utils/fetchTimeout";
 
 import { BACKEND } from "../utils/config";
 import { fechaLocal } from "../utils/fmt";
+import { Modulo, Boton, BotonIcono, Modal, Campo, Entrada, AreaTexto, Interruptor, Tarjeta } from "../components/ui";
 
+// Paleta Monki (los eventos ya guardados conservan su color)
 const TIPOS = [
-  { id: "evento",      label: "Evento",      color: "#10b981" },
-  { id: "cita",        label: "Cita",        color: "#6366f1" },
-  { id: "recordatorio",label: "Recordatorio",color: "#f59e0b" },
-  { id: "tarea",       label: "Tarea",       color: "#3b82f6" },
-  { id: "reunion",     label: "Reunión",     color: "#ec4899" },
+  { id: "evento",      label: "Evento",      color: "#111111" },
+  { id: "cita",        label: "Cita",        color: "#FFD600" },
+  { id: "recordatorio",label: "Recordatorio",color: "#E0A800" },
+  { id: "tarea",       label: "Tarea",       color: "#6B6B6B" },
+  { id: "reunion",     label: "Reunión",     color: "#DC2626" },
 ];
 
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
@@ -41,7 +43,7 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
     hora:        evento?.hora        || "09:00",
     todo_el_dia: evento?.todo_el_dia || false,
     cliente_nombre: evento?.cliente_nombre || "",
-    color:       evento?.color       || "#10b981",
+    color:       evento?.color       || "#111111",
   });
 
   const tipo = TIPOS.find(t => t.id === form.tipo);
@@ -49,124 +51,33 @@ function EventoModal({ evento, onClose, onSave, onDelete }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-          <div className="w-3 h-3 rounded-full" style={{ background: form.color }} />
-          <h2 className="font-semibold text-slate-800 flex-1">
-            {esNuevo ? "Nuevo evento" : "Editar evento"}
-          </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <div className="p-5 space-y-4">
-          {/* Tipo */}
-          <div className="flex gap-2 flex-wrap">
-            {TIPOS.map(t => (
-              <button
-                key={t.id}
-                onClick={() => { set("tipo", t.id); set("color", t.color); }}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all
-                  ${form.tipo === t.id ? "text-white border-transparent" : "text-slate-500 border-slate-200 hover:border-slate-300"}`}
-                style={form.tipo === t.id ? { background: t.color, borderColor: t.color } : {}}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Título */}
-          <input
-            autoFocus
-            value={form.titulo}
-            onChange={e => set("titulo", e.target.value)}
-            placeholder="Título del evento"
-            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400/30 focus:border-yellow-400"
-          />
-
-          {/* Fecha + Hora */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-xs text-slate-500 mb-1 block">Fecha</label>
-              <input
-                type="date"
-                value={form.fecha}
-                onChange={e => set("fecha", e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
-              />
-            </div>
-            {!form.todo_el_dia && (
-              <div className="w-32">
-                <label className="text-xs text-slate-500 mb-1 block">Hora</label>
-                <input
-                  type="time"
-                  value={form.hora}
-                  onChange={e => set("hora", e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Todo el día */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.todo_el_dia}
-              onChange={e => set("todo_el_dia", e.target.checked)}
-              className="accent-yellow-500"
-            />
-            <span className="text-sm text-slate-600">Todo el día</span>
-          </label>
-
-          {/* Cliente */}
-          <ClienteAutocomplete
-            value={form.cliente_nombre}
-            onChange={(c, str) => set("cliente_nombre", str)}
-            tipo="todos"
-            placeholder="Cliente (opcional)"
-            ringColor="focus:ring-yellow-400"
-            className="py-2"
-          />
-
-          {/* Descripción */}
-          <textarea
-            value={form.descripcion}
-            onChange={e => set("descripcion", e.target.value)}
-            placeholder="Descripción (opcional)"
-            rows={2}
-            className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30 resize-none"
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center gap-2 px-5 pb-5">
-          {!esNuevo && (
-            <button
-              onClick={() => onDelete(evento.id)}
-              className="flex items-center gap-1.5 px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm transition-colors"
-            >
-              <Trash2 size={14} /> Eliminar
+    <Modal titulo={esNuevo ? "Nuevo evento" : "Editar evento"} subtitulo={tipo?.label} onCerrar={onClose} ancho="max-w-md"
+      pie={<>
+        {!esNuevo && <Boton variante="peligro" icono={Trash2} onClick={() => onDelete(evento.id)} className="mr-auto">Eliminar</Boton>}
+        <Boton variante="fantasma" onClick={onClose}>Cancelar</Boton>
+        <Boton onClick={() => onSave(form)} disabled={!form.titulo.trim()}>{esNuevo ? "Crear" : "Guardar"}</Boton>
+      </>}>
+      <div className="space-y-4">
+        <div className="flex gap-1.5 flex-wrap">
+          {TIPOS.map(t => (
+            <button key={t.id} type="button" onClick={() => { set("tipo", t.id); set("color", t.color); }}
+              className={`ui-boton inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${form.tipo === t.id ? "bg-monki-k text-white" : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>
+              <span className="w-2 h-2 rounded-full" style={{ background: t.color }}/>{t.label}
             </button>
-          )}
-          <span className="flex-1" />
-          <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm">
-            Cancelar
-          </button>
-          <button
-            onClick={() => onSave(form)}
-            disabled={!form.titulo.trim()}
-            className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-40 transition-colors"
-          >
-            {esNuevo ? "Crear" : "Guardar"}
-          </button>
+          ))}
         </div>
+        <Campo etiqueta="Título"><Entrada value={form.titulo} onChange={e => set("titulo", e.target.value)} placeholder="Título del evento"/></Campo>
+        <div className="grid grid-cols-[1fr_8rem] gap-3">
+          <Campo etiqueta="Fecha"><Entrada type="date" value={form.fecha} onChange={e => set("fecha", e.target.value)}/></Campo>
+          {!form.todo_el_dia && <Campo etiqueta="Hora"><Entrada type="time" value={form.hora} onChange={e => set("hora", e.target.value)}/></Campo>}
+        </div>
+        <Interruptor activo={form.todo_el_dia} onCambio={v => set("todo_el_dia", v)} etiqueta="Todo el día"/>
+        <Campo etiqueta="Cliente (opcional)">
+          <ClienteAutocomplete value={form.cliente_nombre} onChange={(c, str) => set("cliente_nombre", str)} tipo="todos" placeholder="Buscar cliente…" ringColor="focus:ring-monki-y" className="py-2"/>
+        </Campo>
+        <Campo etiqueta="Descripción"><AreaTexto value={form.descripcion} onChange={e => set("descripcion", e.target.value)} placeholder="Descripción (opcional)" rows={2}/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -266,97 +177,56 @@ export default function CalendarioScreen() {
 
   const todayStr = hoy();
 
+  const eventosMes = eventos.length;
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 px-6 py-3 bg-white border-b border-slate-200 shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={() => navMes(-1)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-            <ChevronLeft size={16} className="text-slate-500" />
-          </button>
-          <h1 className="text-base font-bold text-slate-800 w-44 text-center">
-            {MESES[mes]} {año}
-          </h1>
-          <button onClick={() => navMes(1)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-            <ChevronRight size={16} className="text-slate-500" />
-          </button>
+    <Modulo
+      seccion="Agenda"
+      titulo="Calendario"
+      descripcion="Citas, cobros y recordatorios del mes. Tocá un día para agregar algo."
+      acciones={<>
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Mes anterior" onClick={() => navMes(-1)}/>
+          <span className="text-sm font-black w-36 text-center">{MESES[mes]} {año}</span>
+          <BotonIcono icono={ChevronRight} titulo="Mes siguiente" onClick={() => navMes(1)}/>
         </div>
-
-        <button
-          onClick={() => { setMes(now.getMonth()); setAño(now.getFullYear()); }}
-          className="text-xs text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full hover:bg-yellow-50 transition-colors"
-        >
-          Hoy
-        </button>
-
-        <span className="flex-1" />
-
-        {/* Leyenda tipos */}
-        <div className="hidden lg:flex items-center gap-3">
-          {TIPOS.map(t => (
-            <span key={t.id} className="flex items-center gap-1 text-xs text-slate-500">
-              <span className="w-2 h-2 rounded-full" style={{ background: t.color }} />
-              {t.label}
-            </span>
-          ))}
-        </div>
-
-        <button
-          onClick={() => setModal({ fecha: hoy() })}
-          className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors"
-        >
-          <Plus size={15} /> Nuevo evento
-        </button>
+        <Boton variante="secundario" onClick={() => { setMes(now.getMonth()); setAño(now.getFullYear()); }}>Hoy</Boton>
+        <Boton icono={Plus} onClick={() => setModal({ fecha: hoy() })}>Nuevo evento</Boton>
+      </>}
+    >
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        {TIPOS.map(t => (
+          <span key={t.id} className="flex items-center gap-1.5 text-xs font-semibold text-monki-k/60">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />{t.label}
+          </span>
+        ))}
+        <span className="ml-auto monki-tag text-monki-k/45">{loading ? "Cargando…" : `${eventosMes} eventos`}</span>
       </div>
-
-      {/* ── Grid ────────────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto">
-        {/* Encabezado días semana */}
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
-          {DIAS_SEMANA.map(d => (
-            <div key={d} className="py-2 text-center text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-              {d}
-            </div>
-          ))}
+      <Tarjeta className="flex-1 min-h-0 overflow-auto flex flex-col">
+        <div className="grid grid-cols-7 border-b-2 border-black/10 sticky top-0 bg-white z-10">
+          {DIAS_SEMANA.map(d => <div key={d} className="py-2.5 text-center monki-tag text-[10px] text-monki-k/50">{d}</div>)}
         </div>
-
-        {/* Celdas */}
         <div className="grid grid-cols-7 flex-1">
           {celdas.map((d, i) => {
             const fecha = d ? fechaStr(año, mes, d) : null;
             const esHoy = fecha === todayStr;
             const evs   = eventosDelDia(d);
             return (
-              <div
-                key={i}
-                onClick={() => d && setModal({ fecha })}
-                className={`min-h-[100px] border-b border-r border-slate-100 p-2 cursor-pointer transition-colors
-                  ${d ? "hover:bg-yellow-50/40" : "bg-slate-50/50"}
-                  ${esHoy ? "bg-yellow-50" : ""}`}
-              >
+              <div key={i} onClick={() => d && setModal({ fecha })}
+                className={`group min-h-[96px] border-b border-r border-black/5 p-1.5 transition-colors ${d ? "cursor-pointer hover:bg-monki-y/15" : "bg-monki-cream/40"} ${esHoy ? "bg-monki-y/25" : ""}`}>
                 {d && (
                   <>
-                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium mb-1
-                      ${esHoy ? "bg-yellow-500 text-white" : "text-slate-600"}`}>
-                      {d}
-                    </span>
+                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold mb-1 transition-colors ${esHoy ? "bg-monki-k text-monki-y" : "text-monki-k/70 group-hover:bg-white"}`}>{d}</span>
                     <div className="space-y-0.5">
                       {evs.slice(0, 3).map(e => (
-                        <div
-                          key={e.id}
-                          onClick={(ev) => { ev.stopPropagation(); setModal({ evento: e }); }}
-                          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium truncate cursor-pointer hover:opacity-80"
-                          style={{ background: (e.color || "#10b981") + "22", color: e.color || "#10b981" }}
-                        >
-                          {!e.todo_el_dia && e.hora && (
-                            <span className="shrink-0 opacity-70">{e.hora.slice(0,5)}</span>
-                          )}
+                        <div key={e.id} onClick={(ev) => { ev.stopPropagation(); setModal({ evento: e }); }}
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white border border-black/10 text-[10px] font-semibold text-monki-k truncate cursor-pointer hover:border-monki-k transition-colors">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: e.color || "#111" }}/>
+                          {!e.todo_el_dia && e.hora && <span className="shrink-0 font-mono text-monki-k/50">{e.hora.slice(0,5)}</span>}
                           <span className="truncate">{e.titulo}</span>
                         </div>
                       ))}
-                      {evs.length > 3 && (
-                        <span className="text-[10px] text-slate-400 pl-1">+{evs.length - 3} más</span>
-                      )}
+                      {evs.length > 3 && <span className="text-[10px] font-bold text-monki-k/45 pl-1">+{evs.length - 3} más</span>}
                     </div>
                   </>
                 )}
@@ -364,17 +234,11 @@ export default function CalendarioScreen() {
             );
           })}
         </div>
-      </div>
+      </Tarjeta>
 
-      {/* ── Modal ───────────────────────────────────────────────────────────── */}
       {modal && (
-        <EventoModal
-          evento={modal.evento || { fecha: modal.fecha }}
-          onClose={() => setModal(null)}
-          onSave={guardarEvento}
-          onDelete={eliminarEvento}
-        />
+        <EventoModal evento={modal.evento || { fecha: modal.fecha }} onClose={() => setModal(null)} onSave={guardarEvento} onDelete={eliminarEvento}/>
       )}
-    </div>
+    </Modulo>
   );
 }
