@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import api from "../utils/api";
 import { getToken } from "../utils/auth";
+import { Modulo, Boton, BarraFiltros, Buscador, Tarjeta, Vacio, Estado, Indicadores, Indicador } from "../components/ui";
 import { useTranslation } from "react-i18next";
 import {
   Users, CheckCircle, Clock, AlertCircle, XCircle,
@@ -30,18 +31,13 @@ function fmt(iso) {
 
 function EstadoBadge({ estado }) {
   const MAP = {
-    activo:     { label: "Activo",     bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-yellow-500" },
-    trial:      { label: "En trial",   bg: "bg-blue-100",    text: "text-blue-700",    dot: "bg-blue-500"    },
-    vencido:    { label: "Vencido",    bg: "bg-yellow-100",   text: "text-yellow-700",   dot: "bg-yellow-500"   },
-    suspendido: { label: "Suspendido", bg: "bg-red-100",     text: "text-red-700",     dot: "bg-red-500"     },
+    activo:     { label: "Activo",     tono: "exito" },
+    trial:      { label: "En trial",   tono: "alerta" },
+    vencido:    { label: "Vencido",    tono: "neutro" },
+    suspendido: { label: "Suspendido", tono: "peligro" },
   };
   const s = MAP[estado] || MAP.vencido;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}/>
-      {s.label}
-    </span>
-  );
+  return <Estado tono={s.tono}>{s.label}</Estado>;
 }
 
 // ── Mapa de claves → etiquetas legibles ───────────────────────────────────────
@@ -318,20 +314,20 @@ function FilaCliente({ u, token, onRefresh }) {
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+    <div className={`animate-entrar border-2 rounded-[18px] overflow-hidden bg-white transition-all duration-300 ease-monki ${expandido ? "border-monki-k shadow-[5px_5px_0_#111]" : "border-black/10 hover:border-black/25"}`}>
       {/* Fila principal */}
       <button
-        className="w-full flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
+        className="ui-boton w-full flex items-center gap-4 px-4 py-3 transition-colors text-left"
         onClick={() => setExpandido(e => !e)}
       >
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-sm flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-monki-y flex items-center justify-center text-monki-k font-black text-sm flex-shrink-0">
           {(u.nombre || u.email)[0].toUpperCase()}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-900 truncate">{u.nombre}</p>
+          <p className="text-sm font-extrabold text-monki-k truncate">{u.nombre}</p>
           <p className="text-xs text-slate-500 truncate">{u.email}</p>
         </div>
 
@@ -851,18 +847,8 @@ function CodigosPanel({ token }) {
 
 // ── Tarjeta de stat ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, color, icon: Icon }) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}>
-        <Icon size={16} className="text-white"/>
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{label}</p>
-      </div>
-    </div>
-  );
+function StatCard({ label, value, icon: Icon, destacado, alerta, delay }) {
+  return <Indicador etiqueta={label} valor={value} icono={Icon} destacado={destacado} alerta={alerta} delay={delay} />;
 }
 
 // ── Panel de uso de API por empresa ──────────────────────────────────────────
@@ -1034,135 +1020,73 @@ export default function AdminScreen() {
     return matchBusqueda && matchFiltro;
   });
 
+  const Seccion = ({ abierto, onClick, icono: Icono, children }) => (
+    <button type="button" onClick={onClick}
+      className={`ui-boton w-full flex items-center gap-3 px-4 py-3 rounded-[18px] border-2 text-left transition-all duration-300 ease-monki ${abierto ? "bg-monki-k text-white border-monki-k" : "bg-white border-black/10 hover:border-black/25"}`}>
+      <span className={`w-8 h-8 rounded-full flex items-center justify-center ${abierto ? "bg-monki-y text-monki-k" : "bg-monki-cream"}`}><Icono size={15}/></span>
+      <span className="flex-1 font-extrabold">{children}</span>
+      {abierto ? <ChevronUp size={15}/> : <ChevronDown size={15}/>}
+    </button>
+  );
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
-            <Shield size={18} className="text-white"/>
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">{t("admin.title")}</h1>
-            <p className="text-xs text-slate-500">{t("admin.subtitle")}</p>
-          </div>
-        </div>
-        <button
-          onClick={cargar}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors disabled:opacity-60"
-        >
-          <RefreshCw size={12} className={loading ? "animate-spin" : ""}/>
-          Actualizar
-        </button>
-      </div>
-
-      {/* Stats */}
-      {stats && (
+    <Modulo
+      seccion="Superadmin"
+      titulo={t("admin.title")}
+      descripcion={t("admin.subtitle")}
+      acciones={<Boton variante="secundario" icono={RefreshCw} onClick={cargar} cargando={loading} disabled={loading}>Actualizar</Boton>}
+      indicadores={stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard label="Total clientes" value={stats.total}      color="bg-slate-700"    icon={Users}       />
-          <StatCard label="Activos"         value={stats.activos}    color="bg-yellow-500"  icon={CheckCircle} />
-          <StatCard label="En trial"        value={stats.enTrial}    color="bg-blue-500"     icon={Clock}       />
-          <StatCard label="Vencidos"        value={stats.vencidos}   color="bg-yellow-500"    icon={AlertCircle} />
-          <StatCard label="Suspendidos"     value={stats.suspendidos} color="bg-red-500"     icon={XCircle}     />
+          <StatCard label="Clientes"    value={stats.total}       icon={Users}       delay={40}/>
+          <StatCard label="Activos"     value={stats.activos}     icon={CheckCircle} destacado delay={80}/>
+          <StatCard label="En trial"    value={stats.enTrial}     icon={Clock}       delay={120}/>
+          <StatCard label="Vencidos"    value={stats.vencidos}    icon={AlertCircle} delay={160}/>
+          <StatCard label="Suspendidos" value={stats.suspendidos} icon={XCircle}     alerta={stats.suspendidos>0} delay={200}/>
         </div>
       )}
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [
+        { key: "todos",      label: t("admin.filter.all"), cuenta: usuarios.length },
+        { key: "activo",     label: t("admin.filter.active") },
+        { key: "trial",      label: t("admin.filter.trial") },
+        { key: "suspendido", label: t("admin.filter.suspended") },
+      ] }}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-3 max-w-6xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Seccion abierto={verCodigos} onClick={() => setVerCodigos(v => !v)} icono={Key}>{t("admin.codes.title")}</Seccion>
+          <Seccion abierto={verApiUsage} onClick={() => setVerApiUsage(v => !v)} icono={Sparkles}>Uso de IA por empresa</Seccion>
+        </div>
+        {verCodigos && token && <div className="animate-desplegar"><CodigosPanel token={token} /></div>}
+        {verApiUsage && token && <div className="animate-desplegar"><ApiUsagePanel token={token} /></div>}
 
-      {/* Códigos de acceso — toggle */}
-      <div>
-        <button
-          onClick={() => setVerCodigos(v => !v)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
-        >
-          <Key size={14}/>
-          {t("admin.codes.title")}
-          {verCodigos ? <ChevronUp size={13} className="text-slate-400"/> : <ChevronDown size={13} className="text-slate-400"/>}
-        </button>
-        {verCodigos && token && (
-          <div className="mt-3">
-            <CodigosPanel token={token} />
+        <BarraFiltros resumen={`${usuariosFiltrados.length} de ${usuarios.length}`}>
+          <Buscador valor={busqueda} onCambio={setBusqueda} placeholder={t("admin.searchPlaceholder")}/>
+        </BarraFiltros>
+
+        {error && <div className="animate-desplegar bg-red-100 rounded-full px-4 py-2.5 text-sm font-bold text-red-700">{error}</div>}
+
+        {loading ? (
+          <Tarjeta className="flex items-center justify-center py-16 text-monki-k/50 text-sm">
+            <RefreshCw size={18} className="animate-spin mr-2"/> {t("admin.loadingClient")}
+          </Tarjeta>
+        ) : usuariosFiltrados.length === 0 ? (
+          <Tarjeta><Vacio icono={Users} titulo={busqueda || filtro !== "todos" ? t("admin.noResults") : t("admin.noClients")}/></Tarjeta>
+        ) : (
+          <div className="space-y-2">
+            <div className="hidden md:grid grid-cols-[36px_1fr_160px_120px_112px_20px] gap-4 px-4 monki-tag text-[10px] text-monki-k/45">
+              <div/>
+              <div>{t("admin.clientCol")}</div>
+              <div>{t("admin.companyCol")}</div>
+              <div>{t("admin.statusCol")}</div>
+              <div className="text-right">{t("admin.planCol")}</div>
+              <div/>
+            </div>
+            {usuariosFiltrados.map(u => (
+              <FilaCliente key={u.id} u={u} token={token} onRefresh={cargar}/>
+            ))}
           </div>
         )}
       </div>
-
-      {/* Uso de API por empresa — toggle */}
-      <div>
-        <button
-          onClick={() => setVerApiUsage(v => !v)}
-          className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
-        >
-          <Sparkles size={14} className="text-yellow-600"/>
-          Uso de IA por empresa
-          {verApiUsage ? <ChevronUp size={13} className="text-slate-400"/> : <ChevronDown size={13} className="text-slate-400"/>}
-        </button>
-        {verApiUsage && token && (
-          <ApiUsagePanel token={token} />
-        )}
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-          <input
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-            placeholder={t("admin.searchPlaceholder")}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"
-          />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {[
-            { id: "todos",      label: t("admin.filter.all") },
-            { id: "activo",     label: t("admin.filter.active") },
-            { id: "trial",      label: t("admin.filter.trial") },
-            { id: "suspendido", label: t("admin.filter.suspended") },
-          ].map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFiltro(f.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize transition-colors ${
-                filtro === f.id
-                  ? "bg-slate-800 text-white"
-                  : "border border-slate-200 text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Lista */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
-      )}
-
-      {loading ? (
-        <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
-          <RefreshCw size={18} className="animate-spin mr-2"/> {t("admin.loadingClient")}
-        </div>
-      ) : usuariosFiltrados.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-sm">
-          {busqueda || filtro !== "todos" ? t("admin.noResults") : t("admin.noClients")}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Encabezado */}
-          <div className="hidden md:grid grid-cols-[36px_1fr_160px_120px_112px_20px] gap-4 px-4 text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-            <div/>
-            <div>{t("admin.clientCol")}</div>
-            <div>{t("admin.companyCol")}</div>
-            <div>{t("admin.statusCol")}</div>
-            <div className="text-right">{t("admin.planCol")}</div>
-            <div/>
-          </div>
-          {usuariosFiltrados.map(u => (
-            <FilaCliente key={u.id} u={u} token={token} onRefresh={cargar}/>
-          ))}
-        </div>
-      )}
-    </div>
+    </Modulo>
   );
 }
