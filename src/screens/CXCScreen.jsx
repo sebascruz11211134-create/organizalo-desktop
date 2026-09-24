@@ -5,7 +5,8 @@ import { getAutorSync } from "../utils/auth";
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, Printer, FileSpreadsheet, Trash2, Ban } from "lucide-react";
+import { Plus, Printer, FileSpreadsheet, Trash2, Ban, Wallet, AlertTriangle, Receipt } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, fechaLocal, fechaDesplazada } from "../utils/fmt";
@@ -13,12 +14,12 @@ import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../uti
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
-  if (d.estado === "anulada") return { label: "Anulada", cls: "bg-slate-100 text-slate-500" };
+  if (d.estado === "anulada") return { label: "Anulada", tono: "neutro" };
   const s = Math.max(0, d.total - (d.pagado || 0));
-  if (s <= 0) return { label: "Saldada", cls: "bg-green-100 text-green-800" };
-  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
-  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-yellow-100 text-yellow-700" };
-  return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
+  if (s <= 0) return { label: "Saldada", tono: "exito" };
+  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", tono: "peligro" };
+  if ((d.pagado || 0) > 0) return { label: "Parcial", tono: "alerta" };
+  return { label: "Pendiente", tono: "neutro" };
 };
 
 /**
@@ -121,138 +122,66 @@ export function ReciboCXCModal({ clienteInicial, allDebts, onClose, onSave, sett
   // Clientes únicos para el autocomplete
   const clientesUnicos = [...new Set(allDebts.filter(d => d.tipo !== "pagar" && d.estado !== "anulada").map(d => d.nombre).filter(Boolean))].sort();
 
+  const saldoCliente = pendientes.reduce((s,d) => s + Math.max(0, d.total-(d.pagado||0)), 0);
+  const TH = "monki-tag text-[10px] text-monki-k/50 font-medium px-3 py-2.5 border-b-2 border-black/10";
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 bg-slate-700 rounded-t-xl">
-          <h3 className="text-white font-bold text-sm">Recibo CXC</h3>
-          <button onClick={onClose} className="text-slate-300 hover:text-white text-lg leading-none">✕</button>
+    <Modal titulo="Recibo de cobro" subtitulo="Elegí el cliente y aplicá el pago a sus facturas pendientes" onCerrar={onClose} ancho="max-w-3xl"
+      pie={<>
+        <div className="mr-auto flex flex-wrap gap-2 text-sm">
+          <span className="bg-white rounded-full px-3 py-1">Saldo del cliente <b className="text-red-600">{fmtMoney(saldoCliente, mon)}</b></span>
+          <span className="bg-monki-k text-monki-y rounded-full px-3 py-1 font-black">Aplicado {fmtMoney(totalAplicado, mon)}</span>
         </div>
-
-        {/* Campos del recibo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50">
-          {/* Cliente */}
-          <div className="col-span-2">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente *</label>
-            <input
-              list="cxc-clientes"
-              value={cliente}
-              onChange={e => handleClienteChange(e.target.value)}
-              placeholder="Nombre del cliente…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
-            />
-            <datalist id="cxc-clientes">
-              {clientesUnicos.map(c => <option key={c} value={c}/>)}
-            </datalist>
-          </div>
-          {/* Fecha */}
-          <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </div>
-          {/* Método */}
-          <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Método</label>
-            <select value={metodo} onChange={e => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              {METODOS.map(m => <option key={m}>{m}</option>)}
-            </select>
-          </div>
-          {/* Notas */}
-          <div className="col-span-2 md:col-span-4">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observación</label>
-            <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="N° de transferencia, comprobante…"
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </div>
-        </div>
-
-        {/* Grilla de facturas — estilo BOS */}
-        <div className="flex-1 overflow-auto">
-          {cliente.trim() === "" ? (
-            <p className="text-center text-slate-400 py-12 text-sm">Ingresá el nombre del cliente para ver sus facturas pendientes</p>
-          ) : pendientes.length === 0 ? (
-            <p className="text-center text-slate-400 py-12 text-sm">Este cliente no tiene facturas pendientes</p>
-          ) : (
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-slate-100 border-b border-slate-200">
-                <tr className="text-slate-500 text-[10px] uppercase tracking-wide">
-                  <th className="px-3 py-2 text-left font-semibold">Fact / Ref</th>
-                  <th className="px-3 py-2 text-left font-semibold">Fecha</th>
-                  <th className="px-3 py-2 text-left font-semibold">Vence</th>
-                  <th className="px-3 py-2 text-right font-semibold">Saldo Ant.</th>
-                  <th className="px-3 py-2 text-center font-semibold w-32">Aplicado</th>
-                  <th className="px-3 py-2 text-right font-semibold">Saldo Post.</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
+        <Boton variante="fantasma" onClick={onClose}>Cancelar</Boton>
+        <Boton icono={Receipt} disabled={totalAplicado <= 0} onClick={guardar}>Guardar recibo</Boton>
+      </>}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Campo etiqueta="Cliente *" className="col-span-2">
+          <Entrada list="cxc-clientes" value={cliente} onChange={e => handleClienteChange(e.target.value)} placeholder="Nombre del cliente…"/>
+          <datalist id="cxc-clientes">{clientesUnicos.map(c => <option key={c} value={c}/>)}</datalist>
+        </Campo>
+        <Campo etiqueta="Fecha"><Entrada type="date" value={fecha} onChange={e => setFecha(e.target.value)}/></Campo>
+        <Campo etiqueta="Método"><Seleccion value={metodo} onChange={e => setMetodo(e.target.value)} opciones={METODOS}/></Campo>
+        <Campo etiqueta="Observación" className="col-span-2 md:col-span-4"><Entrada value={notas} onChange={e => setNotas(e.target.value)} placeholder="N.° de transferencia, comprobante…"/></Campo>
+      </div>
+      <div className="border-2 border-black/10 rounded-2xl overflow-hidden">
+        {cliente.trim() === "" ? (
+          <p className="text-center text-monki-k/45 py-10 text-sm">Escribí el nombre del cliente para ver sus facturas pendientes.</p>
+        ) : pendientes.length === 0 ? (
+          <p className="text-center text-monki-k/45 py-10 text-sm">Este cliente no tiene facturas pendientes.</p>
+        ) : (
+          <div className="max-h-[40vh] overflow-auto">
+            <table className="ui-tabla w-full text-sm">
+              <thead className="sticky top-0 bg-white z-10"><tr>
+                <th className={TH+" text-left"}>Factura / ref.</th><th className={TH+" text-left"}>Fecha</th><th className={TH+" text-left"}>Vence</th>
+                <th className={TH+" text-right"}>Saldo ant.</th><th className={TH+" text-center w-32"}>Aplicado</th><th className={TH+" text-right"}>Saldo post.</th>
+              </tr></thead>
+              <tbody>
                 {pendientes.map(d => {
                   const saldoAnt  = Math.max(0, d.total - (d.pagado || 0));
                   const aplic     = parseFloat(aplicado[d.id]) || 0;
                   const saldoPost = Math.max(0, saldoAnt - aplic);
                   const vencida   = d.fechaVencimiento && d.fechaVencimiento < hoy();
                   const dmon      = d.moneda || mon;
-
                   return (
-                    <tr key={d.id} className={aplic > 0 ? "bg-green-50" : vencida ? "bg-red-50/40" : ""}>
-                      <td className="px-3 py-2 font-mono font-bold text-slate-700">
-                        {d.facturaRef || d.notas || "—"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-400"><div>{fmtDate(d.creadoEn?.slice(0,10))}</div>{d.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {d.creadoPor}</div>}</td>
-                      <td className={`px-3 py-2 ${vencida ? "text-red-600 font-semibold" : "text-slate-400"}`}>
-                        {fmtDate(d.fechaVencimiento)}
-                      </td>
-                      <td className="px-3 py-2 text-right font-semibold text-slate-700">
-                        {fmtMoney(saldoAnt, dmon)}
-                      </td>
+                    <tr key={d.id} className={`border-t border-black/5 transition-colors ${aplic > 0 ? "bg-[#FFF4B8]" : vencida ? "bg-red-50" : ""}`}>
+                      <td className="px-3 py-2 font-mono text-xs font-bold">{d.facturaRef || d.notas || "—"}</td>
+                      <td className="px-3 py-2 text-monki-k/55"><div>{fmtDate(d.creadoEn?.slice(0,10))}</div>{d.creadoPor && <div className="text-[10px] text-monki-k/40">Por {d.creadoPor}</div>}</td>
+                      <td className={`px-3 py-2 ${vencida ? "text-red-600 font-bold" : "text-monki-k/55"}`}>{fmtDate(d.fechaVencimiento)}</td>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums">{fmtMoney(saldoAnt, dmon)}</td>
                       <td className="px-3 py-2 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          max={saldoAnt}
-                          value={aplicado[d.id] ?? ""}
-                          onChange={e => setLinea(d.id, e.target.value)}
-                          placeholder="0"
-                          className="w-full border border-yellow-300 rounded px-2 py-1 text-center text-xs font-bold focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white"
-                        />
+                        <input type="number" min="0" max={saldoAnt} value={aplicado[d.id] ?? ""} onChange={e => setLinea(d.id, e.target.value)} placeholder="0"
+                          className="w-full bg-white border-2 border-monki-k/20 hover:border-monki-k rounded-xl px-2 py-1 text-center text-sm font-bold"/>
                       </td>
-                      <td className={`px-3 py-2 text-right font-bold ${saldoPost > 0 ? "text-red-600" : "text-yellow-700"}`}>
-                        {fmtMoney(saldoPost, dmon)}
-                      </td>
+                      <td className={`px-3 py-2 text-right font-black tabular-nums ${saldoPost > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldoPost, dmon)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-          )}
-        </div>
-
-        {/* Footer con totales + guardar */}
-        <div className="flex items-center gap-4 px-5 py-3 bg-slate-50 border-t border-slate-200 rounded-b-xl">
-          <div className="flex-1 flex gap-6 text-xs">
-            <div>
-              <span className="text-slate-400">Saldo total cliente:</span>{" "}
-              <strong className="text-red-600">{fmtMoney(pendientes.reduce((s,d) => s + Math.max(0, d.total-(d.pagado||0)), 0), mon)}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400">Total aplicado:</span>{" "}
-              <strong className="text-yellow-700">{fmtMoney(totalAplicado, mon)}</strong>
-            </div>
           </div>
-          <button onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">
-            Cancelar
-          </button>
-          <button
-            disabled={totalAplicado <= 0}
-            onClick={guardar}
-            className="px-6 py-2 bg-yellow-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-30 disabled:cursor-not-allowed">
-            Guardar recibo
-          </button>
-        </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -290,58 +219,32 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-5">Nueva cuenta por cobrar</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente *</label>
-            <ClienteAutocomplete
-              value={nombre}
-              onChange={(c, str) => {
-                setNombre(str);
-                if (c && c.dias_credito > 0) {
-                  // auto-sugerir fecha de vencimiento según plazo del cliente
-                  const d = new Date();
-                  d.setDate(d.getDate() + c.dias_credito);
-                  setVence(fechaLocal(d));
-                }
-              }}
-              tipo="cliente"
-            />
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
-              <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
-              <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                <option value="CRC">₡ CRC</option>
-                <option value="USD">$ USD</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha vencimiento</label>
-            <input type="date" value={vence} onChange={(e) => setVence(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia / Notas</label>
-            <input value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura, descripción…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </div>
+    <Modal titulo="Nueva cuenta por cobrar" subtitulo="Lo que un cliente te debe" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar</Boton></>}>
+      <div className="space-y-4">
+        <Campo etiqueta="Cliente *">
+          <ClienteAutocomplete
+            value={nombre}
+            onChange={(c, str) => {
+              setNombre(str);
+              if (c && c.dias_credito > 0) {
+                // auto-sugerir fecha de vencimiento según plazo del cliente
+                const d = new Date();
+                d.setDate(d.getDate() + c.dias_credito);
+                setVence(fechaLocal(d));
+              }
+            }}
+            tipo="cliente"
+          />
+        </Campo>
+        <div className="grid grid-cols-[1fr_7rem] gap-3">
+          <Campo etiqueta="Monto *"><Entrada type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"/></Campo>
+          <Campo etiqueta="Moneda"><Seleccion value={moneda} onChange={(e) => setMoneda(e.target.value)} opciones={[{value:"CRC",label:"₡ CRC"},{value:"USD",label:"$ USD"}]}/></Campo>
         </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-yellow-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800">Guardar</button>
-        </div>
+        <Campo etiqueta="Fecha de vencimiento"><Entrada type="date" value={vence} onChange={(e) => setVence(e.target.value)}/></Campo>
+        <Campo etiqueta="Referencia / notas"><Entrada value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura, descripción…"/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -368,16 +271,17 @@ export default function CXCScreen() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const { confirmar, dialogo } = useConfirmar();
   const anular = async () => {
     if (!sel) return;
-    if (!confirm(`¿Anular la CXC de ${sel.nombre}? Quedará marcada como anulada.`)) return;
+    if (!(await confirmar("Anular cuenta por cobrar", `¿Anular la CXC de ${sel.nombre}? Quedará marcada como anulada.`, { peligro: true, boton: "Anular" }))) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
     cargar();
   };
 
   const eliminar = async (d) => {
-    if (!confirm(`¿Eliminar la CXC de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar cuenta por cobrar", `¿Eliminar la CXC de ${d.nombre}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.filter((x) => x.id !== d.id));
     // Cancelar eventos de calendario — obtener token fresco para no depender del state
@@ -408,215 +312,149 @@ export default function CXCScreen() {
   const totUSD = visibles.filter((d) => d.moneda === "USD").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
   const sel = visibles.find((d) => d.id === selected);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar principal */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Nueva
-        </button>
-        <button
-          disabled={!sel || sel.estado === "anulada"}
-          onClick={anular}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Ban size={13} /> Anular
-        </button>
-        <button
-          disabled={!sel}
-          onClick={() => sel && eliminar(sel)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13} /> Eliminar
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button onClick={() => { const crc=debts.filter(d=>(d.moneda||"CRC")==="CRC"); const usd=debts.filter(d=>d.moneda==="USD"); printHTML(htmlReporteCXC(crc,usd,settings)); }}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Printer size={13} /> Imprimir
-        </button>
-        <button onClick={() => { const crc=debts.filter(d=>(d.moneda||"CRC")==="CRC"); const usd=debts.filter(d=>d.moneda==="USD"); exportExcel(sheetsReporteCXC(crc,usd),"reporte-cxc"); }}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <FileSpreadsheet size={13} /> Excel
-        </button>
-        <div className="flex-1" />
-        <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
-          <option value="todos">Todos</option>
-          <option value="pendientes">Pendientes</option>
-          <option value="vencidas">Vencidas</option>
-          <option value="saldadas">Saldadas</option>
-        </select>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-32 placeholder-slate-400" />
-        </div>
-      </div>
+  const vencidas = debts.filter(d => d.estado !== "anulada" && d.fechaVencimiento && d.fechaVencimiento < hoy() && Math.max(0, d.total - (d.pagado || 0)) > 0).length;
+  const reporte = accion => { const crc = debts.filter(d=>(d.moneda||"CRC")==="CRC"); const usd = debts.filter(d=>d.moneda==="USD"); accion(crc, usd); };
+  const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 text-left whitespace-nowrap";
+  const saldoSel = sel ? Math.max(0, sel.total - (sel.pagado || 0)) : 0;
 
-      {/* Barra de registro seleccionado */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
-          <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">{sel.nombre}</span>
-          <span className="text-slate-500">Saldo: <strong className="text-red-600">{fmtMoney(Math.max(0,sel.total-(sel.pagado||0)), sel.moneda||"CRC")}</strong></span>
-          <span className="text-slate-500">Vence: {fmtDate(sel.fechaVencimiento)}</span>
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-yellow-300 text-xs text-slate-500">
-          {totCRC > 0 && <span>Por cobrar: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
-          {totUSD > 0 && <span><strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
-          <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
+  return (
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Cuentas por cobrar"
+      descripcion="Lo que te deben tus clientes, cuánto va de plazo y cuánto está vencido."
+      acciones={<>
+        <Boton variante="secundario" icono={Printer} onClick={() => reporte((crc, usd) => printHTML(htmlReporteCXC(crc, usd, settings)))}>Imprimir</Boton>
+        <Boton variante="secundario" icono={FileSpreadsheet} onClick={() => reporte((crc, usd) => exportExcel(sheetsReporteCXC(crc, usd), "reporte-cxc"))}>Excel</Boton>
+        <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Por cobrar CRC" valor={fmtMoney(totCRC,"CRC")} icono={Wallet} destacado delay={40}/>
+          <Indicador etiqueta="Por cobrar USD" valor={fmtMoney(totUSD,"USD")} delay={90}/>
+          <Indicador etiqueta="Vencidas" valor={vencidas} icono={AlertTriangle} alerta={vencidas>0} delay={140} onClick={() => setFiltro("vencidas")}/>
+          <Indicador etiqueta="Cuentas" valor={debts.length} detalle="Registradas" delay={190}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [
+        { key: "todos", label: "Todas" }, { key: "pendientes", label: "Pendientes" }, { key: "vencidas", label: "Vencidas" }, { key: "saldadas", label: "Saldadas" },
+      ] }}
+    >
+      <BarraFiltros resumen={`${visibles.length} cuenta${visibles.length!==1?"s":""}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por cliente o referencia…"/>
+      </BarraFiltros>
+
+      {sel && (
+        <div className="animate-desplegar mb-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.nombre}</b>
+          <span className="text-white/60">Saldo <b className="text-monki-y">{fmtMoney(saldoSel, sel.moneda||"CRC")}</b></span>
+          <span className="text-white/60">Vence {fmtDate(sel.fechaVencimiento)}</span>
+          <div className="flex-1"/>
+          <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={anular}>Anular</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Referencia</th>
-              <th>Total</th>
-              <th>Saldo</th>
-              <th>Emisión</th>
-              <th>Vencimiento</th>
-              <th className="text-center">Plazo</th>
-              <th className="text-center">Antigüedad</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin cuentas por cobrar</td></tr>
-            ) : visibles.map((d) => {
-              const mon      = d.moneda || settings.moneda || "CRC";
-              const saldo    = Math.max(0, d.total - (d.pagado || 0));
-              const estado   = ESTADO(d);
-              const isSel     = selected === d.id;
-              const esAnulada = d.estado === "anulada";
-
-              // Plazo: dias_credito del contacto, o diferencia entre emisión y vencimiento, o 30 por defecto
-              const plazo = (() => {
-                const dc = contactoMap[d.nombre?.toLowerCase()];
-                if (dc > 0) return dc;
-                if (d.fecha && d.fechaVencimiento) {
-                  const diff = Math.round((new Date(d.fechaVencimiento) - new Date(d.fecha)) / 86400000);
-                  if (diff > 0) return diff;
-                }
-                return 0;
-              })();
-
-              // Días transcurridos desde la emisión
-              const diasTranscurridos = d.fecha
-                ? Math.floor((Date.now() - new Date(d.fecha)) / 86400000)
-                : 0;
-
-              // Días vencidos: desde la fecha de vencimiento
-              const diasVenc = (() => {
-                if (!d.fechaVencimiento || saldo <= 0) return 0;
-                const diff = Math.floor((Date.now() - new Date(d.fechaVencimiento)) / 86400000);
-                return diff > 0 ? diff : 0;
-              })();
-
-              // Color de la barra de antigüedad
-              const barColor = diasVenc > 120 ? "bg-red-600" : diasVenc > 60 ? "bg-orange-500" : diasVenc > 30 ? "bg-yellow-500" : diasVenc > 0 ? "bg-yellow-300" : "bg-green-400";
-              const barPct   = plazo > 0 ? Math.min(100, Math.round((diasVenc / plazo) * 100)) : (diasVenc > 0 ? 100 : 0);
-
-              return (
-                <React.Fragment key={d.id}>
-                  <tr
-                    className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
-                    onClick={() => setSelected(isSel ? null : d.id)}
-                  >
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>
-                      <div>{d.nombre}</div>
-                      {d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}
-                    </td>
-                    <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
-                    <td>{fmtMoney(d.total, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-green-600"}`}>{fmtMoney(saldo, mon)}</td>
-                    <td className="text-slate-400 text-xs">{fmtDate(d.fecha) || "—"}</td>
-                    <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                      {fmtDate(d.fechaVencimiento) || "—"}
-                    </td>
-                    {/* Plazo de crédito */}
-                    <td className="text-center text-xs text-slate-500">
-                      {plazo > 0 ? `${plazo}d` : "—"}
-                    </td>
-                    {/* Barra de antigüedad */}
-                    <td className="min-w-[120px]">
-                      {saldo > 0 && d.fechaVencimiento ? (
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-0.5">
-                            <span className={diasVenc > 0 ? "font-bold text-red-600" : "text-slate-400"}>
-                              {diasVenc > 0 ? `Vencida ${diasVenc}d` : "Al día"}
-                            </span>
-                            {plazo > 0 && <span className="text-slate-400">{diasTranscurridos}/{plazo}d</span>}
+      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <table className="ui-tabla w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr>{["Cliente","Referencia","Total","Saldo","Emisión","Vencimiento","Plazo","Antigüedad","Estado"].map(t => <th key={t} className={TH + (["Total","Saldo"].includes(t) ? " !text-right" : ["Plazo"].includes(t) ? " !text-center" : "")}>{t}</th>)}</tr>
+            </thead>
+            <tbody>
+              {visibles.length === 0 ? (
+                <tr><td colSpan={9}><Vacio icono={Wallet} titulo="Sin cuentas por cobrar" texto={debts.length ? "Probá con otra búsqueda o filtro." : "Se crean solas al facturar a crédito, o podés registrar una a mano."}
+                  accion={!debts.length && <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}/></td></tr>
+              ) : visibles.map((d) => {
+                const mon      = d.moneda || settings.moneda || "CRC";
+                const saldo    = Math.max(0, d.total - (d.pagado || 0));
+                const estado   = ESTADO(d);
+                const isSel     = selected === d.id;
+                const esAnulada = d.estado === "anulada";
+                const plazo = (() => {
+                  const dc = contactoMap[d.nombre?.toLowerCase()];
+                  if (dc > 0) return dc;
+                  if (d.fecha && d.fechaVencimiento) {
+                    const diff = Math.round((new Date(d.fechaVencimiento) - new Date(d.fecha)) / 86400000);
+                    if (diff > 0) return diff;
+                  }
+                  return 0;
+                })();
+                const diasTranscurridos = d.fecha ? Math.floor((Date.now() - new Date(d.fecha)) / 86400000) : 0;
+                const diasVenc = (() => {
+                  if (!d.fechaVencimiento || saldo <= 0) return 0;
+                  const diff = Math.floor((Date.now() - new Date(d.fechaVencimiento)) / 86400000);
+                  return diff > 0 ? diff : 0;
+                })();
+                const barColor = diasVenc > 60 ? "bg-red-600" : diasVenc > 0 ? "bg-red-400" : "bg-monki-k";
+                const barPct   = diasVenc > 0 ? 100 : (plazo > 0 ? Math.min(100, Math.round((diasTranscurridos / plazo) * 100)) : 0);
+                return (
+                  <React.Fragment key={d.id}>
+                    <tr onClick={() => setSelected(isSel ? null : d.id)}
+                      className={`ui-fila animate-desplegar cursor-pointer border-b border-black/5 transition-colors ${isSel ? "bg-[#FFF4B8]" : esAnulada ? "opacity-50 hover:bg-monki-cream/60" : "hover:bg-monki-cream/60"}`}>
+                      <td className="px-4 py-2.5"><b className={esAnulada ? "line-through text-monki-k/35" : "text-monki-k"}>{d.nombre}</b>{d.creadoPor && <div className="text-[10px] text-monki-k/45">Por {d.creadoPor}</div>}</td>
+                      <td className="px-4 py-2.5 text-monki-k/50 text-xs">{d.notas || "—"}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{fmtMoney(d.total, mon)}</td>
+                      <td className={`px-4 py-2.5 text-right tabular-nums font-black ${saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldo, mon)}</td>
+                      <td className="px-4 py-2.5 text-monki-k/50 text-xs">{fmtDate(d.fecha) || "—"}</td>
+                      <td className={`px-4 py-2.5 ${d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-bold" : "text-monki-k/55"}`}>{fmtDate(d.fechaVencimiento) || "—"}</td>
+                      <td className="px-4 py-2.5 text-center font-mono text-xs text-monki-k/55">{plazo > 0 ? `${plazo}d` : "—"}</td>
+                      <td className="px-4 py-2.5 min-w-[130px]">
+                        {saldo > 0 && d.fechaVencimiento ? (
+                          <div>
+                            <div className="flex justify-between text-[10px] mb-1">
+                              <span className={diasVenc > 0 ? "font-bold text-red-600" : "text-monki-k/50"}>{diasVenc > 0 ? `Vencida ${diasVenc}d` : "Al día"}</span>
+                              {plazo > 0 && <span className="font-mono text-monki-k/40">{diasTranscurridos}/{plazo}d</span>}
+                            </div>
+                            <div className="w-full h-1.5 bg-black/10 rounded-full overflow-hidden"><div className={`h-full rounded-full ${barColor}`} style={{ width: `${barPct}%` }} /></div>
                           </div>
-                          <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.max(barPct, diasVenc > 0 ? 100 : 0)}%` }} />
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-300">—</span>
-                      )}
-                    </td>
-                    <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${estado.cls}`}>{estado.label}</span></td>
-                  </tr>
-                  {isSel && (
-                    <tr>
-                      <td colSpan={9} className="bg-blue-50 px-8 py-3">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Recibos aplicados</p>
-                        {(d.pagos || []).length === 0 ? (
-                          <p className="text-xs text-slate-400">Sin pagos registrados.</p>
-                        ) : (
-                          <table className="w-full text-xs">
-                            <thead><tr className="text-slate-500">
-                              <th className="text-left pb-1">N° Recibo</th><th className="text-left pb-1">Fecha</th>
-                              <th className="text-left pb-1">Método</th><th className="text-left pb-1">Monto</th>
-                              <th className="text-left pb-1">Notas</th>
-                            </tr></thead>
-                            <tbody>
-                              {(d.pagos || []).map((p) => (
-                                <tr key={p.id}>
-                                  <td className="py-0.5 font-mono text-yellow-700">{p.numero}</td>
-                                  <td className="py-0.5">{p.fecha}</td>
-                                  <td className="py-0.5">{p.metodo}</td>
-                                  <td className="py-0.5 font-bold">{fmtMoney(p.monto, mon)}</td>
-                                  <td className="py-0.5 text-slate-400">{p.notas || "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
+                        ) : <span className="text-xs text-monki-k/25">—</span>}
                       </td>
+                      <td className="px-4 py-2.5"><Estado tono={estado.tono}>{estado.label}</Estado></td>
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-            {/* Fila de totales */}
-            {visibles.length > 0 && (() => {
-              const monPrin = settings.moneda || "CRC";
-              const totalFacturas = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + (d.total || 0), 0);
-              const totalCobrado  = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + (d.pagado || 0), 0);
-              const totalSaldo    = visibles.filter(d => (d.moneda||"CRC") === monPrin).reduce((s,d) => s + Math.max(0, d.total - (d.pagado||0)), 0);
-              return (
-                <tr className="border-t-2 border-slate-300 bg-slate-100 font-bold text-sm">
-                  <td className="text-slate-700 pl-3 py-2">{visibles.length} registro{visibles.length!==1?"s":""}</td>
-                  <td/>
-                  <td className="text-slate-800">{fmtMoney(totalFacturas, monPrin)}</td>
-                  <td className="text-red-600">{fmtMoney(totalSaldo, monPrin)}</td>
-                  <td/><td/><td/><td/><td/>
-                </tr>
-              );
-            })()}
-          </tbody>
-        </table>
+                    {isSel && (
+                      <tr className="animate-desplegar">
+                        <td colSpan={9} className="bg-monki-cream/70 px-6 py-3">
+                          <p className="monki-tag text-monki-k/55 mb-2">Recibos aplicados</p>
+                          {(d.pagos || []).length === 0 ? <p className="text-sm text-monki-k/40">Sin pagos registrados.</p> : (
+                            <div className="space-y-1.5">
+                              {(d.pagos || []).map((p) => (
+                                <div key={p.id} className="flex flex-wrap items-center gap-3 bg-white rounded-xl px-3 py-2 text-sm">
+                                  <span className="font-mono font-bold text-xs">{p.numero}</span>
+                                  <span className="text-monki-k/55">{p.fecha}</span>
+                                  <Estado>{p.metodo}</Estado>
+                                  <b className="ml-auto">{fmtMoney(p.monto, mon)}</b>
+                                  {p.notas && <span className="text-monki-k/40 text-xs w-full">{p.notas}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {visibles.length > 0 && (() => {
+          const monPrin = settings.moneda || "CRC";
+          const deMoneda = visibles.filter(d => (d.moneda||"CRC") === monPrin);
+          const totalFacturas = deMoneda.reduce((s,d) => s + (d.total || 0), 0);
+          const totalSaldo    = deMoneda.reduce((s,d) => s + Math.max(0, d.total - (d.pagado||0)), 0);
+          return (
+            <div className="shrink-0 flex flex-wrap items-center gap-x-6 gap-y-1 border-t-2 border-black/10 px-4 py-2.5 bg-monki-cream/40 text-sm">
+              <span className="monki-tag text-monki-k/55 mr-auto">{visibles.length} registro{visibles.length!==1?"s":""} · {monPrin}</span>
+              <span>Facturado <b>{fmtMoney(totalFacturas, monPrin)}</b></span>
+              <span className="text-red-600">Saldo <b>{fmtMoney(totalSaldo, monPrin)}</b></span>
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Modales */}
       {modal === "nueva" && <NuevaCXCModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
