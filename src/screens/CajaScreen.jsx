@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
+import { fmtMoney, fmtDate, genId, hoy, fechaLocal } from "../utils/fmt";
 
 // Crea un asiento contable automático al cerrar la caja
 async function crearAsientoCaja({ fecha, totalIngresos, totalEgresos, saldoInicial }) {
@@ -57,8 +57,8 @@ const TIPOS_MOV = ["Venta efectivo","Pago a proveedor","Gasto operativo","Fondo 
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function fechaHoy() { return hoy(); }
-function prevDia(f) { const d=new Date(f+"T12:00:00"); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
-function nextDia(f) { const d=new Date(f+"T12:00:00"); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
+function prevDia(f) { const d=new Date(f+"T12:00:00"); d.setDate(d.getDate()-1); return fechaLocal(d); }
+function nextDia(f) { const d=new Date(f+"T12:00:00"); d.setDate(d.getDate()+1); return fechaLocal(d); }
 function labelFecha(f) { return new Date(f+"T12:00:00").toLocaleDateString("es-CR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
 
 // ── Modal movimiento ─────────────────────────────────────────────────────────

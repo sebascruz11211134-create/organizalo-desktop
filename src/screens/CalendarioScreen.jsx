@@ -12,6 +12,7 @@ import { getToken } from "../utils/auth";
 import { fetchWithTimeout } from "../utils/fetchTimeout";
 
 import { BACKEND } from "../utils/config";
+import { fechaLocal } from "../utils/fmt";
 
 const TIPOS = [
   { id: "evento",      label: "Evento",      color: "#10b981" },
@@ -25,7 +26,7 @@ const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
   "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEMANA = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 
-function hoy() { return new Date().toISOString().slice(0,10); }
+function hoy() { return fechaLocal(new Date()); }
 function padTwo(n) { return String(n).padStart(2,"0"); }
 function fechaStr(y,m,d) { return `${y}-${padTwo(m+1)}-${padTwo(d)}`; }
 

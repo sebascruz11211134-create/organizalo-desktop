@@ -4,6 +4,7 @@
  * Usa window.electronAPI expuesto por preload.js.
  * Misma interfaz que reportPrint.js del móvil, adaptada para desktop.
  */
+import { fechaLocal } from "./fmt";
 
 // ── CSS base compartido ───────────────────────────────────────────────────────
 const CSS = `
@@ -43,7 +44,7 @@ function fmt(num, moneda = "CRC") {
   return s + Number(num).toLocaleString("es-CR", opts);
 }
 
-function hoy() { return new Date().toISOString().slice(0, 10); }
+function hoy() { return fechaLocal(new Date()); }
 
 function _mostrarToast(msg) {
   const t = document.createElement("div");

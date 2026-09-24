@@ -11,7 +11,7 @@ import {
   BarChart2, FileText, Package, Wallet, Bell,
 } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney, hoy } from "../utils/fmt";
+import { fmtMoney, hoy, fechaLocal, mesLocal, mesDesplazado } from "../utils/fmt";
 
 import { BACKEND } from "../utils/config.js";
 
@@ -22,9 +22,7 @@ function getMesLabel(offset = 0) {
   return d.toLocaleString("es-CR", { month: "short" });
 }
 function getMesKey(offset = 0) {
-  const d = new Date();
-  d.setMonth(d.getMonth() + offset);
-  return d.toISOString().slice(0, 7); // "2025-06"
+  return mesDesplazado(mesLocal(), offset); // "2025-06"
 }
 
 // ── Gráfico SVG de líneas ──────────────────────────────────────────────────────
@@ -195,7 +193,7 @@ function InsightCard({ stats, facturas, debts }) {
   const insight = useMemo(() => {
     const hd  = hoy();
     const mes = hd.slice(0, 7);
-    const prev = (() => { const d = new Date(mes + "-01"); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
+    const prev = (() => { return mesDesplazado(mes, -1); })();
 
     const factMes = facturas.filter(f => (f.fecha || f.fechaEmision || "").startsWith(mes));
     const factAnt = facturas.filter(f => (f.fecha || f.fechaEmision || "").startsWith(prev));
@@ -331,7 +329,7 @@ export default function DashboardScreen() {
   const { kpis, chartData, recentFacturas, topClientes, statsForIA, proxVencer } = useMemo(() => {
     const hd  = hoy();
     const mes = hd.slice(0, 7);
-    const prev = (() => { const d = new Date(mes + "-01"); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
+    const prev = (() => { return mesDesplazado(mes, -1); })();
 
     // KPIs — ventas reales desde facturas
     const ventasHoy = facturas.filter(f => (f.fecha || "").startsWith(hd)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
@@ -355,7 +353,7 @@ export default function DashboardScreen() {
     // Chart: últimas 4 semanas día a día (28 días)
     const chartData = Array.from({ length: 28 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (27 - i));
-      const key = d.toISOString().slice(0, 10);
+      const key = fechaLocal(d);
       const lbl = i % 7 === 0 ? d.toLocaleString("es-CR", { month: "short", day: "numeric" }) : "";
       const val = facturas.filter(f => (f.fecha || "").startsWith(key)).reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
       return { label: lbl, value: val };
@@ -363,7 +361,7 @@ export default function DashboardScreen() {
 
     // Próximas a vencer (7 días)
     const en7 = new Date(); en7.setDate(en7.getDate() + 7);
-    const en7str = en7.toISOString().slice(0, 10);
+    const en7str = fechaLocal(en7);
     const proxVencer = cxc
       .filter(d => d.fechaVencimiento && d.fechaVencimiento >= hd && d.fechaVencimiento <= en7str && (d.total || 0) > (d.pagado || 0))
       .sort((a, b) => a.fechaVencimiento.localeCompare(b.fechaVencimiento))

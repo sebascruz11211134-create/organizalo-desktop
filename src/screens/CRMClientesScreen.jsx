@@ -10,7 +10,7 @@ import {
   BarChart2, ShoppingCart, Receipt,
 } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney } from "../utils/fmt";
+import { fmtMoney, fechaLocal } from "../utils/fmt";
 import { getToken } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
@@ -96,7 +96,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
 
     // Si hay fecha de seguimiento futura, crear evento en el calendario
     if (fechaSeguimiento && token) {
-      const hoy = new Date().toISOString().slice(0, 10);
+      const hoy = fechaLocal(new Date());
       if (fechaSeguimiento >= hoy) {
         try {
           await fetch(`${BACKEND}/api/eventos`, {
@@ -271,7 +271,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
                 ? <p className="text-sm text-slate-400 text-center py-8">Sin cuentas por cobrar.</p>
                 : cxc.map((c, i) => {
                   const pend = Math.max(0, (c.total || 0) - (c.pagado || 0));
-                  const vencida = c.fechaVencimiento && c.fechaVencimiento < new Date().toISOString().slice(0,10);
+                  const vencida = c.fechaVencimiento && c.fechaVencimiento < fechaLocal(new Date());
                   return (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
                       <DollarSign size={14} className={vencida ? "text-red-500" : "text-yellow-500"} />
@@ -334,7 +334,7 @@ function calcScore(cliente, facturas, debts) {
 
   // Puntualidad: CXC saldadas a tiempo (pagado >= total antes de vencimiento, approx)
   const saldadas = dCli.filter(d => (d.pagado || 0) >= (d.total || 1));
-  const vencidas  = dCli.filter(d => d.fechaVencimiento < new Date().toISOString().slice(0,10) && (d.pagado||0) < (d.total||1));
+  const vencidas  = dCli.filter(d => d.fechaVencimiento < fechaLocal(new Date()) && (d.pagado||0) < (d.total||1));
   const puntPct = dCli.length === 0 ? 100 : Math.max(0, 100 - (vencidas.length / Math.max(dCli.length, 1)) * 100);
 
   return { volumen, freq, puntPct };

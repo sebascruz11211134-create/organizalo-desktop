@@ -9,7 +9,7 @@
  *   Contactos          → código de cliente CLI-XXXX
  */
 import db from "./db";
-import { genId, hoy } from "./fmt";
+import { genId, hoy, fechaLocal, fechaDesplazada } from "./fmt";
 import { BACKEND } from "./config";
 import { fetchWithTimeout } from "./fetchTimeout";
 
@@ -184,7 +184,7 @@ export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, fact
   const dias = parseInt(plazo) || 30;
   const vence = new Date();
   vence.setDate(vence.getDate() + dias);
-  const fechaVencimiento = vence.toISOString().slice(0, 10);
+  const fechaVencimiento = fechaLocal(vence);
 
   const monto = parseFloat(total) || 0;
   const nombreCliente = cliente?.nombre || "Consumidor Final";
@@ -235,7 +235,7 @@ async function crearRecordatoriosCXC({ token, nombreCliente, facturaRef, montoFm
       token,
       titulo:      `⏰ Cobro próximo: ${nombreCliente}`,
       descripcion: `Factura ${facturaRef} vence en 3 días (${fechaVencimiento}). ${montoFmt}`,
-      fecha:       antes.toISOString().slice(0, 10),
+      fecha:       fechaLocal(antes),
       tipo:        "recordatorio",
       color:       "#f59e0b",
     });
@@ -284,16 +284,13 @@ export async function crearCXP({ proveedor, total, moneda, fechaVence, facturaRe
     });
 
     // Recordatorio 3 días antes
-    const vence = new Date(fechaVence);
-    const antes = new Date(vence);
-    antes.setDate(antes.getDate() - 3);
-    const hoyStr = new Date().toISOString().slice(0, 10);
-    if (antes.toISOString().slice(0, 10) > hoyStr) {
+    const antesStr = fechaDesplazada(fechaVence, -3);
+    if (antesStr > fechaLocal(new Date())) {
       await crearEvento({
         token,
         titulo:      `⏰ Pago próximo: ${nombreProveedor}`,
         descripcion: `Factura ${facturaRef || ""} a ${nombreProveedor} vence en 3 días (${fechaVence}). ${montoFmt}`,
-        fecha:       antes.toISOString().slice(0, 10),
+        fecha:       antesStr,
         tipo:        "recordatorio",
         color:       "#f97316",
       });

@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { BookOpen, Printer, FileSpreadsheet } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtMoney, fmtDate } from "../utils/fmt";
+import { fmtMoney, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
 const TABS = ["Libro de Ventas", "Libro de Compras", "Libro Diario", "Libro Mayor"];
@@ -15,9 +15,9 @@ const TABS = ["Libro de Ventas", "Libro de Compras", "Libro Diario", "Libro Mayo
 function primerDia(mes) { return mes + "-01"; }
 function ultimoDia(mes) {
   const [y, m] = mes.split("-").map(Number);
-  return new Date(y, m, 0).toISOString().slice(0, 10);
+  return fechaLocal(new Date(y, m, 0));
 }
-function mesActual() { return new Date().toISOString().slice(0, 7); }
+function mesActual() { return mesLocal(new Date()); }
 
 // ── Imprimir tabla ─────────────────────────────────────────────────────────────
 function imprimirTabla(titulo, cabeceras, filas, totales) {

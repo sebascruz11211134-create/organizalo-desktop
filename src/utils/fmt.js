@@ -22,8 +22,37 @@ export function fmtDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
+// Fechas de calendario en la hora LOCAL del equipo (Costa Rica). toISOString()
+// usa UTC: después de las 6 p.m. daba la fecha de mañana (y el mes siguiente
+// el último día del mes).
+const p2 = n => String(n).padStart(2, "0");
+export function fechaLocal(d = new Date()) {
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+}
+export function mesLocal(d = new Date()) {
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}`;
+}
+// "YYYY-MM-DD" → Date a medianoche LOCAL. new Date("YYYY-MM-DD") la toma como
+// medianoche UTC, que en Costa Rica es el día anterior a las 6 p.m.
+export function parseFechaLocal(ymd) {
+  const [y, m, d] = String(ymd).slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+// Fecha "YYYY-MM-DD" desplazada n días (en calendario local).
+export function fechaDesplazada(ymd, n) {
+  const d = parseFechaLocal(ymd);
+  d.setDate(d.getDate() + n);
+  return fechaLocal(d);
+}
+
+// "YYYY-MM" desplazado n meses (sin el salto de mes del día 31).
+export function mesDesplazado(ym, n) {
+  const [y, m] = ym.split("-").map(Number);
+  return mesLocal(new Date(y, m - 1 + n, 1));
+}
+
 export function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return fechaLocal();
 }
 
 export function mesLabel(ym) {

@@ -324,6 +324,29 @@ export default function ConfiguracionScreen() {
     setTimeout(() => setSyncing(""), 3000);
   };
 
+  // Datos fiscales del emisor (settings.fiscal): el backend los usa para
+  // facturar a nombre de ESTA empresa (código de actividad y ubicación son
+  // obligatorios en el XML v4.4).
+  const fiscal = s.fiscal || {};
+  const setFiscal = (k, v) => setS((p) => ({ ...p, fiscal: { ...(p.fiscal || {}), [k]: v } }));
+  const fiscalField = (label, key, placeholder = "", extra = {}) => (
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{label}</label>
+      <input value={fiscal[key] || ""} onChange={(e) => setFiscal(key, e.target.value)} placeholder={placeholder} {...extra}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+    </div>
+  );
+  const requisitosFacturacion = [
+    ["Cédula del negocio", !!String(s.cedula || "").replace(/\D/g, "")],
+    ["Nombre o razón social", !!(s.razonSocial || s.nombreNegocio)],
+    ["Correo electrónico", !!s.correo],
+    ["Código de actividad económica (6 dígitos)", /^\d{6}$/.test(fiscal.codigoActividad || "")],
+    ["Provincia, cantón y distrito", /^[1-7]$/.test(fiscal.provincia || "") && /^\d{2}$/.test(fiscal.canton || "") && /^\d{2}$/.test(fiscal.distrito || "")],
+    ["Llave criptográfica (.p12)", !!certStatus?.configured],
+    ["Usuario y contraseña ATV", !!certStatus?.atvConfigurado],
+  ];
+  const listoParaFacturar = requisitosFacturacion.every(([, ok]) => ok);
+
   const field = (label, key, type = "text", placeholder = "") => (
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{label}</label>
@@ -408,6 +431,44 @@ export default function ConfiguracionScreen() {
           <div className="col-span-2">
             {field("Dirección", "direccion", "text", "San José, Costa Rica")}
           </div>
+        </div>
+
+        <h3 className="text-sm font-bold text-slate-800 mt-6 mb-1">Datos fiscales para facturar</h3>
+        <p className="text-xs text-slate-500 mb-3">
+          Hacienda los exige en cada comprobante. Están en tu inscripción de TRIBU-CR.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">{field("Razón social (como aparece en Hacienda)", "razonSocial", "text", "Mi Empresa Sociedad Anónima")}</div>
+          {field("Teléfono", "telefono", "tel", "2222-2222")}
+          {fiscalField("Código de actividad económica", "codigoActividad", "Ej. 522001", { inputMode: "numeric", maxLength: 6 })}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Provincia</label>
+            <select value={fiscal.provincia || ""} onChange={(e) => setFiscal("provincia", e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
+              <option value="">—</option>
+              {["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"].map((n, i) => (
+                <option key={n} value={String(i + 1)}>{i + 1} - {n}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {fiscalField("Cantón", "canton", "01", { inputMode: "numeric", maxLength: 2 })}
+            {fiscalField("Distrito", "distrito", "01", { inputMode: "numeric", maxLength: 2 })}
+          </div>
+          <div className="col-span-2">{fiscalField("Otras señas", "otrasSenas", "100 m norte del parque")}</div>
+        </div>
+
+        <div className={`mt-4 rounded-lg border px-4 py-3 text-xs ${listoParaFacturar ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"}`}>
+          <p className={`font-semibold mb-1 ${listoParaFacturar ? "text-green-800" : "text-yellow-800"}`}>
+            {listoParaFacturar ? "✓ Listo para facturar" : "Para facturar a nombre de tu empresa falta:"}
+          </p>
+          {!listoParaFacturar && (
+            <ul className="space-y-0.5">
+              {requisitosFacturacion.map(([n, ok]) => (
+                <li key={n} className={ok ? "text-green-700" : "text-yellow-800"}>{ok ? "✓" : "○"} {n}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="mt-4">

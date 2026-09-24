@@ -10,7 +10,7 @@ import {
   Users, Package, DollarSign, Receipt, Trash2,
 } from "lucide-react";
 import db from "../utils/db";
-import { genId, hoy } from "../utils/fmt";
+import { genId, hoy, fechaLocal, fechaDesplazada } from "../utils/fmt";
 
 import { BACKEND } from "../utils/config.js";
 
@@ -155,7 +155,7 @@ const MODULOS = [
         const { crearEvento } = await import("../utils/clienteUtils");
         const token = await getToken();
         if (token) {
-          const todayStr = new Date().toISOString().slice(0, 10);
+          const todayStr = fechaLocal(new Date());
           for (const d of limpios) {
             if (!d.fechaVencimiento) continue;
             const saldo = Math.max(0, d.total - (d.pagado || 0));
@@ -173,9 +173,7 @@ const MODULOS = [
             await crearEvento({ token, titulo, descripcion: desc, fecha: fechaEvento, tipo: "recordatorio", color: yaVencio ? "#ef4444" : "#10b981" }).catch(() => {});
             // Recordatorio 3 días antes (solo si es futuro)
             if (!yaVencio) {
-              const antes = new Date(d.fechaVencimiento);
-              antes.setDate(antes.getDate() - 3);
-              const antesStr = antes.toISOString().slice(0, 10);
+              const antesStr = fechaDesplazada(d.fechaVencimiento, -3);
               if (antesStr > todayStr) {
                 await crearEvento({ token, titulo: `⏰ Cobro próximo: ${d.nombre}`, descripcion: `Vence en 3 días (${d.fechaVencimiento}). ₡${montoFmt}`, fecha: antesStr, tipo: "recordatorio", color: "#f59e0b" }).catch(() => {});
               }

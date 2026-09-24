@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, DollarSign, Edit3
 } from "lucide-react";
 import db from "../utils/db";
-import { genId } from "../utils/fmt";
+import { genId, fechaLocal } from "../utils/fmt";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
@@ -50,7 +50,7 @@ function getSemanasDelMes(year, month) {
     const inicio = new Date(d);
     const fin = new Date(d);
     fin.setDate(fin.getDate() + 6);
-    semanas.push({ inicio: inicio.toISOString().slice(0, 10), fin: fin.toISOString().slice(0, 10) });
+    semanas.push({ inicio: fechaLocal(inicio), fin: fechaLocal(fin) });
     d.setDate(d.getDate() + 7);
     if (semanas.length >= 6) break;
   }
@@ -58,7 +58,7 @@ function getSemanasDelMes(year, month) {
 }
 
 function semanaActual(semanas) {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaLocal(new Date());
   return semanas.findIndex(s => hoy >= s.inicio && hoy <= s.fin);
 }
 
@@ -111,7 +111,7 @@ function PagoFijoModal({ onClose, onSave }) {
 
 // ── Modal: nuevo movimiento ──────────────────────────────────────────────────
 function MovModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ tipo: "salida", monto: "", descripcion: "", categoria: "Otro", fecha: new Date().toISOString().slice(0, 10) });
+  const [form, setForm] = useState({ tipo: "salida", monto: "", descripcion: "", categoria: "Otro", fecha: fechaLocal(new Date()) });
   const u = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const guardar = () => {
     if (!form.monto || !form.descripcion) return alert("Monto y descripción requeridos");

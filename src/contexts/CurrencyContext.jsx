@@ -11,6 +11,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "../utils/api";
 import { getToken } from "../utils/auth";
+import { fechaLocal } from "../utils/fmt";
 
 const CurrencyContext = createContext(null);
 
@@ -53,7 +54,7 @@ export function CurrencyProvider({ children }) {
       console.warn("[CurrencyContext] No se pudo obtener tipo de cambio:", e.message);
       // Fallback: usar tipo de cambio aproximado para no mostrar vacío
       if (!tipoCambio) {
-        setTipoCambio({ compra: 517, venta: 527, fecha: new Date().toISOString().slice(0, 10), fallback: true });
+        setTipoCambio({ compra: 517, venta: 527, fecha: fechaLocal(new Date()), fallback: true });
       }
       setError("Sin conexión al BCCR");
     } finally {
