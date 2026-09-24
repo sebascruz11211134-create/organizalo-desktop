@@ -174,10 +174,10 @@ function SingleItem({ item, collapsed, badge = 0, onNavigate }) {
       title={collapsed ? item.label : undefined}
       onClick={onNavigate}
       className={({ isActive }) =>
-        `group relative flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150
+        `group relative flex items-center gap-3 px-3 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 ease-monki
          ${isActive
-           ? "bg-yellow-500 text-white shadow-lg shadow-yellow-900/30"
-           : "text-slate-300 hover:bg-white/[0.08] hover:text-white"}`
+           ? "bg-monki-y text-monki-k shadow-[4px_4px_0_rgba(255,214,0,0.25)]"
+           : "text-slate-300 hover:bg-white/[0.08] hover:text-white hover:translate-x-1"}`
       }
     >
       {({ isActive }) => (
@@ -185,7 +185,7 @@ function SingleItem({ item, collapsed, badge = 0, onNavigate }) {
           <div className="relative shrink-0">
             <item.icon
               size={16}
-              className={`transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-white"}`}
+              className={`transition-all duration-300 ${isActive ? "text-monki-k" : "text-slate-400 group-hover:text-monki-y group-hover:scale-110"}`}
             />
             {/* Badge de mensajes no leídos */}
             {badge > 0 && (
@@ -218,46 +218,46 @@ function GroupItem({ item, collapsed }) {
       <button
         onClick={() => !collapsed && setOpen(o => !o)}
         title={collapsed ? item.label : undefined}
-        className={`group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150
+        className={`group w-full flex items-center gap-3 px-3 py-2 rounded-full text-[13px] font-semibold transition-all duration-300 ease-monki
           ${hasActive
-            ? "text-yellow-300 bg-yellow-500/12"
-            : "text-slate-300 hover:bg-white/[0.08] hover:text-white"}`}
+            ? "text-monki-y bg-monki-y/10"
+            : "text-slate-300 hover:bg-white/[0.08] hover:text-white hover:translate-x-1"}`}
       >
         <item.icon
           size={16}
-          className={`shrink-0 transition-colors ${hasActive ? "text-yellow-400" : "text-slate-400 group-hover:text-white"}`}
+          className={`shrink-0 transition-all duration-300 ${hasActive ? "text-monki-y" : "text-slate-400 group-hover:text-monki-y group-hover:scale-110"}`}
         />
         {!collapsed && (
           <>
             <span className="flex-1 text-left truncate">{item.label}</span>
             <span className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"}`}>
-              <ChevronDown size={12} className={hasActive ? "text-yellow-400" : "text-slate-600"} />
+              <ChevronDown size={12} className={hasActive ? "text-monki-y" : "text-slate-600"} />
             </span>
           </>
         )}
         {/* Collapsed: dot indicator si tiene activo */}
         {collapsed && hasActive && (
-          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-monki-y shrink-0" />
         )}
       </button>
 
       {/* Subitems */}
       {!collapsed && open && (
-        <div className="mt-0.5 ml-3 pl-4 border-l border-white/10 space-y-px">
+        <div className="mt-0.5 ml-3 pl-4 border-l border-white/10 space-y-px animate-desplegar">
           {item.children.map(child => (
             <NavLink
               key={child.path}
               to={child.path}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-100
+                `flex items-center gap-2.5 px-2.5 py-1.5 rounded-full text-[12px] font-medium transition-all duration-200 ease-monki
                  ${isActive
-                   ? "text-yellow-300 bg-yellow-500/15"
-                   : "text-slate-300 hover:text-white hover:bg-white/[0.06]"}`
+                   ? "text-monki-k bg-monki-y font-semibold"
+                   : "text-slate-300 hover:text-white hover:bg-white/[0.06] hover:translate-x-0.5"}`
               }
             >
               {({ isActive }) => (
                 <>
-                  <div className={`w-1 h-1 rounded-full shrink-0 transition-colors ${isActive ? "bg-yellow-400" : "bg-slate-500"}`} />
+                  <div className={`w-1 h-1 rounded-full shrink-0 transition-colors ${isActive ? "bg-monki-k" : "bg-slate-500"}`} />
                   <span className="truncate">{child.label}</span>
                 </>
               )}
@@ -289,23 +289,23 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         ${collapsed ? "w-14" : "w-56"}
       `}
       style={{
-        background: "linear-gradient(180deg, #0d1829 0%, #0f1f2e 50%, #0b1620 100%)",
+        background: "#111111",
         borderRight: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       {/* Glow decorativo top */}
       <div
         className="absolute top-0 left-0 right-0 h-32 pointer-events-none"
-        style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(16,185,129,0.12) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(ellipse at 50% -20%, rgba(255,214,0,0.14) 0%, transparent 70%)" }}
       />
 
       {/* ── Logo ────────────────────────────────────────────────────────────── */}
       <div className="drag-region relative flex items-center gap-2.5 pt-4 pb-4" style={{ paddingLeft: collapsed ? 14 : 76, paddingRight: 14 }}>
-        <img src="/MK_Logo2.png" alt="Monki" className="shrink-0" style={{ width: 32, height: 32, objectFit: "contain" }} />
+        <img src="/MK_Logo2.png" alt="Monki" className="shrink-0 transition-transform duration-500 ease-monki hover:rotate-[-8deg] hover:scale-110" style={{ width: 32, height: 32, objectFit: "contain" }} />
         {!collapsed && (
-          <div className="min-w-0 flex items-baseline gap-0.5">
-            <p className="text-[14px] font-semibold text-white leading-none tracking-tight whitespace-nowrap">Monki</p>
-            <span className="text-[10px] font-bold leading-none" style={{ color: "#FACC15" }}>.ERP</span>
+          <div className="min-w-0 flex items-baseline">
+            <p className="text-[19px] font-black text-white leading-none tracking-[-0.04em] whitespace-nowrap">MONKI<span className="text-monki-y">.</span></p>
+            <span className="ml-1 font-mono text-[9px] font-semibold uppercase tracking-widest text-monki-y/80">ERP</span>
           </div>
         )}
       </div>
@@ -339,7 +339,7 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
               title={collapsed ? "Admin" : undefined}
               className={({ isActive }) =>
                 `group flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all
-                 ${isActive ? "bg-yellow-500/20 text-yellow-300" : "text-yellow-500/70 hover:bg-yellow-500/10 hover:text-yellow-300"}`
+                 ${isActive ? "bg-monki-y text-monki-k" : "text-monki-y/70 hover:bg-monki-y/10 hover:text-monki-y"}`
               }
             >
               <Shield size={16} className="shrink-0" />
@@ -355,8 +355,7 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
           <div className="mx-3" style={{ height: 1, background: "rgba(255,255,255,0.07)" }} />
           <div className="px-3 py-3 flex items-center gap-2.5">
             <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold text-yellow-100"
-              style={{ background: "rgba(16,185,129,0.25)" }}
+              className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-black bg-monki-y text-monki-k"
             >
               {userEmail[0].toUpperCase()}
             </div>
@@ -371,9 +370,9 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
         /* Colapsado: solo el toggle pequeño centrado */
         <div className="flex flex-col items-center gap-0.5 py-2">
           <button onClick={() => setMoneda("CRC")} title="Colones"
-            className={`w-7 h-6 rounded text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-yellow-500 text-white" : "text-slate-500 hover:text-slate-200"}`}>₡</button>
+            className={`w-7 h-6 rounded text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-monki-y text-monki-k" : "text-slate-500 hover:text-slate-200"}`}>₡</button>
           <button onClick={() => setMoneda("USD")} title="Dólares"
-            className={`w-7 h-6 rounded text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-yellow-500 text-white" : "text-slate-500 hover:text-slate-200"}`}>$</button>
+            className={`w-7 h-6 rounded text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-monki-y text-monki-k" : "text-slate-500 hover:text-slate-200"}`}>$</button>
         </div>
       ) : (
         /* Expandido: tarjeta con tipo de cambio + toggle */
@@ -386,7 +385,7 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
               <div className="flex justify-between">
                 <div>
                   <p className="text-[9px] text-slate-400">Compra</p>
-                  <p className="text-[12px] font-semibold text-yellow-400">₡{tipoCambio.compra?.toLocaleString("es-CR")}</p>
+                  <p className="text-[12px] font-semibold text-monki-y">₡{tipoCambio.compra?.toLocaleString("es-CR")}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-slate-400">Venta</p>
@@ -401,11 +400,11 @@ export default function Sidebar({ collapsed, onToggle, userEmail, modulosHabilit
             <p className="text-[10px] text-slate-400 flex-1">Mostrar en:</p>
             <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
               <button onClick={() => setMoneda("CRC")} title="Colones"
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-yellow-500 text-white shadow-sm" : "text-slate-400 hover:text-white"}`}>
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="CRC" ? "bg-monki-y text-monki-k shadow-sm" : "text-slate-400 hover:text-white"}`}>
                 ₡ CRC
               </button>
               <button onClick={() => setMoneda("USD")} title="Dólares"
-                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-yellow-500 text-white shadow-sm" : "text-slate-400 hover:text-white"}`}>
+                className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${moneda==="USD" ? "bg-monki-y text-monki-k shadow-sm" : "text-slate-400 hover:text-white"}`}>
                 $ USD
               </button>
             </div>

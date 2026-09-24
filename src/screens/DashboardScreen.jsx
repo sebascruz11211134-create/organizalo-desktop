@@ -140,32 +140,56 @@ function BarChart28({ data }) {
   );
 }
 
-// ── KPI Card ───────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon: Icon, trend, trendUp, onClick, alert, color = "slate" }) {
-  const colors = {
-    green:  { bg: "bg-yellow-50", border: "border-yellow-100", icon: "text-yellow-500", val: "text-yellow-700" },
-    red:    { bg: "bg-red-50",     border: "border-red-100",     icon: "text-red-400",     val: "text-red-700"     },
-    blue:   { bg: "bg-blue-50",    border: "border-blue-100",    icon: "text-blue-500",    val: "text-slate-900"   },
-    slate:  { bg: "bg-white",      border: "border-slate-200",   icon: "text-slate-400",   val: "text-slate-900"   },
-  };
-  const c = alert ? colors.red : colors[color];
+// Nombre del cliente de una factura: Facturación guarda cliente como objeto
+// { nombre, cedula… }; otros orígenes como texto o clienteNombre.
+const nombreCliente = f => f.clienteNombre || (typeof f.cliente === "string" ? f.cliente : f.cliente?.nombre) || "—";
 
+// ── Contador animado (los montos "cuentan" al aparecer, como en la web) ─────────
+function useContarHasta(objetivo, ms = 900) {
+  const [valor, setValor] = useState(0);
+  useEffect(() => {
+    const destino = Number(objetivo) || 0;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setValor(destino); return; }
+    let raf, inicio;
+    const paso = (t) => {
+      inicio ??= t;
+      const p = Math.min(1, (t - inicio) / ms);
+      setValor(destino * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(raf);
+  }, [objetivo, ms]);
+  return valor;
+}
+
+// ── KPI Card ───────────────────────────────────────────────────────────────────
+// destacado: negro con amarillo (como el panel activo de la web).
+function KpiCard({ label, monto, sub, icon: Icon, trend, trendUp, onClick, alert, destacado, delay = 0 }) {
+  const animado = useContarHasta(monto);
+  const oscuro = destacado && !alert;
   return (
-    <button onClick={onClick}
-      className={`group flex flex-col gap-2.5 p-4 ${c.bg} border ${c.border} rounded-xl text-left
-                  hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`}>
+    <button onClick={onClick} style={{ animationDelay: `${delay}ms` }}
+      className={`group animate-entrar flex flex-col gap-3 p-4 rounded-[18px] text-left border-2 transition-all duration-300 ease-monki
+                  hover:-translate-x-[3px] hover:-translate-y-[3px]
+                  ${oscuro ? "bg-monki-k border-monki-k text-monki-y hover:shadow-[5px_5px_0_#FFD600]"
+                   : alert ? "bg-white border-red-400 hover:shadow-[5px_5px_0_#ef4444]"
+                   : "bg-white border-black/10 hover:border-monki-k hover:shadow-[5px_5px_0_#111]"}`}>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-        <div className={`p-1.5 rounded-lg bg-white shadow-sm`}>
-          <Icon size={12} className={c.icon} />
+        <span className={`font-mono text-[10px] font-semibold uppercase tracking-widest ${oscuro ? "text-monki-y/70" : "text-slate-500"}`}>{label}</span>
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform duration-500 ease-monki group-hover:rotate-[-12deg] group-hover:scale-110
+          ${oscuro ? "bg-monki-y text-monki-k" : alert ? "bg-red-500 text-white" : "bg-monki-y text-monki-k"}`}>
+          <Icon size={13} />
         </div>
       </div>
-      <p className={`text-xl font-bold tracking-tight leading-none ${c.val}`}>{value}</p>
+      <p className={`text-[22px] font-black tracking-[-0.03em] leading-none tabular-nums ${oscuro ? "text-monki-y" : alert ? "text-red-600" : "text-monki-k"}`}>
+        {fmtMoney(animado, "CRC")}
+      </p>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-slate-400">{sub}</p>
+        <p className={`text-[11px] ${oscuro ? "text-white/60" : "text-slate-500"}`}>{sub}</p>
         {trend && (
-          <span className={`flex items-center gap-0.5 text-[10px] font-semibold
-            ${trendUp ? "text-yellow-600" : "text-red-500"}`}>
+          <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full
+            ${trendUp ? (oscuro ? "bg-monki-y text-monki-k" : "bg-monki-k text-monki-y") : "bg-red-500 text-white"}`}>
             {trendUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
             {trend}
           </span>
@@ -404,67 +428,80 @@ export default function DashboardScreen() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
+    <div className="flex flex-col h-full overflow-auto">
       <div className="p-6 max-w-[1100px] mx-auto w-full">
 
-        {/* ── Header ── */}
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Bienvenido, {negocio}</h1>
-            <p className="text-[11px] text-slate-400 mt-0.5 capitalize">{fecha}</p>
+        {/* ── Header (banda amarilla como el hero de la web) ── */}
+        <div className="animate-entrar relative overflow-hidden mb-6 rounded-monki bg-monki-y border-2 border-monki-k px-6 py-6 flex items-center justify-between gap-6">
+          <div className="monki-grid-bg absolute inset-0 pointer-events-none" aria-hidden="true" />
+          <div className="relative">
+            <p className="monki-eyebrow mb-4"><span className="monki-pulse" /> <span className="capitalize">{fecha}</span></p>
+            <h1 className="text-[28px] sm:text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-monki-k">
+              Hola, <span className="monki-mark">{negocio}</span>.
+            </h1>
+            <p className="text-sm text-monki-k/70 mt-2 max-w-md">Así va tu negocio hoy. Tocá cualquier indicador para ver el detalle.</p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={() => navigate("/facturacion")}
+                className="group flex items-center gap-2 bg-monki-k text-monki-y text-[13px] font-bold px-5 py-2.5 rounded-full transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FAFAF5]">
+                <Receipt size={14} /> Nueva factura <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </button>
+              <button onClick={() => navigate("/cxc")}
+                className="flex items-center gap-2 text-monki-k text-[13px] font-bold px-5 py-2.5 rounded-full shadow-[inset_0_0_0_2px_#111] transition-colors duration-300 hover:bg-monki-k hover:text-monki-y">
+                Cuentas por cobrar
+              </button>
+            </div>
           </div>
-          <button onClick={() => navigate("/facturacion")}
-            className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold
-                       px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all">
-            <Receipt size={12} /> Nueva factura
-          </button>
+          <img src="/MK_Logo2.png" alt="" aria-hidden="true"
+            className="relative hidden md:block w-28 h-28 object-contain animate-flotar drop-shadow-[6px_6px_0_rgba(17,17,17,0.9)]" />
         </div>
 
         {/* ── KPI Row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5 kpi-grid">
           <KpiCard
             label="Ventas hoy"
-            value={fmtMoney(kpis.ventasHoy, "CRC")}
+            monto={kpis.ventasHoy}
             sub={new Date().toLocaleDateString("es-CR", { weekday: "short", day: "numeric" })}
             icon={Receipt}
-            color={kpis.ventasHoy > 0 ? "green" : "slate"}
+            delay={60}
             onClick={() => navigate("/facturas-historial")}
           />
           <KpiCard
             label="Ventas del mes"
-            value={fmtMoney(kpis.ventasMes, "CRC")}
+            monto={kpis.ventasMes}
             sub="Facturación total"
             icon={TrendingUp}
-            color="green"
+            destacado
+            delay={120}
             trend={kpis.ventTrend}
             trendUp={parseFloat(kpis.ventTrend) >= 0}
             onClick={() => navigate("/analytics")}
           />
           <KpiCard
             label="Por cobrar (CXC)"
-            value={fmtMoney(kpis.totalCXC, "CRC")}
+            monto={kpis.totalCXC}
             sub={kpis.vencidas > 0 ? `⚠️ ${kpis.vencidas} vencida${kpis.vencidas > 1 ? "s" : ""}` : "Al día"}
             icon={DollarSign}
             alert={kpis.vencidas > 0}
+            delay={180}
             onClick={() => navigate("/cxc")}
           />
           <KpiCard
             label="Gastos del mes"
-            value={fmtMoney(kpis.gastosMes, "CRC")}
+            monto={kpis.gastosMes}
             sub="Compras registradas"
             icon={TrendingDown}
-            color="slate"
+            delay={240}
             trend={kpis.gasTrend}
             trendUp={false}
             onClick={() => navigate("/compras")}
           />
           <KpiCard
             label="Utilidad estimada"
-            value={fmtMoney(Math.abs(kpis.utilidad), "CRC")}
+            monto={Math.abs(kpis.utilidad)}
             sub={kpis.utilidad >= 0 ? "Ventas − Gastos" : "⚠️ Déficit"}
             icon={BarChart2}
-            color={kpis.utilidad >= 0 ? "green" : "red"}
             alert={kpis.utilidad < 0}
+            delay={300}
             onClick={() => navigate("/analytics")}
           />
         </div>
@@ -536,7 +573,7 @@ export default function DashboardScreen() {
                               {f.numFactura || f.consecutivo || `#${String(i + 1).padStart(4, "0")}`}
                             </td>
                             <td className="px-3 py-3 font-medium text-slate-700 truncate max-w-[140px]">
-                              {f.clienteNombre || f.cliente || "—"}
+                              {nombreCliente(f)}
                             </td>
                             <td className="px-3 py-3 text-slate-400">
                               {(f.fecha || f.fechaEmision || "").slice(0, 10)}
@@ -555,7 +592,7 @@ export default function DashboardScreen() {
                   {/* Cards — visible solo en móvil (< md) */}
                   <div className="md:hidden divide-y divide-slate-50">
                     {recentFacturas.map((f, i) => {
-                      const nombre = f.clienteNombre || f.cliente || "—";
+                      const nombre = nombreCliente(f);
                       const initials = typeof nombre === "string"
                         ? nombre.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
                         : "?";
