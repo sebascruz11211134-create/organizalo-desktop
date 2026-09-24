@@ -2,17 +2,18 @@
  * EstadoCuentaScreen — Estado de cuenta por cliente (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Printer, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { Printer, FileSpreadsheet, ChevronDown, Users, Wallet, CheckCircle } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Selector, Tarjeta, Vacio, Estado, Indicadores, Indicador } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, fmtDate, hoy } from "../utils/fmt";
 import { printHTML, exportExcel, htmlEstadoCuenta, sheetsEstadoCuenta } from "../utils/reportHelpers";
 
 const EST = (d) => {
   const s = Math.max(0, d.total - (d.pagado || 0));
-  if (s <= 0) return { label: "Saldada", cls: "bg-green-100 text-green-800" };
-  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
-  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-yellow-100 text-yellow-700" };
-  return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
+  if (s <= 0) return { label: "Saldada", tono: "exito" };
+  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", tono: "peligro" };
+  if ((d.pagado || 0) > 0) return { label: "Parcial", tono: "alerta" };
+  return { label: "Pendiente", tono: "neutro" };
 };
 
 export default function EstadoCuentaScreen() {
@@ -39,110 +40,88 @@ export default function EstadoCuentaScreen() {
   const totB = filtradas.reduce((s, d) => s + (d.total || 0), 0);
   const totP = filtradas.reduce((s, d) => s + (d.pagado || 0), 0);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
-        <Search size={14} className="text-slate-400 shrink-0" />
-        <select value={cliente} onChange={(e) => setCliente(e.target.value)}
-          className="flex-1 border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-          {clientes.length === 0 && <option value="">Sin clientes con CXC</option>}
-          {clientes.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <button onClick={() => printHTML(htmlEstadoCuenta(cliente, filtradas, settings))}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors">
-          <Printer size={14} /> Imprimir
-        </button>
-        <button onClick={() => exportExcel(sheetsEstadoCuenta(cliente, filtradas, settings), `estado-${cliente}`)}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors">
-          <FileSpreadsheet size={14} /> Excel
-        </button>
-      </div>
+  const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 text-left whitespace-nowrap";
+  const saldoTotal = Math.max(0, totB - totP);
 
-      {/* Resumen */}
-      {filtradas.length > 0 && (
-        <div className="flex gap-6 px-6 py-2 bg-green-50 border-b border-yellow-300 text-sm">
-          <span className="text-slate-500">Total: <strong>{fmtMoney(totB, mon)}</strong></span>
-          <span className="text-yellow-700">Cobrado: <strong>{fmtMoney(totP, mon)}</strong></span>
-          <span className={`font-bold ${totB - totP > 0 ? "text-red-600" : "text-yellow-700"}`}>
-            Saldo: {fmtMoney(Math.max(0, totB - totP), mon)}
-          </span>
-          <span className="ml-auto text-slate-400">{filtradas.length} cuenta{filtradas.length !== 1 ? "s" : ""}</span>
+  return (
+    <Modulo
+      seccion="Reportes"
+      titulo="Estado de cuenta"
+      descripcion="Todas las cuentas de un cliente, con lo cobrado y lo que falta."
+      acciones={<>
+        <Boton variante="secundario" icono={Printer} onClick={() => printHTML(htmlEstadoCuenta(cliente, filtradas, settings))} disabled={!cliente}>Imprimir</Boton>
+        <Boton variante="secundario" icono={FileSpreadsheet} onClick={() => exportExcel(sheetsEstadoCuenta(cliente, filtradas, settings), `estado-${cliente}`)} disabled={!cliente}>Excel</Boton>
+      </>}
+      indicadores={filtradas.length > 0 && (
+        <Indicadores>
+          <Indicador etiqueta="Cuentas" valor={filtradas.length} detalle={cliente} icono={Users} delay={40}/>
+          <Indicador etiqueta="Facturado" valor={fmtMoney(totB, mon)} delay={90}/>
+          <Indicador etiqueta="Cobrado" valor={fmtMoney(totP, mon)} icono={CheckCircle} delay={140}/>
+          <Indicador etiqueta="Saldo" valor={fmtMoney(saldoTotal, mon)} icono={Wallet} destacado={saldoTotal<=0} alerta={saldoTotal>0} delay={190}/>
+        </Indicadores>
+      )}
+    >
+      <BarraFiltros>
+        <span className="monki-tag text-monki-k/55">Cliente</span>
+        <Selector valor={cliente} onCambio={setCliente} className="min-w-[240px]"
+          opciones={clientes.length ? clientes : [{ value: "", label: "Sin clientes con CXC" }]}/>
+      </BarraFiltros>
+      {filtradas.length === 0 ? (
+        <Tarjeta className="flex-1 flex items-center justify-center">
+          <Vacio icono={Users} titulo={clientes.length === 0 ? "No hay cuentas por cobrar" : "Elegí un cliente"} texto={clientes.length === 0 ? "Cuando factures a crédito, las cuentas aparecen acá." : "Seleccioná un cliente para ver su estado de cuenta."}/>
+        </Tarjeta>
+      ) : (
+        <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <table className="ui-tabla w-full text-sm">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr>{["Referencia / notas","Total","Cobrado","Saldo","Vencimiento","Estado",""].map((t,i)=><th key={i} className={TH}>{t}</th>)}</tr>
+              </thead>
+              <tbody>
+                {filtradas.map((d) => {
+                  const saldo  = Math.max(0, d.total - (d.pagado || 0));
+                  const estado = EST(d);
+                  const isExp  = expanded === d.id;
+                  const dMon   = d.moneda || settings.moneda || "CRC";
+                  return (
+                    <React.Fragment key={d.id}>
+                      <tr className={`cursor-pointer border-b border-black/5 transition-colors ${isExp ? "bg-[#FFF4B8]" : "hover:bg-monki-cream/60"}`} onClick={() => setExpanded(isExp ? null : d.id)}>
+                        <td className="px-4 py-2.5 font-semibold text-monki-k">{d.notas || "—"}</td>
+                        <td className="px-4 py-2.5 tabular-nums">{fmtMoney(d.total, dMon)}</td>
+                        <td className="px-4 py-2.5 tabular-nums text-monki-k/60">{fmtMoney(d.pagado || 0, dMon)}</td>
+                        <td className={`px-4 py-2.5 font-black tabular-nums ${saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldo, dMon)}</td>
+                        <td className={`px-4 py-2.5 ${d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-bold" : "text-monki-k/55"}`}>{fmtDate(d.fechaVencimiento)}</td>
+                        <td className="px-4 py-2.5"><Estado tono={estado.tono}>{estado.label}</Estado></td>
+                        <td className="px-4 py-2.5"><ChevronDown size={15} className={`text-monki-k/40 transition-transform duration-300 ${isExp ? "rotate-180" : ""}`} /></td>
+                      </tr>
+                      {isExp && (
+                        <tr className="animate-desplegar">
+                          <td colSpan={7} className="bg-monki-cream/70 px-6 py-3">
+                            <p className="monki-tag text-monki-k/55 mb-2">Pagos registrados</p>
+                            {(d.pagos || []).length === 0 ? <p className="text-sm text-monki-k/40">Todavía no hay pagos.</p> : (
+                              <div className="space-y-1.5">
+                                {(d.pagos || []).map((p) => (
+                                  <div key={p.id} className="flex flex-wrap items-center gap-3 bg-white rounded-xl px-3 py-2 text-sm">
+                                    <span className="font-mono font-bold text-xs">{p.numero}</span>
+                                    <span className="text-monki-k/55">{p.fecha}</span>
+                                    <Estado>{p.metodo}</Estado>
+                                    <b className="ml-auto">{fmtMoney(p.monto, dMon)}</b>
+                                    {p.notas && <span className="text-monki-k/40 text-xs w-full">{p.notas}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        {filtradas.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm">
-            {clientes.length === 0 ? "No hay cuentas por cobrar." : "Seleccione un cliente."}
-          </div>
-        ) : (
-          <table className="table-base">
-            <thead>
-              <tr>
-                <th>Referencia / Notas</th>
-                <th>Total</th>
-                <th>Cobrado</th>
-                <th>Saldo</th>
-                <th>Vencimiento</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtradas.map((d) => {
-                const saldo  = Math.max(0, d.total - (d.pagado || 0));
-                const estado = EST(d);
-                const isExp  = expanded === d.id;
-                const dMon   = d.moneda || settings.moneda || "CRC";
-                return (
-                  <React.Fragment key={d.id}>
-                    <tr className="cursor-pointer" onClick={() => setExpanded(isExp ? null : d.id)}>
-                      <td className="text-slate-700">{d.notas || "—"}</td>
-                      <td>{fmtMoney(d.total, dMon)}</td>
-                      <td className="text-yellow-700">{fmtMoney(d.pagado || 0, dMon)}</td>
-                      <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, dMon)}</td>
-                      <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                        {fmtDate(d.fechaVencimiento)}
-                      </td>
-                      <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${estado.cls}`}>{estado.label}</span></td>
-                      <td><ChevronDown size={14} className={`text-slate-400 transition-transform ${isExp ? "rotate-180" : ""}`} /></td>
-                    </tr>
-                    {isExp && (d.pagos || []).length > 0 && (
-                      <tr>
-                        <td colSpan={7} className="bg-green-50 px-8 py-3">
-                          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Pagos registrados</p>
-                          <table className="w-full text-xs">
-                            <thead><tr className="text-slate-500">
-                              <th className="text-left pb-1">N° Recibo</th>
-                              <th className="text-left pb-1">Fecha</th>
-                              <th className="text-left pb-1">Método</th>
-                              <th className="text-left pb-1">Monto</th>
-                              <th className="text-left pb-1">Notas</th>
-                            </tr></thead>
-                            <tbody>
-                              {(d.pagos || []).map((p) => (
-                                <tr key={p.id}>
-                                  <td className="py-0.5 font-mono text-yellow-700">{p.numero}</td>
-                                  <td className="py-0.5">{p.fecha}</td>
-                                  <td className="py-0.5">{p.metodo}</td>
-                                  <td className="py-0.5 font-bold">{fmtMoney(p.monto, dMon)}</td>
-                                  <td className="py-0.5 text-slate-400">{p.notas || "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+    </Modulo>
   );
 }

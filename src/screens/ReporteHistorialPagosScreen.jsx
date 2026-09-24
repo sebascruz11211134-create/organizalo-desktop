@@ -4,7 +4,8 @@
  * Conecta: facturas ↔ debts (CXC) ↔ recibos
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, Printer, FileSpreadsheet, ChevronDown, ChevronRight } from "lucide-react";
+import { FileSpreadsheet, ChevronDown, ChevronRight, History, Users, FileText, Receipt } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Tarjeta, Vacio, Estado, Indicadores, Indicador, Entrada } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy } from "../utils/fmt";
@@ -102,91 +103,74 @@ export default function ReporteHistorialPagosScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 md:px-6 py-3 bg-white border-b border-gray-200 flex-wrap">
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 flex-1 min-w-0">
-          <Search size={14} className="text-slate-400 shrink-0"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar cliente…"
-            className="bg-transparent text-sm flex-1 outline-none min-w-0"/>
-        </div>
-        <label className="text-xs text-slate-500 flex items-center gap-1">
-          Desde <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="border border-slate-200 rounded px-2 py-1 text-sm"/>
-        </label>
-        <label className="text-xs text-slate-500 flex items-center gap-1">
-          Hasta <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="border border-slate-200 rounded px-2 py-1 text-sm"/>
-        </label>
-        <button onClick={exportar}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
-          <FileSpreadsheet size={14}/> Excel
-        </button>
-      </div>
+    <Modulo
+      seccion="Reportes"
+      titulo="Historial de pagos"
+      descripcion="Por cliente: cada factura y los recibos con que se pagó."
+      acciones={<Boton variante="secundario" icono={FileSpreadsheet} onClick={exportar}>Excel</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Clientes" valor={clientes.length} icono={Users} delay={40}/>
+          <Indicador etiqueta="Facturas" valor={facFiltradas.length} detalle="En el rango" icono={FileText} delay={90}/>
+          <Indicador etiqueta="Recibos" valor={recibos.length} icono={Receipt} delay={140}/>
+          <Indicador etiqueta="Saldo pendiente" valor={fmtMoney(clientes.reduce((t,c)=>t+data[c].reduce((s,x)=>s+x.saldo,0),0), moneda)} destacado delay={190}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar cliente…"/>
+        <label className="flex items-center gap-2 monki-tag text-monki-k/55">Desde <Entrada type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="!w-auto !py-1.5"/></label>
+        <label className="flex items-center gap-2 monki-tag text-monki-k/55">Hasta <Entrada type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="!w-auto !py-1.5"/></label>
+      </BarraFiltros>
 
-      {/* Stats */}
-      <div className="flex gap-4 px-4 md:px-6 py-2 bg-green-50 border-b border-yellow-300 text-xs text-slate-500">
-        <span>{clientes.length} clientes</span>
-        <span>{facFiltradas.length} facturas</span>
-        <span>{recibos.length} recibos</span>
-      </div>
-
-      {/* Lista por cliente */}
-      <div className="flex-1 overflow-auto px-4 md:px-6 py-4 space-y-3">
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-2">
         {clientes.length === 0 && (
-          <p className="text-center text-slate-400 py-16">Sin resultados</p>
+          <Tarjeta className="h-full flex items-center justify-center"><Vacio icono={History} titulo="Sin resultados" texto="Probá con otro cliente o rango de fechas."/></Tarjeta>
         )}
-        {clientes.map(cliente => {
+        {clientes.map((cliente, ci) => {
           const items = data[cliente];
           const totalFacturado = items.reduce((s, x) => s + (x.factura.total || 0), 0);
           const totalPagado    = items.reduce((s, x) => s + x.pagado, 0);
           const totalSaldo     = items.reduce((s, x) => s + x.saldo, 0);
           const isOpen = expanded[cliente];
-
           return (
-            <div key={cliente} className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
-              {/* Cabecera cliente */}
-              <button onClick={() => toggle(cliente)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left">
-                {isOpen ? <ChevronDown size={15} className="text-slate-400 shrink-0"/> : <ChevronRight size={15} className="text-slate-400 shrink-0"/>}
-                <span className="font-bold text-slate-800 flex-1">{cliente}</span>
-                <span className="text-xs text-slate-400">{items.length} factura{items.length !== 1 ? "s" : ""}</span>
-                <span className="text-xs font-semibold text-slate-600 ml-4">Facturado: {fmtMoney(totalFacturado, moneda)}</span>
-                <span className="text-xs font-semibold text-yellow-700 ml-4">Cobrado: {fmtMoney(totalPagado, moneda)}</span>
-                <span className={`text-xs font-bold ml-4 ${totalSaldo > 0 ? "text-red-600" : "text-yellow-700"}`}>
-                  Saldo: {fmtMoney(totalSaldo, moneda)}
+            <div key={cliente} style={{ animationDelay: `${Math.min(ci,10)*35}ms` }}
+              className={`animate-entrar border-2 rounded-[18px] bg-white overflow-hidden transition-all duration-300 ease-monki ${isOpen ? "border-monki-k shadow-[5px_5px_0_#111]" : "border-black/10 hover:border-black/25"}`}>
+              <button type="button" onClick={() => toggle(cliente)} className="ui-boton w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isOpen ? "bg-monki-k text-monki-y" : "bg-monki-y text-monki-k"}`}>
+                  {isOpen ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
                 </span>
+                <span className="font-extrabold text-monki-k flex-1 min-w-[140px]">{cliente}</span>
+                <span className="font-mono text-[11px] text-monki-k/45">{items.length} factura{items.length !== 1 ? "s" : ""}</span>
+                <span className="text-xs text-monki-k/55">Facturado <b className="text-monki-k">{fmtMoney(totalFacturado, moneda)}</b></span>
+                <span className="text-xs text-monki-k/55">Cobrado <b className="text-monki-k">{fmtMoney(totalPagado, moneda)}</b></span>
+                <span className={`text-xs font-black px-2.5 py-1 rounded-full ${totalSaldo > 0 ? "bg-red-100 text-red-700" : "bg-[#dcfce7] text-[#166534]"}`}>Saldo {fmtMoney(totalSaldo, moneda)}</span>
               </button>
-
-              {/* Facturas del cliente */}
               {isOpen && (
-                <div className="border-t border-slate-100 divide-y divide-slate-50">
+                <div className="animate-desplegar border-t-2 border-black/5">
                   {items.map(({ factura, pagos, pagado, saldo }) => (
-                    <div key={factura.id} className="px-6 py-3">
-                      {/* Factura */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{factura.numero}</span>
-                        <span className="text-xs text-slate-400">{fmtDate(factura.fecha)}</span>
-                        <span className="text-sm font-semibold text-slate-800">{fmtMoney(factura.total, factura.moneda || moneda)}</span>
+                    <div key={factura.id} className="px-5 py-3 border-b border-black/5 last:border-0">
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
+                        <span className="font-mono text-xs font-bold bg-monki-cream px-2 py-0.5 rounded-md">{factura.numero}</span>
+                        <span className="text-xs text-monki-k/45">{fmtDate(factura.fecha)}</span>
+                        <b className="text-sm">{fmtMoney(factura.total, factura.moneda || moneda)}</b>
                         <div className="flex-1"/>
-                        {saldo <= 0
-                          ? <span className="text-[10px] font-bold bg-green-100 text-yellow-700 px-2 py-0.5 rounded-full">Pagada</span>
-                          : pagado > 0
-                          ? <span className="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Parcial — debe {fmtMoney(saldo, moneda)}</span>
-                          : <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Pendiente {fmtMoney(saldo, moneda)}</span>
-                        }
+                        {saldo <= 0 ? <Estado tono="exito">Pagada</Estado>
+                          : pagado > 0 ? <Estado tono="alerta">Parcial — debe {fmtMoney(saldo, moneda)}</Estado>
+                          : <Estado tono="peligro">Pendiente {fmtMoney(saldo, moneda)}</Estado>}
                       </div>
-                      {/* Recibos de esa factura */}
                       {pagos.length === 0 ? (
-                        <p className="text-[11px] text-slate-300 pl-2">Sin recibos de cobro registrados</p>
+                        <p className="text-xs text-monki-k/35 pl-2">Sin recibos de cobro registrados</p>
                       ) : (
                         <div className="pl-2 space-y-1">
                           {pagos.map(r => (
-                            <div key={r.id} className="flex items-center gap-3 text-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0"/>
-                              <span className="font-mono font-semibold text-yellow-700">{r.numero}</span>
-                              <span className="text-slate-400">{fmtDate(r.fecha)}</span>
-                              <span className="font-semibold text-slate-700">{fmtMoney(r.monto, r.moneda || moneda)}</span>
-                              <span className="text-slate-400">{r.metodo}</span>
-                              {r.notas && <span className="text-slate-300 truncate max-w-[120px]">{r.notas}</span>}
+                            <div key={r.id} className="flex flex-wrap items-center gap-3 text-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-monki-k shrink-0"/>
+                              <span className="font-mono font-bold">{r.numero}</span>
+                              <span className="text-monki-k/45">{fmtDate(r.fecha)}</span>
+                              <b>{fmtMoney(r.monto, r.moneda || moneda)}</b>
+                              <span className="text-monki-k/45">{r.metodo}</span>
+                              {r.notas && <span className="text-monki-k/35 truncate max-w-[160px]">{r.notas}</span>}
                             </div>
                           ))}
                         </div>
@@ -199,6 +183,6 @@ export default function ReporteHistorialPagosScreen() {
           );
         })}
       </div>
-    </div>
+    </Modulo>
   );
 }
