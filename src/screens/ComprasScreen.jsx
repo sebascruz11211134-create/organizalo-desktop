@@ -4,7 +4,8 @@ import { getAutorSync } from "../utils/auth";
  * Registra gastos con crédito fiscal de IVA.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Search, X, Check, ShoppingCart } from "lucide-react";
+import { Plus, Trash2, X, Check, ShoppingCart, Edit2, CreditCard, Receipt } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
@@ -14,14 +15,14 @@ const CATEGORIAS = ["Mercadería","Materia prima","Servicios","Equipo","Suminist
 const MEDIOS = ["Efectivo","Transferencia","SINPE Móvil","Tarjeta","Cheque","Crédito proveedor"];
 
 const ESTADOS = {
-  pendiente:  { label:"Pendiente",   cls:"bg-yellow-100 text-yellow-700" },
-  pagada:     { label:"Pagada",      cls:"bg-green-100 text-yellow-700" },
-  vencida:    { label:"Vencida",     cls:"bg-red-100 text-red-600" },
+  pendiente:  { label:"Pendiente",   tono:"alerta" },
+  pagada:     { label:"Pagada",      tono:"exito" },
+  vencida:    { label:"Vencida",     tono:"peligro" },
 };
 
 function Badge({ estado }) {
   const e = ESTADOS[estado] || ESTADOS.pendiente;
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.cls}`}>{e.label}</span>;
+  return <Estado tono={e.tono}>{e.label}</Estado>;
 }
 
 function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCancelar }) {
@@ -97,199 +98,125 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
     });
   };
 
-  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400";
-  const LBL = "block text-[10px] font-bold text-slate-500 uppercase mb-1";
-
+  const Desplegable = ({ children }) => (
+    <div className="animate-desplegar absolute top-full left-0 w-full mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-44 overflow-auto">{children}</div>
+  );
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar oscuro */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
-        <button onClick={onCancelar} className="flex items-center gap-1.5 border border-slate-500 text-slate-300 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold">
-          <X size={13}/> Cancelar
-        </button>
-        <span className="text-slate-300 text-xs font-bold flex-1">{compra ? "Editar compra" : "Nueva compra / factura de proveedor"}</span>
-        <div className="flex items-center gap-2 text-xs text-slate-300">
-          <span>Base: {fmtMoney(base,"CRC")}</span>
-          <span className="text-slate-500">·</span>
-          <span className="text-white font-black">{fmtMoney(total,"CRC")}</span>
-        </div>
-        <button onClick={guardar} className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
-          <Check size={13}/> Guardar
-        </button>
-      </div>
-
-      {/* Body — 2 paneles */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Panel izquierdo: campos */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 border-r border-slate-200 px-4 py-4 space-y-3">
-
-          {/* Proveedor */}
-          <div>
-            <label className={LBL}>Proveedor</label>
-            <div className="relative">
-              <input value={busq} autoComplete="off"
+    <Modulo
+      seccion="Compras"
+      titulo={compra ? "Editar compra" : "Nueva compra"}
+      descripcion="Factura de proveedor: suma crédito fiscal de IVA y, si es mercadería, aumenta el inventario."
+      acciones={<>
+        <Boton variante="fantasma" icono={X} onClick={onCancelar}>Cancelar</Boton>
+        <Boton icono={Check} onClick={guardar}>Guardar</Boton>
+      </>}
+    >
+      <div className="lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_17rem] gap-3">
+        <Tarjeta className="overflow-y-auto" cuerpo="p-4 space-y-4">
+          <div className="relative">
+            <Campo etiqueta="Proveedor" ayuda={diasProvee > 0 ? `Plazo de pago: ${diasProvee} días — el vencimiento se calcula solo` : undefined}>
+              <Entrada value={busq} autoComplete="off"
                 onChange={e=>{setBusq(e.target.value);setProveedor(e.target.value);setShowProv(true);}}
                 onFocus={()=>setShowProv(true)} onBlur={()=>setTimeout(()=>setShowProv(false),150)}
-                placeholder="Nombre del proveedor…" className={INP}/>
-              {showProv && filtrados.length>0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
-                  {filtrados.map(c=>(
-                    <button key={c.id} onMouseDown={()=>seleccionarProveedor(c)}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0">
-                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
-                      <span className="font-semibold">{c.nombre}</span>
-                      <span className="text-slate-400 ml-1.5">{c.cedula}</span>
-                      {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-red-600 font-semibold">{c.dias_credito}d pago</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {diasProvee > 0 && (
-                <p className="text-[10px] text-yellow-700 bg-yellow-50 px-2 py-1 rounded mt-1">
-                  ⏱ Plazo de pago: {diasProvee} días — vencimiento calculado automáticamente
-                </p>
-              )}
-            </div>
+                placeholder="Nombre del proveedor…"/>
+            </Campo>
+            {showProv && filtrados.length>0 && (
+              <Desplegable>
+                {filtrados.map(c=>(
+                  <button key={c.id} type="button" onMouseDown={()=>seleccionarProveedor(c)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                    {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-cream px-1.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                    <span className="font-semibold">{c.nombre}</span>
+                    <span className="text-monki-k/40 ml-1.5 font-mono text-xs">{c.cedula}</span>
+                    {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] font-bold">{c.dias_credito}d de pago</span>}
+                  </button>
+                ))}
+              </Desplegable>
+            )}
           </div>
-
-          {/* N° factura + Categoría */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={LBL}>N.° Factura proveedor</label>
-              <input value={numFactura} onChange={e=>setNumFactura(e.target.value)} placeholder="FAC-0012345" className={INP}/>
-            </div>
-            <div>
-              <label className={LBL}>Categoría</label>
-              <select value={categoria} onChange={e=>setCategoria(e.target.value)} className={INP}>
-                {CATEGORIAS.map(c=><option key={c}>{c}</option>)}
-              </select>
-            </div>
+            <Campo etiqueta="N.° de factura del proveedor"><Entrada value={numFactura} onChange={e=>setNumFactura(e.target.value)} placeholder="FAC-0012345" className="font-mono"/></Campo>
+            <Campo etiqueta="Categoría"><Seleccion value={categoria} onChange={e=>setCategoria(e.target.value)} opciones={CATEGORIAS}/></Campo>
           </div>
-
-          {/* Fechas + Estado */}
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className={LBL}>Fecha factura</label>
-              <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} className={INP}/>
-            </div>
-            <div>
-              <label className={LBL}>Fecha vencimiento</label>
-              <input type="date" value={fechaVence} onChange={e=>setFechaVence(e.target.value)} className={INP}/>
-            </div>
-            <div>
-              <label className={LBL}>Estado</label>
-              <select value={estado} onChange={e=>setEstado(e.target.value)} className={INP}>
-                {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
+            <Campo etiqueta="Fecha de la factura"><Entrada type="date" value={fecha} onChange={e=>setFecha(e.target.value)}/></Campo>
+            <Campo etiqueta="Vencimiento"><Entrada type="date" value={fechaVence} onChange={e=>setFechaVence(e.target.value)}/></Campo>
+            <Campo etiqueta="Estado"><Seleccion value={estado} onChange={e=>setEstado(e.target.value)} opciones={Object.entries(ESTADOS).map(([k,v])=>({value:k,label:v.label}))}/></Campo>
           </div>
-
-          {/* Monto base + % IVA + Medio */}
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className={LBL}>Monto base (sin IVA)</label>
-              <input type="number" value={montoBase} onChange={e=>setMontoBase(e.target.value)} min="0" step="any" placeholder="0"
-                className={`${INP} text-right`}/>
-            </div>
-            <div>
-              <label className={LBL}>% IVA (crédito fiscal)</label>
-              <select value={pctIVA} onChange={e=>setPctIVA(Number(e.target.value))} className={INP}>
-                <option value={0}>0% — Exento</option>
-                <option value={1}>1%</option>
-                <option value={2}>2%</option>
-                <option value={4}>4%</option>
-                <option value={8}>8%</option>
-                <option value={13}>13%</option>
-              </select>
-            </div>
-            <div>
-              <label className={LBL}>Medio de pago</label>
-              <select value={medio} onChange={e=>setMedio(e.target.value)} className={INP}>
-                {MEDIOS.map(m=><option key={m}>{m}</option>)}
-              </select>
-            </div>
+            <Campo etiqueta="Monto base (sin IVA)"><Entrada type="number" value={montoBase} onChange={e=>setMontoBase(e.target.value)} min="0" step="any" placeholder="0" className="text-right"/></Campo>
+            <Campo etiqueta="IVA (crédito fiscal)">
+              <Seleccion value={pctIVA} onChange={e=>setPctIVA(Number(e.target.value))}
+                opciones={[{value:0,label:"0% — Exento"},{value:1,label:"1%"},{value:2,label:"2%"},{value:4,label:"4%"},{value:8,label:"8%"},{value:13,label:"13%"}]}/>
+            </Campo>
+            <Campo etiqueta="Medio de pago"><Seleccion value={medio} onChange={e=>setMedio(e.target.value)} opciones={MEDIOS}/></Campo>
           </div>
-
-          {/* Productos recibidos */}
           {INVENTARIABLE.includes(categoria) && (
-            <div className="border-t border-slate-200 pt-3">
-              <label className={LBL}>📦 Productos recibidos (aumenta inventario)</label>
-              <div className="relative mt-1">
-                <input value={busqProd} autoComplete="off"
-                  onChange={e=>{setBusqProd(e.target.value);setShowProds(true);}}
-                  onFocus={()=>setShowProds(true)} onBlur={()=>setTimeout(()=>setShowProds(false),150)}
-                  placeholder="Buscar producto del catálogo…" className={INP}/>
+            <div className="border-t-2 border-black/5 pt-4">
+              <div className="relative">
+                <Campo etiqueta="Productos recibidos" ayuda="Al guardar se suma el stock de estos productos.">
+                  <Entrada value={busqProd} autoComplete="off"
+                    onChange={e=>{setBusqProd(e.target.value);setShowProds(true);}}
+                    onFocus={()=>setShowProds(true)} onBlur={()=>setTimeout(()=>setShowProds(false),150)}
+                    placeholder="Buscar producto del catálogo…"/>
+                </Campo>
                 {showProds && prodsFiltrados.length>0 && (
-                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-36 overflow-auto">
+                  <div className="animate-desplegar absolute top-[72px] left-0 w-full bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-40 overflow-auto">
                     {prodsFiltrados.map(p=>(
-                      <button key={p.id} onMouseDown={()=>agregarLinea(p)}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0 flex justify-between">
-                        <span className="font-semibold">{p.nombre}</span>
-                        <span className="text-slate-400">Stock: {p.stock ?? "—"}</span>
+                      <button key={p.id} type="button" onMouseDown={()=>agregarLinea(p)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0 flex justify-between">
+                        <span className="font-semibold">{p.nombre}</span><span className="font-mono text-[11px] text-monki-k/50">Stock {p.stock ?? "—"}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
               {lineas.length > 0 && (
-                <div className="mt-2 space-y-1">
+                <div className="mt-2 space-y-1.5">
                   {lineas.map((l,i)=>(
-                    <div key={i} className="flex items-center gap-2 bg-white border border-slate-200 rounded px-3 py-1.5">
-                      <span className="flex-1 text-xs text-slate-700">{l.descripcion}</span>
+                    <div key={i} className="animate-desplegar flex items-center gap-2 bg-monki-cream rounded-xl pl-3 pr-1 py-1">
+                      <span className="flex-1 text-sm font-semibold">{l.descripcion}</span>
                       <input type="number" min="0.01" step="any" value={l.cantidad}
                         onChange={e=>setLineas(lineas.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
-                        className="w-16 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none"/>
-                      <span className="text-[10px] text-slate-400">unds.</span>
-                      <button onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-xs">✕</button>
+                        className="w-20 bg-white border-2 border-black/10 rounded-lg px-2 py-1 text-sm text-right"/>
+                      <span className="text-[10px] text-monki-k/45">unds.</span>
+                      <BotonIcono icono={X} titulo="Quitar" tono="peligro" onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))}/>
                     </div>
                   ))}
-                  <p className="text-[10px] text-yellow-600">✓ Al guardar se aumentará el stock de estos productos</p>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </Tarjeta>
 
-        {/* Panel derecho: resumen */}
-        <div className="w-56 shrink-0 bg-white overflow-y-auto px-4 py-4 space-y-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Resumen</p>
-          <div className="flex justify-between text-xs text-slate-600">
-            <span>Base imponible</span><span>{fmtMoney(base,"CRC")}</span>
-          </div>
-          <div className="flex justify-between text-xs text-slate-500">
-            <span>IVA ({pctIVA}%) fiscal</span><span>{fmtMoney(montoIVA,"CRC")}</span>
-          </div>
-          <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2 mt-1">
-            <span>TOTAL</span><span className="text-yellow-700">{fmtMoney(total,"CRC")}</span>
-          </div>
-
-          <div className="border-t border-slate-100 pt-3">
-            <label className={LBL}>Observaciones</label>
-            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={4}
-              placeholder="Notas, referencia interna…"
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </div>
-
-          {(proyectos||[]).length > 0 && (
-            <div className="border-t border-slate-100 pt-3">
-              <label className={LBL}>Proyecto</label>
-              <select value={proyectoId} onChange={e=>setProyectoId(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                <option value="">— Sin proyecto —</option>
-                {(proyectos||[]).filter(p=>p.estado==="Activo").map(p=>(
-                  <option key={p.id} value={p.id}>{p.nombre}{p.codigo?` (${p.codigo})`:""}</option>
-                ))}
-              </select>
+        <div className="flex flex-col gap-3 min-h-0">
+          <div className="animate-entrar bg-monki-k text-white rounded-[18px] p-5">
+            <p className="monki-tag text-monki-y mb-3">Resumen</p>
+            <div className="flex justify-between text-sm text-white/70 py-1"><span>Base imponible</span><span>{fmtMoney(base,"CRC")}</span></div>
+            <div className="flex justify-between text-sm text-white/70 py-1"><span>IVA ({pctIVA}%) fiscal</span><span>{fmtMoney(montoIVA,"CRC")}</span></div>
+            <div className="border-t border-white/15 mt-2 pt-3">
+              <p className="monki-tag text-white/50">Total</p>
+              <p className="text-[26px] font-black tracking-[-0.03em] text-monki-y leading-tight">{fmtMoney(total,"CRC")}</p>
             </div>
-          )}
+          </div>
+          <Tarjeta cuerpo="p-4 space-y-3">
+            <Campo etiqueta="Observaciones"><AreaTexto value={notas} onChange={e=>setNotas(e.target.value)} rows={4} placeholder="Notas, referencia interna…"/></Campo>
+            {(proyectos||[]).length > 0 && (
+              <Campo etiqueta="Proyecto">
+                <Seleccion value={proyectoId} onChange={e=>setProyectoId(e.target.value)}
+                  opciones={[{value:"",label:"— Sin proyecto —"}, ...(proyectos||[]).filter(p=>p.estado==="Activo").map(p=>({value:p.id,label:`${p.nombre}${p.codigo?` (${p.codigo})`:""}`}))]}/>
+              </Campo>
+            )}
+          </Tarjeta>
         </div>
       </div>
-    </div>
+    </Modulo>
   );
 }
 
 // ── Principal ─────────────────────────────────────────────────────────────────
 export default function ComprasScreen() {
+  const { confirmar, dialogo } = useConfirmar();
   const [compras,   setCompras]   = useState([]);
   const [contactos, setContactos] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -370,7 +297,7 @@ export default function ComprasScreen() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar esta compra?")) return;
+    if (!(await confirmar("Eliminar compra", "¿Eliminar esta compra? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     const all = await db.getCompras();
     await db.setCompras(all.filter(x=>x.id!==id));
     cargar();
@@ -397,112 +324,48 @@ export default function ComprasScreen() {
   const totMes = compras.filter(x=>x.fecha?.startsWith(mesLocal(new Date()))).reduce((s,c)=>s+c.total,0);
   const totIVA  = compras.filter(x=>x.estado!=="vencida").reduce((s,c)=>s+(c.montoIVA||0),0);
 
+  const nueva = () => { setEditando(null); setVista("form"); };
+  const editar = c => { setEditando(c); setVista("form"); };
+  const columnas = [
+    { key: "prov", titulo: "Proveedor", render: c => <div><b className="text-monki-k">{c.proveedor || "—"}</b>{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },
+    { key: "num", titulo: "N.° factura", render: c => <span className="font-mono text-xs text-monki-k/55">{c.numFactura || "—"}</span> },
+    { key: "cat", titulo: "Categoría", render: c => <span className="text-monki-k/60 text-xs">{c.categoria}</span> },
+    { key: "fecha", titulo: "Fecha", render: c => fmtDate(c.fecha) },
+    { key: "vence", titulo: "Vence", render: c => <span className={c.estado==="vencida"?"text-red-600 font-bold":"text-monki-k/55"}>{c.fechaVence ? fmtDate(c.fechaVence) : "—"}</span> },
+    { key: "total", titulo: "Total", alinear: "right", render: c => <b>{fmtMoney(c.total,"CRC")}</b> },
+    { key: "iva", titulo: "IVA", alinear: "right", render: c => <span className="text-monki-k/55 text-xs">{fmtMoney(c.montoIVA||0,"CRC")}</span> },
+    { key: "estado", titulo: "Estado", render: c => <Badge estado={c.estado}/> },
+    { key: "acc", titulo: "", alinear: "right", render: c => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        {c.estado==="pendiente" && <BotonIcono icono={Check} titulo="Marcar pagada" onClick={()=>marcarPagada(c.id)}/>}
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>editar(c)}/>
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(c.id)}/>
+      </div>) },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
-      {/* KPIs strip */}
-      <div className="flex gap-6 px-5 py-2 bg-white border-b border-slate-200 shrink-0">
-        {[
-          { label:"Por pagar", val:fmtMoney(totPendiente,"CRC"), color:"text-yellow-600" },
-          { label:"Compras del mes", val:fmtMoney(totMes,"CRC"), color:"text-slate-800" },
-          { label:"IVA crédito fiscal", val:fmtMoney(totIVA,"CRC"), color:"text-yellow-600" },
-        ].map(k=>(
-          <div key={k.label}>
-            <div className="text-[10px] font-bold text-slate-400 uppercase">{k.label}</div>
-            <div className={`text-base font-black ${k.color}`}>{k.val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
-        <button onClick={()=>{setEditando(null);setVista("form");}}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
-          <Plus size={13}/> Nueva compra
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&(setEditando(sel),setVista("form"))}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          Editar
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&eliminar(sel.id)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          <Trash2 size={13}/> Eliminar
-        </button>
-        {sel?.estado==="pendiente" && (
-          <button onClick={()=>marcarPagada(sel.id)}
-            className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 text-xs font-semibold px-3 py-1.5 rounded">
-            ✓ Marcar pagada
-          </button>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-            <Search size={12} className="text-slate-300"/>
-            <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar…"
-              className="bg-transparent text-white text-xs outline-none w-32 placeholder-slate-400"/>
-          </div>
-          <select value={filtroEst} onChange={e=>setFiltroEst(e.target.value)}
-            className="text-xs border border-slate-500 bg-slate-600 text-white rounded px-2 py-1.5 focus:outline-none">
-            <option value="todos">Todos</option>
-            {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Sub-barra */}
-      {sel ? (
-        <div className="flex items-center gap-3 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs shrink-0">
-          <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold">{sel.proveedor}</span>
-          {sel.numFactura && <span className="text-slate-400">#{sel.numFactura}</span>}
-          <Badge estado={sel.estado}/>
-          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕</button>
-        </div>
-      ) : (
-        <div className="px-4 py-1.5 bg-slate-50 border-b text-[10px] text-slate-400 shrink-0">
-          {filtradas.length} compras — clic en fila para seleccionar
-        </div>
-      )}
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        {filtradas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-            <ShoppingCart size={40} className="text-slate-200"/>
-            <p className="text-sm">Sin compras registradas.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-100 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">Proveedor</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">N.° Factura</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Categoría</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Fecha</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Vence</th>
-                <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Total</th>
-                <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">IVA</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtradas.map(c=>(
-                <tr key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
-                  className={`cursor-pointer transition-colors ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"hover:bg-slate-50"}`}>
-                  <td className="px-4 py-2.5 font-semibold text-slate-800">{c.proveedor || "—"}</td>
-                  <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{c.numFactura || "—"}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500">{c.categoria}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {c.creadoPor}</div>}</td>
-                  <td className={`px-3 py-2.5 text-xs ${c.estado==="vencida"?"text-red-500 font-semibold":"text-slate-500"}`}>
-                    {c.fechaVence ? fmtDate(c.fechaVence) : "—"}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total,"CRC")}</td>
-                  <td className="px-3 py-2.5 text-right text-xs text-yellow-600">{fmtMoney(c.montoIVA||0,"CRC")}</td>
-                  <td className="px-3 py-2.5"><Badge estado={c.estado}/></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+    <Modulo
+      seccion="Compras"
+      titulo="Facturas de proveedor"
+      descripcion="Lo que comprás: gastos, mercadería y el IVA que podés rebajar como crédito fiscal."
+      acciones={<Boton icono={Plus} onClick={nueva}>Nueva compra</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Por pagar" valor={fmtMoney(totPendiente,"CRC")} icono={CreditCard} destacado delay={40} onClick={()=>setFiltroEst("pendiente")}/>
+          <Indicador etiqueta="Compras del mes" valor={fmtMoney(totMes,"CRC")} icono={ShoppingCart} delay={90}/>
+          <Indicador etiqueta="IVA crédito fiscal" valor={fmtMoney(totIVA,"CRC")} icono={Receipt} delay={140}/>
+          <Indicador etiqueta="Vencidas" valor={compras.filter(c=>c.estado==="vencida").length} alerta={compras.some(c=>c.estado==="vencida")} delay={190} onClick={()=>setFiltroEst("vencida")}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtroEst, onCambiar: setFiltroEst, items: [{ key: "todos", label: "Todas", cuenta: compras.length }, ...Object.entries(ESTADOS).map(([key,v]) => ({ key, label: v.label }))] }}
+    >
+      <BarraFiltros resumen={`${filtradas.length} compras`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por proveedor o número…"/>
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={filtradas} seleccionada={selected} onFila={c=>setSelected(selected===c.id?null:c.id)}
+        vacio={<Vacio icono={ShoppingCart} titulo={compras.length ? "Sin resultados" : "Sin compras registradas"} texto={compras.length ? "Probá con otra búsqueda o estado." : "Registrá las facturas de tus proveedores para llevar el crédito fiscal."}
+          accion={!compras.length && <Boton icono={Plus} onClick={nueva}>Nueva compra</Boton>}/>}/>
+      {dialogo}
+    </Modulo>
   );
 }
