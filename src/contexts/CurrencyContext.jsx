@@ -42,20 +42,37 @@ export function CurrencyProvider({ children }) {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.data?.compra) {
+      if (res.data?.ok && res.data.compra) {
         setTipoCambio({
-          compra: res.data.compra,
-          venta:  res.data.venta,
-          fecha:  res.data.fecha,
+          compra:  res.data.compra,
+          venta:   res.data.venta,
+          fecha:   res.data.fecha,
+          fuente:  res.data.fuente,
+          oficial: !!res.data.oficial, // solo el del BCCR sirve para facturar en dólares
         });
         setError(null);
+      } else if (res.data?.referencia) {
+        // Solo tasa de mercado (el BCCR no respondió): sirve para mostrar montos
+        // aproximados, no es compra/venta oficial.
+        // Una cotización oficial de hoy que ya teníamos no se reemplaza por una
+        // referencia de mercado (bloquearía facturar en USD sin motivo).
+        setTipoCambio(actual => (actual?.oficial && !actual.fallback && !actual.referencia && actual.fecha === fechaLocal(new Date()))
+          ? actual
+          : {
+              compra: res.data.referencia, venta: res.data.referencia, fecha: res.data.fecha,
+              fuente: res.data.fuente, oficial: false, referencia: true,
+            });
+        setError(res.data.error || "Tipo de cambio no oficial");
+      } else {
+        throw new Error(res.data?.error || "Tipo de cambio no disponible");
       }
     } catch (e) {
       console.warn("[CurrencyContext] No se pudo obtener tipo de cambio:", e.message);
-      // Fallback: usar tipo de cambio aproximado para no mostrar vacío
-      if (!tipoCambio) {
-        setTipoCambio({ compra: 517, venta: 527, fecha: fechaLocal(new Date()), fallback: true });
-      }
+      // Fallback solo si no hay NINGUNA cotización: con el valor actual del
+      // estado (el useCallback no ve el tipoCambio vivo), una falla de la
+      // actualización horaria no reemplaza una cotización oficial válida.
+      // Solo para mostrar montos aproximados: NUNCA para facturar (fallback: true).
+      setTipoCambio(actual => actual || { compra: 517, venta: 527, fecha: fechaLocal(new Date()), fallback: true, oficial: false });
       setError("Sin conexión al BCCR");
     } finally {
       setCargando(false);

@@ -14,30 +14,35 @@ import { getAutorSync, getCurrentUserSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Send, Save, FileText, ChevronDown, Printer, Search, Loader2 } from "lucide-react";
 import db from "../utils/db";
+import { useCurrency } from "../contexts/CurrencyContext";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
 import { guardarFacturaVenta } from "../utils/efectosVenta";
 
-import { emitir, etiquetaEstado, camposFactura, idempotencyFactura, facturaReintentable, reintentarFactura, emisionesEnCurso, registrarEmision, quitarEmision, propietarioDe } from "../utils/comprobantes";
+import { emitir, etiquetaEstado, camposFactura, idempotencyFactura, facturaReintentable, reintentarFactura, emisionesEnCurso, registrarEmision, quitarEmision, propietarioDe, payloadVigente, cotizacionOficialDeHoy, esCredito } from "../utils/comprobantes";
 
 // ── Constantes Hacienda ───────────────────────────────────────────────────────
+// Esta pantalla emite solo factura (01) y tiquete (04): /api/invoices no conoce
+// otros tipos y una "nota de crédito" elegida aquí salía como factura nueva.
+// Las notas tienen su propia pantalla (Notas de crédito / Nota de débito).
 const TIPOS_DOC = [
   { value: "01", label: "01 - Factura Electrónica" },
-  { value: "02", label: "02 - Nota de Débito" },
-  { value: "03", label: "03 - Nota de Crédito" },
   { value: "04", label: "04 - Tiquete Electrónico" },
-  { value: "08", label: "08 - Fact. Elect. de Compra" },
-  { value: "09", label: "09 - Fact. Elect. de Exportación" },
 ];
 
+// Catálogo CondicionVenta v4.4 (antes "06" figuraba como "Otro": en Hacienda es
+// arrendamiento en función financiera; "Otros" es 99).
 const CONDICIONES = [
   { value: "01", label: "01 - Contado" },
   { value: "02", label: "02 - Crédito" },
+  { value: "10", label: "10 - Venta a crédito hasta 90 días" },
   { value: "03", label: "03 - Consignación" },
   { value: "04", label: "04 - Apartado" },
-  { value: "05", label: "05 - Arrendamiento" },
-  { value: "06", label: "06 - Otro" },
+  { value: "05", label: "05 - Arrendamiento con opción de compra" },
+  { value: "06", label: "06 - Arrendamiento en función financiera" },
+  { value: "07", label: "07 - Cobro a favor de un tercero" },
+  { value: "99", label: "99 - Otros" },
 ];
 
 const MEDIOS_PAGO = [
@@ -49,31 +54,39 @@ const MEDIOS_PAGO = [
   { value: "99", label: "99 - Otro" },
 ];
 
+// Catálogo CodigoTarifaIVA v4.4 (XSD de Hacienda). "10" es exento; "01" es tarifa 0% (gravada).
 const TIPOS_IVA = [
-  { value: "01", label: "01 - Tarifa 0% (Exento)" },
-  { value: "02", label: "02 - Tarifa 1%" },
-  { value: "03", label: "03 - Tarifa 2%" },
-  { value: "04", label: "04 - Tarifa 4% (Canasta)" },
-  { value: "05", label: "05 - Tarifa 0% (Trans. no sujeta)" },
-  { value: "06", label: "06 - Tarifa 4% (Med. y otros)" },
-  { value: "07", label: "07 - Tarifa 8%" },
-  { value: "08", label: "08 - Tarifa 13%" },
+  { value: "08", label: "08 - Tarifa general 13%" },
+  { value: "07", label: "07 - Tarifa reducida 8%" },
+  { value: "04", label: "04 - Tarifa reducida 4%" },
+  { value: "06", label: "06 - Tarifa transitoria 4%" },
+  { value: "03", label: "03 - Tarifa reducida 2%" },
+  { value: "02", label: "02 - Tarifa reducida 1%" },
+  { value: "09", label: "09 - Tarifa reducida 0,5%" },
+  { value: "01", label: "01 - Tarifa 0%" },
+  { value: "05", label: "05 - Tarifa transitoria 0%" },
+  { value: "11", label: "11 - Tarifa 0% sin derecho a crédito" },
+  { value: "10", label: "10 - Exento" },
 ];
 
-const IVA_PCT = { "01": 0, "02": 1, "03": 2, "04": 4, "05": 0, "06": 4, "07": 8, "08": 13 };
+const IVA_PCT = { "01": 0, "02": 1, "03": 2, "04": 4, "05": 0, "06": 4, "07": 8, "08": 13, "09": 0.5, "10": 0, "11": 0 };
 
 const UNIDADES = ["Unid", "Kg", "g", "L", "mL", "m", "cm", "h", "Días", "Servicio", "Otro"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+// Mismos redondeos y en el mismo orden que el backend (xmlBuilder: 5 decimales
+// por línea); si no, el total guardado aquí difería del que va a Hacienda.
+const r5 = n => { const v = Number(n) || 0; return Number((v + Math.sign(v) * 1e-9).toFixed(5)); };
 function calcLinea(l) {
   const cant     = parseFloat(l.cantidad) || 0;
-  const precio   = parseFloat(l.precioUnit) || 0;
+  const precio   = r5(parseFloat(l.precioUnit) || 0);
   const pctDesc  = parseFloat(l.pctDesc) || 0;
-  const montoDesc = (cant * precio * pctDesc) / 100;
-  const subTotal  = cant * precio - montoDesc;
+  const bruto     = r5(cant * precio);
+  const montoDesc = r5((bruto * pctDesc) / 100);
+  const subTotal  = r5(bruto - montoDesc);
   const pctIVA    = IVA_PCT[l.codigoIVA] ?? 13;
-  const montoIVA  = (subTotal * pctIVA) / 100;
-  const total     = subTotal + montoIVA;
+  const montoIVA  = r5((subTotal * pctIVA) / 100);
+  const total     = r5(subTotal + montoIVA);
   return { ...l, montoDesc, subTotal, pctIVA, montoIVA, total };
 }
 
@@ -258,6 +271,7 @@ export default function FacturacionScreen() {
   const [proyectos,  setProyectos]  = useState([]);
   const [empleados,  setEmpleados]  = useState([]);
   const [sending,    setSending]    = useState(false);
+  const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
   const [enviada,    setEnviada]    = useState(null); // factura recién enviada
   const propietario = propietarioDe(getCurrentUserSync());
   const [enCurso,    setEnCurso]    = useState(() => emisionesEnCurso(propietario)); // emisiones que quedaron a medias
@@ -369,10 +383,10 @@ export default function FacturacionScreen() {
 
   // ── Totales ───────────────────────────────────────────────────────────────
   const lineasCalc = lineas.map(calcLinea);
-  const subtotal   = lineasCalc.reduce((s, l) => s + l.subTotal, 0);
+  const subtotal   = r5(lineasCalc.reduce((s, l) => s + l.subTotal, 0));
   const totalDesc  = lineasCalc.reduce((s, l) => s + l.montoDesc, 0);
-  const totalIVA   = lineasCalc.reduce((s, l) => s + l.montoIVA, 0);
-  const totalFact  = lineasCalc.reduce((s, l) => s + l.total, 0);
+  const totalIVA   = r5(lineasCalc.reduce((s, l) => s + l.montoIVA, 0));
+  const totalFact  = r5(lineasCalc.reduce((s, l) => s + l.total, 0));
 
   // ── Acciones ──────────────────────────────────────────────────────────────
   const agregarLinea = () => setLineas((p) => [...p, lineaVacia()]);
@@ -407,7 +421,7 @@ export default function FacturacionScreen() {
       fecha: fechaEm,
       condPago,
       medioPago,
-      plazo: condPago === "02" ? parseInt(plazo) || 30 : 0,
+      plazo: esCredito(condPago) ? parseInt(plazo) || 30 : 0,
       moneda,
       cliente: { ...cliente, nombre: cliente.nombre || "Consumidor Final" },
       lineas: lineasCalc,
@@ -434,6 +448,23 @@ export default function FacturacionScreen() {
       return;
     }
     const f = armarFactura();
+    if (f.moneda === "USD" && !cotizacionOficialDeHoy(tipoCambio)) {
+      recargarTipoCambio?.();
+      alert("Para facturar en dólares se necesita el tipo de cambio oficial del BCCR de hoy, y no está disponible" +
+        (tipoCambio?.fuente && !tipoCambio.oficial ? ` (solo hay una referencia de mercado: ${tipoCambio.fuente})` : "") +
+        ". Se está consultando de nuevo; intentá en unos segundos.");
+      return;
+    }
+    let condicionVentaOtros;
+    if (f.condPago === "99") {
+      condicionVentaOtros = (prompt("Describí la condición de venta (Hacienda lo exige para \"Otros\"):") || "").trim();
+      if (condicionVentaOtros.length < 5) { alert("La descripción de la condición de venta necesita al menos 5 caracteres."); return; }
+    }
+    let medioPagoOtros;
+    if (!esCredito(f.condPago) && f.medioPago === "99") {
+      medioPagoOtros = (prompt("Describí el medio de pago (Hacienda lo exige para \"Otro\"):") || "").trim();
+      if (medioPagoOtros.length < 3) { alert("La descripción del medio de pago necesita al menos 3 caracteres."); return; }
+    }
     setSending(true);
     try {
       // POST /api/invoices con el formato que espera el backend
@@ -441,17 +472,31 @@ export default function FacturacionScreen() {
         cliente: {
           nombre: f.cliente.nombre || "Consumidor Final",
           cedula: f.cliente.cedula || undefined,
+          cedulaTipo: f.cliente.tipo || undefined, // 05/06 conservan letras; antes el tipo se ignoraba
           correo:  f.cliente.email || f.cliente.correo || undefined,
         },
+        // Todo lo que se ve en pantalla va al XML: descuento, tarifa, CABYS y
+        // unidad por línea (antes solo cantidad/precio/%IVA: con descuento el
+        // total enviado a Hacienda no coincidía con el cobrado).
         items: f.lineas.map(l => ({
-          descripcion:    l.descripcion,
-          cantidad:       Number(l.cantidad),
-          precioUnitario: Number(l.precioUnit),
-          tarifaIva:      l.pctIVA ?? 13,
+          descripcion:     l.descripcion,
+          cantidad:        Number(l.cantidad),
+          precioUnitario:  Number(l.precioUnit),
+          descuento:       l.montoDesc || 0, // ya redondeado igual que en el backend
+          codigoTarifaIva: l.codigoIVA || "08",
+          codigoCabys:     l.codigoCabys || undefined,
+          unidadMedida:    l.unidad || "Unid",
         })),
-        moneda:     f.moneda,
-        tipoCambio: f.moneda === "USD" ? (settings.tipoCambio || 600) : 1,
-        tipoDoc:    f.tipoDoc, // "04" = tiquete; antes no se enviaba y todo salía como factura
+        moneda:         f.moneda,
+        tipoCambio:     f.moneda === "USD" ? tipoCambio?.venta : 1,
+        tipoCambioFecha: f.moneda === "USD" ? tipoCambio?.fecha : undefined,
+        tipoDoc:        f.tipoDoc, // "04" = tiquete; antes no se enviaba y todo salía como factura
+        condicionVenta: f.condPago || "01",
+        plazoCredito:   esCredito(f.condPago) ? f.plazo : undefined,
+        // En crédito Hacienda no lleva medio de pago; no se manda "99" sin descripción.
+        medioPago:      esCredito(f.condPago) ? "01" : (f.medioPago || "01"),
+        medioPagoOtros,
+        condicionVentaOtros,
       };
       const intento = { ...f, payload };
       // Se anota ANTES de llamar al backend: si la app se cierra a la mitad se
@@ -485,6 +530,7 @@ export default function FacturacionScreen() {
     // fiscales mandan: un error de red no reemplaza un estado conocido.
     const local = (await db.getFacturas()).find(x => x.id === intento.id);
     const factura = { ...datos, ...(local || {}) };
+    // camposFactura trae tipo y total del comprobante emitido (CxC y asiento usan esos).
     const guardada = { ...factura, ...camposFactura(r, factura) };
     try {
       await guardarLocal(guardada);
@@ -519,16 +565,22 @@ export default function FacturacionScreen() {
   };
 
   // Reanuda una emisión que quedó a medias (app cerrada durante el envío).
-  const reanudarEmision = async (intento) => {
+  const reanudarEmision = async (intentoOriginal) => {
+    let intento = intentoOriginal;
     if (!propietario || intento.propietario !== propietario) return; // solo la cuenta que la inició
     const local = (await db.getFacturas()).find(x => x.id === intento.id);
     // Ya tiene comprobante confirmado y no hay nada que reenviar: solo completar lo local.
     if (local?.haciendaId && !facturaReintentable(local)) return completarRegistro(local);
     setSending(true);
     try {
-      const r = local?.haciendaId
-        ? (await reintentarFactura(local, authToken)).r
-        : await emitir("/api/invoices", intento.payload, { token: authToken, idempotencyKey: idempotencyFactura(intento) });
+      let r;
+      if (local?.haciendaId) r = (await reintentarFactura(local, authToken, tipoCambio)).r; // reenviar: no usa cotización
+      else {
+        const { payload, error, requiereCotizacion } = payloadVigente(intento.payload, tipoCambio);
+        if (error) { if (requiereCotizacion) recargarTipoCambio?.(); alert(error); return; }
+        r = await emitir("/api/invoices", payload, { token: authToken, idempotencyKey: idempotencyFactura(intento) });
+        intento = { ...intento, payload };
+      }
       await procesarResultado(intento, r);
     } finally {
       setSending(false);
@@ -540,7 +592,8 @@ export default function FacturacionScreen() {
   const reintentarEnvio = async (factura) => {
     setSending(true);
     try {
-      const { r, campos } = await reintentarFactura(factura, authToken);
+      const { r, campos, requiereCotizacion } = await reintentarFactura(factura, authToken, tipoCambio);
+      if (requiereCotizacion) recargarTipoCambio?.();
       const actualizada = { ...factura, ...campos };
       await guardarLocal(actualizada);
       setEnviada(actualizada);
@@ -834,6 +887,7 @@ export default function FacturacionScreen() {
                   className="w-20 border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
                   <option value="01">Física</option><option value="02">Jurídica</option>
                   <option value="03">DIMEX</option><option value="04">NITE</option>
+                  <option value="05">Extranjero</option><option value="06">No contrib.</option>
                 </select>
                 <input value={cliente.cedula}
                   onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
@@ -891,7 +945,7 @@ export default function FacturacionScreen() {
                 {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
-            {condPago === "02" && (
+            {esCredito(condPago) && (
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Plazo (días)</label>
                 <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)} placeholder="30" min="1"

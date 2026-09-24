@@ -4,7 +4,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban, Send, Loader2 } from "lucide-react";
 import { getToken } from "../utils/auth";
-import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada } from "../utils/comprobantes";
+import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada, referenciaDeFactura, payloadVigente } from "../utils/comprobantes";
+import { useCurrency } from "../contexts/CurrencyContext";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
@@ -154,6 +155,7 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
 }
 
 export default function NotasCreditoScreen() {
+  const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
   const [notas,     setNotas]     = useState([]);
   const [settings,  setSettings]  = useState({});
   const [facturas,  setFacturas]  = useState([]);
@@ -209,9 +211,15 @@ export default function NotasCreditoScreen() {
 
       const token = await getToken();
       // Si el backend ya tiene la nota (id guardado), siempre se retoma esa, nunca se crea otra.
-      const r = nota.haciendaId
-        ? await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token })
-        : await emitir("/api/emision/nota-credito", {
+      let r;
+      if (nota.haciendaId) {
+        r = await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token });
+      } else {
+        // Referencia válida (clave, fecha y tipo) o no se envía nada.
+        const { error: errorRef, ...referencia } = referenciaDeFactura(await db.getFacturas(), nota.facturaRef);
+        if (errorRef) { alert(errorRef); return; }
+        // En dólares se exige la cotización oficial del BCCR de hoy, igual que en las facturas.
+        const { payload, error, requiereCotizacion } = payloadVigente({
           cliente: {
             nombre: nota.cliente || "Consumidor Final",
             cedula: contacto?.cedula || undefined,
@@ -227,9 +235,12 @@ export default function NotasCreditoScreen() {
             unidadMedida:   "Servicio",
           }],
           moneda:           nota.moneda || "CRC",
-          referenciaNumero: nota.facturaRef || undefined,
+          ...referencia,
           referenciaRazon:  nota.motivo || "Anulación de comprobante",
-        }, { token, idempotencyKey: `nc-${nota.id}` });
+        }, tipoCambio);
+        if (error) { if (requiereCotizacion) recargarTipoCambio?.(); alert(error); return; }
+        r = await emitir("/api/emision/nota-credito", payload, { token, idempotencyKey: `nc-${nota.id}` });
+      }
 
       // Persistir estado Hacienda en la nota local (también si falló: guarda el id para reenviar)
       const todas = await db.getNotasCredito();

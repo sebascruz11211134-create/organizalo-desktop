@@ -6,6 +6,7 @@ import { genId } from "./fmt";
 import { getAutorSync } from "./auth";
 import { reducirInventario, limpiarVentaAplicada, crearCXC } from "./clienteUtils";
 import { guardarFacturaConEfectos } from "./efectosFactura";
+import { esCredito } from "./comprobantes";
 
 // ── Asiento contable automático por factura ──────────────────────────────
 export const crearAsientoFactura = async (factura) => {
@@ -19,7 +20,7 @@ export const crearAsientoFactura = async (factura) => {
     if (tot <= 0) return;
 
     const lineas = [];
-    if (factura.condPago === "02") {
+    if (esCredito(factura.condPago)) {
       lineas.push({ cuentaCodigo: "1201", cuentaNombre: "Cuentas por cobrar", debe: tot, haber: 0 });
     } else {
       lineas.push({ cuentaCodigo: "1101", cuentaNombre: "Caja / Efectivo",    debe: tot, haber: 0 });
@@ -47,7 +48,7 @@ export const efectosVenta = (token) => [
   // 1. Reducir inventario por los productos vendidos
   ["inventario", () => true, f => reducirInventario(f.lineas, f.id), f => limpiarVentaAplicada(f.id)],
   // 2. Si es a crédito (condPago "02"), crear CXC + evento calendario
-  ["cxc", f => f.condPago === "02", f => crearCXC({
+  ["cxc", f => esCredito(f.condPago), f => crearCXC({
     cliente: f.cliente, total: f.total, moneda: f.moneda,
     plazo: f.plazo || 30, facturaRef: f.numero, facturaId: f.id, token,
   })],
@@ -55,8 +56,23 @@ export const efectosVenta = (token) => [
   ["asiento", () => true, f => crearAsientoFactura(f)],
 ];
 
-export const guardarFacturaVenta = (factura, token) =>
-  guardarFacturaConEfectos(factura, { getFacturas: db.getFacturas, setFacturas: db.setFacturas, efectos: efectosVenta(token) });
+// Si la CxC ya se creó y el comprobante emitido trae otro total (p. ej. un
+// reintento que por fin recibió la respuesta del backend), se ajusta la CxC.
+async function ajustarCxcAlTotalEmitido(factura) {
+  if (!factura?.id || !esCredito(factura.condPago) || !factura.efectos?.cxc) return;
+  const total = Number(factura.total);
+  if (!Number.isFinite(total)) return;
+  const debts = await db.getDebts();
+  const cxc = debts.find(d => d.facturaId === factura.id);
+  if (!cxc || Math.abs((Number(cxc.total) || 0) - total) < 0.00001) return;
+  await db.setDebts(debts.map(d => d === cxc ? { ...d, total } : d));
+}
+
+export const guardarFacturaVenta = async (factura, token) => {
+  const guardada = await guardarFacturaConEfectos(factura, { getFacturas: db.getFacturas, setFacturas: db.setFacturas, efectos: efectosVenta(token) });
+  await ajustarCxcAlTotalEmitido(guardada || factura);
+  return guardada;
+};
 
 // ¿Le falta algún efecto local? (independiente de su estado en Hacienda).
 // Facturas viejas sin registro de efectos ya tenían todo aplicado.

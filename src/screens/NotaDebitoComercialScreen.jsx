@@ -13,7 +13,8 @@ import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { getToken, getAutorSync } from "../utils/auth";
-import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada } from "../utils/comprobantes";
+import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada, referenciaDeFactura, payloadVigente } from "../utils/comprobantes";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 // ── Constantes Hacienda ───────────────────────────────────────────────────────
 const TIPOS_IVA = [
@@ -46,6 +47,7 @@ function BadgeHacienda({ estado }) {
 }
 
 export default function NotaDebitoComercialScreen() {
+  const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
   const [notas,     setNotas]     = useState([]);
   const [contactos, setContactos] = useState([]);
   const [settings,  setSettings]  = useState({});
@@ -149,9 +151,15 @@ export default function NotaDebitoComercialScreen() {
     try {
       const token = await getToken();
       // Si el backend ya tiene la nota (id guardado), siempre se retoma esa, nunca se crea otra.
-      const r = nota.haciendaId
-        ? await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token })
-        : await emitir("/api/emision/nota-debito", {
+      let r;
+      if (nota.haciendaId) {
+        r = await reenviar(`/api/emision/notas/${nota.haciendaId}/reenviar`, { token });
+      } else {
+        // Referencia válida (clave, fecha y tipo) o no se envía nada.
+        const { error: errorRef, ...referencia } = referenciaDeFactura(await db.getFacturas(), nota.facturaRef);
+        if (errorRef) { alert(errorRef); return; }
+        // En dólares se exige la cotización oficial del BCCR de hoy, igual que en las facturas.
+        const { payload, error, requiereCotizacion } = payloadVigente({
           cliente: {
             nombre: nota.cliente?.nombre || "Consumidor Final",
             cedula: nota.cliente?.cedula || undefined,
@@ -166,9 +174,12 @@ export default function NotaDebitoComercialScreen() {
             unidadMedida:   l.unidad || "Unid",
           })),
           moneda:           nota.moneda || "CRC",
-          referenciaNumero: nota.facturaRef || undefined,
+          ...referencia,
           referenciaRazon:  nota.motivo || "Cargo adicional",
-        }, { token, idempotencyKey: `nd-${nota.id}` });
+        }, tipoCambio);
+        if (error) { if (requiereCotizacion) recargarTipoCambio?.(); alert(error); return; }
+        r = await emitir("/api/emision/nota-debito", payload, { token, idempotencyKey: `nd-${nota.id}` });
+      }
 
       // Guardar el resultado también si falló: conserva el id para reenviar.
       const campos = camposHacienda(r, nota);

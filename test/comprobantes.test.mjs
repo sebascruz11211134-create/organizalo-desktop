@@ -74,3 +74,64 @@ test('un 200 con el cuerpo cortado no cuenta como éxito y se puede reintentar',
  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({})});
  assert.equal((await emitir('/api/invoices',{},{token:'t',idempotencyKey:'fe-y'})).ok,false,'200 sin id/estado tampoco');
 });
+import {referenciaDeFactura} from '../src/utils/comprobantes.js';
+test('la nota referencia la CLAVE de la factura original, no el número local',()=>{
+ const facturas=[{numero:'FE-00001',clave:'5'.repeat(50),fecha:'2026-08-30',fechaEmision:'2026-09-01T15:20:00-06:00',tipoDoc:'01'},{numero:'FE-00002',tipoDoc:'04'}];
+ assert.deepEqual(referenciaDeFactura(facturas,'FE-00001'),{referenciaNumero:'5'.repeat(50),referenciaFecha:'2026-09-01T15:20:00-06:00',referenciaTipoDoc:'01'},'fecha fiscal, no la del selector');
+ const pedir=(fecha,tipo)=>({fecha:()=>fecha,tipo:()=>tipo});
+ assert.match(referenciaDeFactura(facturas,'FE-00002',pedir('2026-08-15','01')).error,/no fue emitida/,'factura local sin clave: se bloquea, no se manda FE-00002');
+ assert.match(referenciaDeFactura(facturas,'FE-99999',pedir('2026-08-15','01')).error,/clave de 50 dígitos/,'externa sin clave');
+ assert.deepEqual(referenciaDeFactura(facturas,'9'.repeat(50),pedir('2026-08-15','04')),{referenciaNumero:'9'.repeat(50),referenciaFecha:'2026-08-15',referenciaTipoDoc:'04'},'externa: fecha y tipo reales');
+ assert.match(referenciaDeFactura(facturas,'9'.repeat(50),pedir('','01')).error,/fecha/,'sin fecha no se envía');
+ assert.match(referenciaDeFactura(facturas,'9'.repeat(50),pedir('2026-08-15','')).error,/tipo/,'sin tipo no se envía');
+ assert.deepEqual(referenciaDeFactura(facturas,''),{});
+});
+
+test('la fecha fiscal que devuelve el backend se guarda en la factura y no se pierde con un error de conexión',()=>{
+ const c=camposFactura({ok:true,comprobante:{id:'s1',estado:'enviado',clave:'5'.repeat(50),fechaEmision:'2026-09-24T10:00:00-06:00'}},{});
+ assert.equal(c.fechaEmision,'2026-09-24T10:00:00-06:00');
+ const sin=camposFactura({ok:false,comprobante:null,error:'x'},{haciendaId:'s1',fechaEmision:'2026-09-24T10:00:00-06:00'});
+ assert.equal(sin.fechaEmision,undefined,'sin respuesta no se pisa (queda la guardada)');
+});
+import {payloadVigente} from '../src/utils/comprobantes.js';
+import {fechaLocal} from '../src/utils/fmt.js';
+test('reintentar una factura en dólares al día siguiente usa la cotización vigente o se bloquea',async()=>{
+ const hoy=fechaLocal();
+ const ayer=fechaLocal(new Date(Date.now()-86400000));
+ const payload={moneda:'USD',tipoCambio:500,tipoCambioFecha:ayer,items:[]};
+ assert.equal(payloadVigente({...payload,tipoCambioFecha:hoy},null).requiereCotizacion,true,'aunque sea de hoy, sin cotización oficial no se envía');
+ assert.equal(payloadVigente({moneda:'CRC'},null).payload.moneda,'CRC','colones: no aplica');
+ const vigente=payloadVigente(payload,{venta:512,fecha:hoy,oficial:true});
+ assert.match(payloadVigente(payload,{venta:508,fecha:hoy,oficial:false,referencia:true}).error,/oficial/,'la referencia de mercado no sirve');
+ assert.equal(vigente.payload.tipoCambio,512);assert.equal(vigente.payload.tipoCambioFecha,hoy);
+ assert.match(payloadVigente(payload,{venta:512,fecha:ayer}).error,/no es del día/);
+ assert.match(payloadVigente(payload,{venta:517,fecha:hoy,fallback:true}).error,/no es del día/);
+ // El reintento real manda la cotización nueva y la guarda en la factura
+ let enviado;globalThis.fetch=async(url,opts)=>{enviado=JSON.parse(opts.body);return {ok:true,status:201,json:async()=>({id:'s9',estado:'simulado',clave:'5'.repeat(50)})};};
+ const {campos}=await reintentarFactura({id:'fx',estado:'sin_conexion',payload},'t',{venta:512,fecha:hoy,oficial:true});
+ assert.equal(enviado.tipoCambio,512);assert.equal(campos.payload.tipoCambio,512);
+ enviado=null;await reintentarFactura({id:'fz',estado:'sin_conexion',payload},'t',{venta:508,fecha:hoy,oficial:false,referencia:true});
+ assert.equal(enviado,null,'con referencia no oficial no se envía');
+ // Sin cotización vigente no se envía nada
+ enviado=null;const b=await reintentarFactura({id:'fy',estado:'sin_conexion',payload},'t',null);
+ assert.equal(enviado,null);assert.equal(b.r.ok,false);
+});
+
+import {cotizacionOficialDeHoy} from '../src/utils/comprobantes.js';
+test('facturar en dólares: solo cotización oficial del BCCR de hoy',()=>{
+ const hoy=fechaLocal();
+ assert.equal(cotizacionOficialDeHoy({venta:512,fecha:hoy,oficial:true}),true);
+ assert.equal(cotizacionOficialDeHoy({venta:508,fecha:hoy,oficial:false,referencia:true}),false,'referencia de mercado');
+ assert.equal(cotizacionOficialDeHoy({venta:527,fecha:hoy,fallback:true,oficial:false}),false,'aproximada');
+ assert.equal(cotizacionOficialDeHoy({venta:512,fecha:'2020-01-01',oficial:true}),false,'de otro día');
+ assert.equal(cotizacionOficialDeHoy(null),false);
+ const pay={moneda:'USD',tipoCambio:500,tipoCambioFecha:'2020-01-01'};
+ assert.equal(payloadVigente(pay,{venta:508,fecha:hoy,oficial:false,referencia:true}).requiereCotizacion,true);
+});
+
+test('lo emitido manda también en reintentos: tipo y total del comprobante del backend',()=>{
+ const c=camposFactura({ok:true,comprobante:{id:'h1',estado:'enviado',clave:'5'.repeat(50),numeroConsecutivo:'00100001040000000001',total:5.537}},{total:5.54,tipoDoc:'01'});
+ assert.equal(c.tipoDoc,'04');assert.equal(c.total,5.537);
+ const sinRespuesta=camposFactura({ok:false,error:'red'},{total:10});
+ assert.equal('total' in sinRespuesta,false,'sin comprobante no se toca el total');
+});

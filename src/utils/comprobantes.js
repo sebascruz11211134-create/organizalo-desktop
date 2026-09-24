@@ -7,6 +7,7 @@
 // emisión (doble clic, reintento tras corte) devuelva el mismo comprobante.
 
 import { BACKEND } from "./config.js";
+import { fechaLocal } from "./fmt.js";
 
 // Estados que se pueden retomar con reenviar().
 export const REINTENTABLES = new Set(["pendiente", "error_firma", "error_envio", "envio_incierto"]);
@@ -101,6 +102,11 @@ export function camposFactura(resultado, previo = {}) {
     modoSimulacion: c.modoSimulacion,
     haciendaRes: c.respuestaHacienda,
     haciendaId: c.id,
+    fechaEmision: c.fechaEmision || previo.fechaEmision, // fecha y hora fiscal (va en el XML)
+    // Lo emitido manda (también en reintentos): tipo y total salen del
+    // comprobante que armó el backend, no del cálculo de la pantalla.
+    ...(c.numeroConsecutivo ? { tipoDoc: String(c.numeroConsecutivo).slice(8, 10) } : {}),
+    ...(Number.isFinite(Number(c.total)) && c.total != null ? { total: Number(c.total) } : {}),
     error: resultado.ok ? null : resultado.error,
   };
 }
@@ -111,13 +117,40 @@ export const idempotencyFactura = factura => `fe-${factura.id}`;
 export const facturaReintentable = f =>
   !!f && ((f.haciendaId && REINTENTABLES.has(f.estado)) || (!f.haciendaId && f.estado === "sin_conexion" && !!f.payload));
 
+// Payload listo para (re)crear una factura: si es en dólares y su cotización
+// no es de hoy, usa la vigente (el comprobante se crearía hoy). Si el backend
+// ya lo había recibido, la Idempotency-Key devuelve el original sin tocarlo.
+// Condiciones de venta a crédito del catálogo de Hacienda (02 crédito, 08
+// servicios al Estado a crédito, 10 venta a crédito hasta 90 días).
+export const CONDICIONES_CREDITO = new Set(["02", "08", "10"]);
+export const esCredito = c => CONDICIONES_CREDITO.has(c);
+
+// Única regla para facturar en dólares: cotización OFICIAL del BCCR y de hoy
+// (nunca la referencia de mercado ni la aproximada).
+export const cotizacionOficialDeHoy = tc =>
+  !!tc?.venta && tc.oficial === true && !tc.fallback && !tc.referencia && tc.fecha === fechaLocal();
+
+export function payloadVigente(payload, tipoCambio) {
+  if (payload?.moneda !== "USD") return { payload };
+  // Toda creación en dólares exige la cotización oficial de hoy, aunque el
+  // payload guardado sea de hoy (no hay prueba de que fuera oficial).
+  if (!cotizacionOficialDeHoy(tipoCambio)) {
+    return { requiereCotizacion: true, error: "El tipo de cambio de esta factura en dólares ya no es del día y no hay uno oficial vigente del BCCR. Se está actualizando; intentá de nuevo en unos segundos." };
+  }
+  return { payload: { ...payload, tipoCambio: tipoCambio.venta, tipoCambioFecha: tipoCambio.fecha } };
+}
+
 // Retoma el envío de una factura guardada: reenviar si el backend ya la tiene,
 // o repetir la emisión con la MISMA Idempotency-Key si nunca respondió.
-export async function reintentarFactura(factura, token) {
-  const r = factura.haciendaId
-    ? await reenviar(`/api/invoices/${factura.haciendaId}/reenviar`, { token })
-    : await emitir("/api/invoices", factura.payload, { token, idempotencyKey: idempotencyFactura(factura) });
-  return { r, campos: camposFactura(r, factura) };
+export async function reintentarFactura(factura, token, tipoCambio) {
+  if (factura.haciendaId) {
+    const r = await reenviar(`/api/invoices/${factura.haciendaId}/reenviar`, { token });
+    return { r, campos: camposFactura(r, factura) };
+  }
+  const { payload, error, requiereCotizacion } = payloadVigente(factura.payload, tipoCambio);
+  if (error) return { r: { ok: false, comprobante: null, error }, campos: { error }, requiereCotizacion };
+  const r = await emitir("/api/invoices", payload, { token, idempotencyKey: idempotencyFactura(factura) });
+  return { r, campos: { ...camposFactura(r, factura), payload } };
 }
 
 // Emisiones en curso: se anotan en este dispositivo ANTES de llamar al backend,
@@ -138,3 +171,35 @@ export function registrarEmision(factura, propietario) {
 export const quitarEmision = id => {
   try { escribirEnCurso(leerEnCurso().filter(x => x.id !== id)); } catch { /* se reintenta al reanudar */ }
 };
+
+// Referencia de una nota al comprobante original. Hacienda espera su CLAVE
+// (50 dígitos), su fecha de emisión y su tipo; en pantalla se guarda el número
+// local ("FE-00001"). Devuelve { error } si no se puede armar una referencia
+// válida: la nota NO se envía (antes salía con "FE-00001" o sin tipo real).
+const preguntar = texto => (typeof window !== "undefined" && window.prompt ? window.prompt(texto) : "") || "";
+const PREGUNTAS = {
+  fecha: () => preguntar("Fecha de emisión del comprobante de referencia (AAAA-MM-DD). Hacienda la exige:"),
+  tipo:  () => preguntar("Tipo del comprobante de referencia: 01 factura, 02 nota de débito, 03 nota de crédito, 04 tiquete:"),
+};
+export function referenciaDeFactura(facturas, facturaRef, pedir = PREGUNTAS) {
+  if (!facturaRef) return {};
+  const ref = String(facturaRef).trim();
+  const f = (facturas || []).find(x => x.numero === ref || x.clave === ref);
+  if (f && !f.clave) {
+    return { error: `La factura ${ref} todavía no fue emitida a Hacienda (no tiene clave). Enviala primero y después hacé la nota.` };
+  }
+  if (f) {
+    // La fecha debe ser la FISCAL (la del XML), no la del selector de la pantalla.
+    // El backend igual la corrige con la que tiene guardada para esa clave.
+    return { referenciaNumero: f.clave, referenciaFecha: f.fechaEmision || undefined, referenciaTipoDoc: f.tipoDoc === "04" ? "04" : "01" };
+  }
+  // Comprobante de otro sistema: clave, fecha y tipo son obligatorios.
+  if (!/^\d{50}$/.test(ref)) {
+    return { error: `"${ref}" no es una factura de este sistema. Para referenciar un comprobante externo usá su clave de 50 dígitos.` };
+  }
+  const fecha = String(pedir.fecha() || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { error: "Falta la fecha del comprobante de referencia (AAAA-MM-DD). No se envió la nota." };
+  const tipo = String(pedir.tipo() || "").trim().padStart(2, "0");
+  if (!/^(0[1-9]|1[0-8])$/.test(tipo)) return { error: "Falta el tipo del comprobante de referencia (01 a 18). No se envió la nota." };
+  return { referenciaNumero: ref, referenciaFecha: fecha, referenciaTipoDoc: tipo };
+}

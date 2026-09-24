@@ -9,6 +9,7 @@ import { fmtMoney, fmtDate } from "../utils/fmt";
 import { getToken } from "../utils/auth";
 import { etiquetaEstado, facturaReintentable, reintentarFactura } from "../utils/comprobantes";
 import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 const ESTADOS = {
   aceptada: { label: "Aceptada", cls: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -119,6 +120,7 @@ export default function FacturasHistorialScreen() {
 
   // Retoma una factura que quedó a medias, con la misma clave (nunca crea otra).
   const [reintentando, setReintentando] = useState(false);
+  const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
   const reintentar = async (f) => {
     setReintentando(true);
     try {
@@ -130,7 +132,8 @@ export default function FacturasHistorialScreen() {
         alert("✅ Registro de la factura completado (inventario, CxC y asiento).");
         return;
       }
-      const { r, campos } = await reintentarFactura(f, token);
+      const { r, campos, requiereCotizacion } = await reintentarFactura(f, token, tipoCambio);
+      if (requiereCotizacion) recargarTipoCambio?.();
       // Además de los datos fiscales, completa inventario/CxC/asiento si
       // quedaron pendientes (sin repetir los ya aplicados).
       await guardarFacturaVenta({ ...f, ...campos }, token);

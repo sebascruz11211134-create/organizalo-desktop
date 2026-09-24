@@ -22,7 +22,7 @@ const PASOS = [
   { id: 1, icon: Building2, color: "emerald", titulo: "Tu empresa",        sub: "Configuremos los datos básicos de tu negocio" },
   { id: 2, icon: Package,   color: "blue",    titulo: "Primer producto",    sub: "Agregá el primer producto o servicio que vendés" },
   { id: 3, icon: Users,     color: "violet",  titulo: "Primer cliente",     sub: "Registrá tu primer cliente o proveedor" },
-  { id: 4, icon: Receipt,   color: "amber",   titulo: "¡Listo para facturar!", sub: "Ya podés crear tu primera factura" },
+  { id: 4, icon: Receipt,   color: "amber",   titulo: "¡Todo listo!", sub: "Ya podés empezar a usar el sistema" },
 ];
 
 // ── Step 1: Empresa ────────────────────────────────────────────────────────────
@@ -168,6 +168,10 @@ function StepListo({ onFactura, onDashboard }) {
         <p className="text-slate-700 text-sm font-semibold">¡Estás listo para empezar!</p>
         <p className="text-slate-400 text-xs mt-1">Tu empresa, producto y cliente están configurados.</p>
       </div>
+      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-left">
+        Para enviar facturas electrónicas a Hacienda falta completar los datos fiscales y subir tu llave
+        criptográfica y usuario ATV en <strong>Configuración → Facturación electrónica</strong>.
+      </p>
       <div className="flex flex-col gap-2 pt-2">
         <button onClick={onFactura}
           className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all">
