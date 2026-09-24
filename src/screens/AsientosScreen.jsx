@@ -4,7 +4,8 @@
  * Validación: suma(debe) === suma(haber)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, X, ChevronDown, ChevronRight, Printer, Trash2 } from "lucide-react";
+import { Plus, X, ChevronDown, ChevronRight, Trash2, BookOpen, Scale, Edit2 } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { PLAN_DEFAULT } from "../utils/planCuentas";
@@ -61,122 +62,76 @@ function AsientoModal({ asiento, cuentas, onClose, onSave }) {
 
   const detalleCuentas = cuentas.filter(c=>!c.esGrupo);
 
+  const CELDA = "w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-2.5 py-2 text-sm transition-colors";
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">{esNuevo?"Nuevo asiento contable":"Editar asiento"}</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400"/></button>
+    <Modal titulo={esNuevo?"Nuevo asiento contable":"Editar asiento"} subtitulo="Partida doble: el debe tiene que igualar al haber" onCerrar={onClose} ancho="max-w-3xl"
+      pie={<>
+        <Boton variante="secundario" icono={Plus} onClick={addLinea} className="mr-auto">Agregar línea</Boton>
+        <Boton variante="fantasma" onClick={onClose}>Cancelar</Boton>
+        <Boton onClick={guardar} disabled={!balanceado}>Guardar asiento</Boton>
+      </>}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <Campo etiqueta="Fecha *"><Entrada type="date" value={form.fecha} onChange={e=>u("fecha",e.target.value)}/></Campo>
+        <Campo etiqueta="Referencia"><Entrada value={form.referencia} onChange={e=>u("referencia",e.target.value)} placeholder="Fact-00123, cheque 001…"/></Campo>
+        <Campo etiqueta="Descripción *"><Entrada value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} placeholder="Registro de venta, pago de planilla…"/></Campo>
+      </div>
+
+      <div className="border-2 border-black/10 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 monki-tag text-monki-k/50 px-3 py-2.5 border-b-2 border-black/10">
+          <span>Cuenta</span><span className="text-right">Debe</span><span className="text-right">Haber</span><span className="w-8"/>
         </div>
-
-        {/* Header del asiento */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Fecha *</span>
-            <input type="date" value={form.fecha} onChange={e=>u("fecha",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Referencia</span>
-            <input value={form.referencia} onChange={e=>u("referencia",e.target.value)}
-              placeholder="Ej: Fact-00123, Cheque 001"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-          <label className="block col-span-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Descripción *</span>
-            <input value={form.descripcion} onChange={e=>u("descripcion",e.target.value)}
-              placeholder="Registro de venta, pago de planilla…"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-        </div>
-
-        {/* Líneas */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-0 bg-slate-50 text-[11px] font-semibold text-slate-500 uppercase px-4 py-2 border-b border-slate-200">
-            <span>Cuenta</span><span className="text-right">Debe</span><span className="text-right">Haber</span><span></span>
+        {form.lineas.map((l,i) => (
+          <div key={i} className="animate-desplegar grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-2 border-b border-black/5 last:border-b-0 items-center">
+            <select value={l.cuentaCodigo} onChange={e=>selCuenta(i,e.target.value)} className={CELDA+" cursor-pointer"}>
+              <option value="">— Seleccionar cuenta —</option>
+              {detalleCuentas.map(c=>(<option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nombre}</option>))}
+            </select>
+            <input type="number" min="0" step="any" value={l.debe||""} onChange={e=>updLinea(i,"debe",e.target.value)} placeholder="0" className={CELDA+" text-right"}/>
+            <input type="number" min="0" step="any" value={l.haber||""} onChange={e=>updLinea(i,"haber",e.target.value)} placeholder="0" className={CELDA+" text-right"}/>
+            <BotonIcono icono={X} titulo="Quitar línea" tono="peligro" onClick={()=>delLinea(i)} disabled={form.lineas.length<=2}/>
           </div>
-          {form.lineas.map((l,i) => (
-            <div key={i} className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-2 border-b border-slate-100 last:border-b-0 items-center">
-              <select value={l.cuentaCodigo} onChange={e=>selCuenta(i,e.target.value)}
-                className="border border-slate-200 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                <option value="">— Seleccionar cuenta —</option>
-                {detalleCuentas.map(c=>(
-                  <option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nombre}</option>
-                ))}
-              </select>
-              <input type="number" min="0" step="any" value={l.debe||""} onChange={e=>updLinea(i,"debe",e.target.value)}
-                placeholder="0" className="border border-slate-200 rounded-md px-2 py-1.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400"/>
-              <input type="number" min="0" step="any" value={l.haber||""} onChange={e=>updLinea(i,"haber",e.target.value)}
-                placeholder="0" className="border border-slate-200 rounded-md px-2 py-1.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-blue-400"/>
-              <button onClick={()=>delLinea(i)} disabled={form.lineas.length<=2} className="p-1 text-slate-300 hover:text-red-500 disabled:opacity-20">
-                <X size={14}/>
-              </button>
-            </div>
-          ))}
-          {/* Totales */}
-          <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-2.5 bg-slate-50 border-t-2 border-slate-200 items-center">
-            <span className="text-xs font-bold text-slate-700">TOTALES</span>
-            <span className={`text-xs font-bold text-right ${balanceado?"text-yellow-700":"text-red-600"}`}>
-              {fmtMoney(totalDebe,"CRC")}
-            </span>
-            <span className={`text-xs font-bold text-right ${balanceado?"text-yellow-700":"text-red-600"}`}>
-              {fmtMoney(totalHaber,"CRC")}
-            </span>
-            <span className="text-xs">{balanceado?"✓":""}</span>
-          </div>
-        </div>
-
-        {!balanceado && (
-          <p className="text-xs text-red-600 mt-2">
-            ⚠ Diferencia: {fmtMoney(Math.abs(totalDebe-totalHaber),"CRC")} — el asiento debe balancear (Debe = Haber).
-          </p>
-        )}
-
-        <div className="flex items-center justify-between mt-4">
-          <button onClick={addLinea} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            + Agregar línea
-          </button>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="border border-gray-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-            <button onClick={guardar} disabled={!balanceado}
-              className="bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50">
-              Guardar asiento
-            </button>
-          </div>
+        ))}
+        <div className={`grid grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 py-3 items-center transition-colors ${balanceado?"bg-monki-k text-white":"bg-red-600 text-white"}`}>
+          <span className="monki-tag">{balanceado ? "Balanceado ✓" : "No balancea"}</span>
+          <span className="text-sm font-black text-right">{fmtMoney(totalDebe,"CRC")}</span>
+          <span className="text-sm font-black text-right">{fmtMoney(totalHaber,"CRC")}</span>
+          <span className="w-8"/>
         </div>
       </div>
-    </div>
+      {!balanceado && (
+        <p className="text-sm text-red-600 font-semibold mt-2">Diferencia de {fmtMoney(Math.abs(totalDebe-totalHaber),"CRC")}: el debe tiene que ser igual al haber.</p>
+      )}
+    </Modal>
   );
 }
 
 // ── Fila expandible ──────────────────────────────────────────────────────────
-function AsientoRow({ a, onEdit, isSel, onSelect }) {
+function AsientoRow({ a, onEdit, isSel, onSelect, onEliminar }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <tr className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : "hover:bg-slate-50"}`}
+      <tr className={`ui-fila animate-desplegar cursor-pointer border-b border-black/5 transition-colors ${isSel ? "bg-[#FFF4B8]" : "hover:bg-monki-cream/60"}`}
         onClick={onSelect}>
-        <td className="font-mono text-xs text-slate-500">{a.numero}</td>
-        <td className="text-slate-500">{fmtDate(a.fecha)}</td>
-        <td className="font-semibold text-slate-900">{a.descripcion}</td>
-        <td className="text-slate-400 text-xs">{a.referencia||"—"}</td>
-        <td className="text-right font-semibold">{fmtMoney(a.totalDebe,"CRC")}</td>
-        <td className="text-right text-slate-400">{fmtMoney(a.totalHaber,"CRC")}</td>
-        <td>
-          <button onClick={e=>{e.stopPropagation();setOpen(o=>!o);}} className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
-            {open ? <ChevronDown size={13}/> : <ChevronRight size={13}/>}
-          </button>
+        <td className="px-4 py-2.5 font-mono text-xs font-bold">{a.numero}</td>
+        <td className="px-4 py-2.5">{fmtDate(a.fecha)}</td>
+        <td className="px-4 py-2.5"><b className="text-monki-k">{a.descripcion}</b>{a.autoGenerado && <span className="ml-2"><Estado>Automático</Estado></span>}</td>
+        <td className="px-4 py-2.5 text-monki-k/50 text-xs">{a.referencia||"—"}</td>
+        <td className="px-4 py-2.5 text-right font-bold tabular-nums">{fmtMoney(a.totalDebe,"CRC")}</td>
+        <td className="px-4 py-2.5 text-right text-monki-k/55 tabular-nums">{fmtMoney(a.totalHaber,"CRC")}</td>
+        <td className="px-2 py-1.5 text-right whitespace-nowrap" onClick={e=>e.stopPropagation()}>
+          <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>onEdit(a)}/>
+          <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>onEliminar(a)}/>
+          <BotonIcono icono={open ? ChevronDown : ChevronRight} titulo={open ? "Ocultar líneas" : "Ver líneas"} onClick={()=>setOpen(o=>!o)}/>
         </td>
       </tr>
       {open && a.lineas?.map((l,i)=>(
-        <tr key={i} className="bg-slate-50 text-xs">
-          <td></td>
-          <td></td>
-          <td className="text-slate-600 pl-6">{l.cuentaCodigo} — {l.cuentaNombre}</td>
-          <td></td>
-          <td className="text-right font-mono">{l.debe>0?fmtMoney(l.debe,"CRC"):""}</td>
-          <td className="text-right font-mono text-slate-400">{l.haber>0?fmtMoney(l.haber,"CRC"):""}</td>
-          <td></td>
+        <tr key={i} className="animate-desplegar bg-monki-cream/60 text-xs border-b border-black/5">
+          <td/><td/>
+          <td className="px-4 py-2 text-monki-k/70 pl-8"><span className="font-mono">{l.cuentaCodigo}</span> — {l.cuentaNombre}</td>
+          <td/>
+          <td className="px-4 py-2 text-right font-mono">{l.debe>0?fmtMoney(l.debe,"CRC"):""}</td>
+          <td className="px-4 py-2 text-right font-mono text-monki-k/50">{l.haber>0?fmtMoney(l.haber,"CRC"):""}</td>
+          <td/>
         </tr>
       ))}
     </>
@@ -200,11 +155,12 @@ export default function AsientosScreen() {
   useEffect(()=>{ cargar(); },[cargar]);
   useSyncRefresh(cargar);
 
-  const eliminar = async () => {
-    if (!sel) return;
-    if (!confirm(`¿Eliminar el asiento ${sel.numero}? Esta acción no se puede deshacer.`)) return;
+  const { confirmar, dialogo } = useConfirmar();
+  const eliminar = async (objetivo = sel) => {
+    if (!objetivo) return;
+    if (!(await confirmar("Eliminar asiento", `¿Eliminar el asiento ${objetivo.numero}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getAsientos();
-    await db.setAsientos(todos.filter(x => x.id !== sel.id));
+    await db.setAsientos(todos.filter(x => x.id !== objetivo.id));
     setSelected(null);
     cargar();
   };
@@ -219,76 +175,55 @@ export default function AsientosScreen() {
   const totHaber = visibles.reduce((s,a)=>s+a.totalHaber,0);
   const sel      = visibles.find(a => a.id === selected);
 
+  const balanceados = Math.abs(totDebe-totHaber)<0.01;
+  const mesActual = hoy().slice(0,7);
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar oscuro estilo TecApro */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={()=>setModal({})}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13}/> Nuevo asiento
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <button
-          disabled={!sel}
-          onClick={eliminar}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13}/> Eliminar
-        </button>
-        <div className="flex-1"/>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Asientos contables"
+      descripcion="El diario: cada movimiento en partida doble. Los automáticos salen de facturas, compras y recibos."
+      acciones={<Boton icono={Plus} onClick={()=>setModal({})}>Nuevo asiento</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Asientos" valor={visibles.length} detalle={busq ? "Con la búsqueda" : "En total"} icono={BookOpen} delay={40}/>
+          <Indicador etiqueta="Este mes" valor={asientos.filter(a=>(a.fecha||"").startsWith(mesActual)).length} delay={90}/>
+          <Indicador etiqueta="Total debe" valor={fmtMoney(totDebe,"CRC")} delay={140}/>
+          <Indicador etiqueta={balanceados ? "Balanceado" : "Descuadre"} valor={balanceados ? "✓" : fmtMoney(Math.abs(totDebe-totHaber),"CRC")} detalle="Debe contra haber" icono={Scale} destacado={balanceados} alerta={!balanceados} delay={190}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${visibles.length} asientos`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por descripción, número o referencia…"/>
+      </BarraFiltros>
+      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <table className="ui-tabla w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr className="monki-tag text-monki-k/55">
+                {["N.°","Fecha","Descripción","Referencia"].map(t=><th key={t} className="font-semibold px-4 py-3 border-b-2 border-black/10 text-left whitespace-nowrap">{t}</th>)}
+                <th className="font-semibold px-4 py-3 border-b-2 border-black/10 text-right">Debe</th>
+                <th className="font-semibold px-4 py-3 border-b-2 border-black/10 text-right">Haber</th>
+                <th className="border-b-2 border-black/10"/>
+              </tr>
+            </thead>
+            <tbody>
+              {visibles.length===0 ? (
+                <tr><td colSpan={7}><Vacio icono={BookOpen} titulo={asientos.length ? "Sin resultados" : "Todavía no hay asientos"} texto={asientos.length ? "Probá con otra búsqueda." : "Se crean solos al facturar y cobrar, o podés registrar uno a mano."}
+                  accion={!asientos.length && <Boton icono={Plus} onClick={()=>setModal({})}>Nuevo asiento</Boton>}/></td></tr>
+              ) : visibles.map(a=>{
+                const isSel = selected === a.id;
+                return <AsientoRow key={a.id} a={a} onEdit={setModal} onEliminar={eliminar} isSel={isSel} onSelect={()=>setSelected(isSel?null:a.id)}/>;
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      {/* Barra de registro seleccionado / totales */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-red-50 border-b border-red-200 text-xs">
-          <span className="text-red-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">{sel.numero}</span>
-          <span className="text-slate-500">{sel.descripcion}</span>
-          {sel.referencia && <span className="text-slate-400">Ref: {sel.referencia}</span>}
-          <span className="font-bold text-slate-700">{fmtMoney(sel.totalDebe,"CRC")}</span>
-          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-6 px-4 py-1.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
-          <span>{visibles.length} asientos</span>
-          <span>Total debe: <strong className="text-slate-700">{fmtMoney(totDebe,"CRC")}</strong></span>
-          <span>Total haber: <strong className="text-slate-700">{fmtMoney(totHaber,"CRC")}</strong></span>
-          {Math.abs(totDebe-totHaber)<0.01 && visibles.length>0 &&
-            <span className="text-yellow-600 font-semibold">✓ Balanceado</span>}
-          <span className="ml-auto">clic en fila para seleccionar</span>
-        </div>
-      )}
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>N°</th><th>Fecha</th><th>Descripción</th><th>Referencia</th>
-              <th className="text-right">Debe</th><th className="text-right">Haber</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.length===0 ? (
-              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin asientos contables</td></tr>
-            ) : visibles.map(a=>{
-              const isSel = selected === a.id;
-              return (
-                <AsientoRow key={a.id} a={a} onEdit={setModal} isSel={isSel} onSelect={()=>setSelected(isSel?null:a.id)}/>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
       {modal!==null && (
         <AsientoModal asiento={Object.keys(modal).length>0?modal:null} cuentas={cuentas}
           onClose={()=>setModal(null)} onSave={cargar}/>
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
