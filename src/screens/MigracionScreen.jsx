@@ -13,6 +13,7 @@ import db from "../utils/db";
 import { genId, hoy, fechaLocal, fechaDesplazada } from "../utils/fmt";
 
 import { BACKEND } from "../utils/config.js";
+import { Modulo, Boton, BotonIcono, Tarjeta, Estado, Campo, Entrada, useConfirmar } from "../components/ui";
 
 // ── Definición de módulos ───────────────────────────────────────────────────
 
@@ -343,6 +344,7 @@ function ImportarExcel() {
   const [resultado,  setResultado]  = useState(null);
   const [limpiando,  setLimpiando]  = useState(false);
   const inputRef = useRef();
+  const { confirmar: pedirConfirmacion, dialogo } = useConfirmar();
 
   const modulo = MODULOS.find((m) => m.id === moduloId);
 
@@ -355,7 +357,7 @@ function ImportarExcel() {
 
   const limpiarTodo = async () => {
     if (!modulo.limpiar) return;
-    if (!window.confirm(`¿Borrar TODOS los ${modulo.label.toLowerCase()} guardados? Esto no se puede deshacer.`)) return;
+    if (!(await pedirConfirmacion(`Limpiar ${modulo.label.toLowerCase()}`, `¿Borrar TODOS los ${modulo.label.toLowerCase()} guardados? Esto no se puede deshacer.`, { peligro: true, boton: "Borrar todo" }))) return;
     setLimpiando(true);
     try {
       await modulo.limpiar();
@@ -400,178 +402,124 @@ function ImportarExcel() {
   const errCount   = errors.filter(Boolean).length;
   const validCount = filas ? filas.length - errCount : 0;
 
+  const COLS_OCULTAS = ["id", "creadoEn", "tipo", "activo", "_codigo"];
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Selector de módulo */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-wrap gap-1 p-1 bg-white rounded-full border-2 border-black/10 w-fit">
         {MODULOS.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => cambiarModulo(m.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors
-              ${moduloId === m.id
-                ? "bg-yellow-600 text-white border-yellow-600"
-                : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
-          >
-            <m.icon size={14} />
-            {m.label}
+          <button key={m.id} type="button" onClick={() => cambiarModulo(m.id)}
+            className={`ui-boton flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ease-monki
+              ${moduloId === m.id ? "bg-monki-k text-monki-y" : "text-monki-k/60 hover:text-monki-k hover:bg-black/5"}`}>
+            <m.icon size={13} /> {m.label}
           </button>
         ))}
       </div>
 
-      {/* Card del módulo */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <div className="flex items-start justify-between gap-4">
+      {/* Tarjeta del módulo */}
+      <Tarjeta cuerpo="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="font-semibold text-slate-900 text-base mb-1">{modulo.label}</h3>
-            <p className="text-sm text-slate-500 max-w-lg">{modulo.desc}</p>
+            <h3 className="text-[18px] font-black tracking-[-0.02em] text-monki-k">{modulo.label}</h3>
+            <p className="text-sm text-monki-k/60 max-w-lg mt-0.5">{modulo.desc}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => descargarPlantilla(modulo)}
-              className="flex items-center gap-2 border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
-            >
-              <Download size={14} /> Descargar plantilla
-            </button>
-            {modulo.limpiar && (
-              <button
-                onClick={limpiarTodo}
-                disabled={limpiando}
-                className="flex items-center gap-2 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
-              >
-                {limpiando ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                Limpiar todo
-              </button>
-            )}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Boton variante="secundario" icono={Download} onClick={() => descargarPlantilla(modulo)}>Descargar plantilla</Boton>
+            {modulo.limpiar && <Boton variante="peligro" icono={Trash2} cargando={limpiando} disabled={limpiando} onClick={limpiarTodo}>Limpiar todo</Boton>}
           </div>
         </div>
 
-        {/* Columnas */}
         <div className="mt-4 flex flex-wrap gap-1.5">
           {modulo.columnas.map((col) => (
-            <span key={col}
-              className={`px-2 py-0.5 rounded text-xs font-mono
-                ${col.includes("*") ? "bg-blue-50 text-blue-700 font-bold" : "bg-slate-100 text-slate-500"}`}>
-              {col}
-            </span>
+            <span key={col} className={`px-2.5 py-0.5 rounded-full text-xs font-mono ${col.includes("*") ? "bg-monki-y text-monki-k font-bold" : "bg-black/5 text-monki-k/60"}`}>{col}</span>
           ))}
         </div>
-        <p className="text-[11px] text-slate-400 mt-2">Los campos en <span className="text-blue-600 font-bold">azul</span> son obligatorios.</p>
+        <p className="text-[11px] text-monki-k/45 mt-2">Los campos en <b className="bg-monki-y px-1 rounded text-monki-k">amarillo</b> son obligatorios.</p>
 
-        {/* Upload zone */}
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="mt-5 border-2 border-dashed border-slate-200 rounded-xl p-8 text-center cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors"
-        >
-          <Upload size={28} className="mx-auto text-slate-300 mb-3" />
-          <p className="text-sm font-semibold text-slate-600">Arrastrá o hacé clic para subir tu Excel</p>
-          <p className="text-xs text-slate-400 mt-1">Formato .xlsx — máx. 5000 filas</p>
+        <div onClick={() => inputRef.current?.click()}
+          className="group mt-5 border-2 border-dashed border-black/15 rounded-[18px] p-8 text-center cursor-pointer transition-all duration-300 ease-monki hover:border-monki-k hover:bg-monki-cream/60">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-monki-y flex items-center justify-center shadow-[3px_3px_0_#111] transition-transform duration-300 ease-monki group-hover:-translate-y-1">
+            <Upload size={20} className="text-monki-k" />
+          </div>
+          <p className="text-sm font-bold text-monki-k">Arrastrá o hacé clic para subir tu Excel</p>
+          <p className="text-xs text-monki-k/45 mt-1">Formato .xlsx — máx. 5000 filas</p>
           <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={onFileChange} />
         </div>
-      </div>
+      </Tarjeta>
 
-      {/* Preview + validación */}
+      {/* Vista previa + validación */}
       {filas && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          {/* Header preview */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100">
-            <span className="text-sm font-semibold text-slate-900">
-              {filas.length} filas leídas
-            </span>
-            {errCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-yellow-600 font-semibold bg-yellow-50 px-2 py-0.5 rounded-full">
-                <AlertTriangle size={11} /> {errCount} con errores (se omitirán)
-              </span>
-            )}
-            {validCount > 0 && (
-              <span className="flex items-center gap-1 text-xs text-yellow-700 font-semibold bg-yellow-50 px-2 py-0.5 rounded-full">
-                <CheckCircle size={11} /> {validCount} válidas
-              </span>
-            )}
+        <Tarjeta className="animate-entrar overflow-hidden">
+          <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b-2 border-black/10">
+            <b className="text-sm text-monki-k">{filas.length} filas leídas</b>
+            {errCount > 0 && <Estado tono="peligro">{errCount} con errores (se omitirán)</Estado>}
+            {validCount > 0 && <Estado tono="exito">{validCount} válidas</Estado>}
             <span className="flex-1" />
-            <button onClick={() => { setFilas(null); setErrors([]); }} className="text-slate-400 hover:text-slate-700">
-              <X size={16} />
-            </button>
+            <BotonIcono icono={X} titulo="Descartar" onClick={() => { setFilas(null); setErrors([]); }}/>
           </div>
-
-          {/* Table preview (primeras 10) */}
           <div className="overflow-x-auto max-h-56 overflow-y-auto">
-            <table className="table-base text-xs w-full">
-              <thead>
-                <tr>
-                  <th className="w-6">#</th>
-                  {Object.keys(filas[0] || {}).filter((k) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo" && k !== "_codigo").slice(0, 6).map((k) => (
-                    <th key={k}>{k}</th>
+            <table className="ui-tabla text-xs w-full">
+              <thead className="sticky top-0 bg-white">
+                <tr className="monki-tag text-monki-k/55">
+                  <th className="px-3 py-2 text-left w-6">#</th>
+                  {Object.keys(filas[0] || {}).filter((k) => !COLS_OCULTAS.includes(k)).slice(0, 6).map((k) => (
+                    <th key={k} className="px-3 py-2 text-left">{k}</th>
                   ))}
-                  <th>Estado</th>
+                  <th className="px-3 py-2 text-left">Estado</th>
                 </tr>
               </thead>
               <tbody>
                 {filas.slice(0, 10).map((row, i) => (
-                  <tr key={i} className={errors[i] ? "bg-red-50" : ""}>
-                    <td className="text-slate-400">{i + 1}</td>
+                  <tr key={i} className={`border-t border-black/5 ${errors[i] ? "bg-red-50" : ""}`}>
+                    <td className="px-3 py-1.5 text-monki-k/40">{i + 1}</td>
                     {Object.entries(row).filter(([k]) => k !== "id" && k !== "creadoEn" && k !== "tipo" && k !== "activo" && k !== "numero" && k !== "_codigo").slice(0, 6).map(([k, v]) => (
-                      <td key={k} className="truncate max-w-[120px]">{String(v)}</td>
+                      <td key={k} className="px-3 py-1.5 truncate max-w-[120px]">{String(v)}</td>
                     ))}
-                    <td>
-                      {errors[i]
-                        ? <span className="text-red-600 font-semibold">{errors[i]}</span>
-                        : <span className="text-yellow-700">✓</span>}
+                    <td className="px-3 py-1.5">
+                      {errors[i] ? <span className="text-red-600 font-semibold">{errors[i]}</span> : <CheckCircle size={13} className="text-emerald-600" />}
                     </td>
                   </tr>
                 ))}
                 {filas.length > 10 && (
-                  <tr><td colSpan={8} className="text-center text-slate-400 py-2">... y {filas.length - 10} filas más</td></tr>
+                  <tr><td colSpan={8} className="text-center text-monki-k/45 py-2">... y {filas.length - 10} filas más</td></tr>
                 )}
               </tbody>
             </table>
           </div>
-
-          {/* Botón confirmar */}
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-            <p className="text-sm text-slate-500">
-              Se importarán <strong className="text-slate-900">{validCount}</strong> {modulo.label.toLowerCase()} válidos.
+          <div className="px-5 py-3 bg-monki-cream/50 border-t-2 border-black/10 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-monki-k/60">
+              Se importarán <b className="text-monki-k">{validCount}</b> {modulo.label.toLowerCase()} válidos.
               {errCount > 0 && ` Las ${errCount} con errores se omitirán.`}
             </p>
-            <button
-              onClick={confirmar}
-              disabled={loading || validCount === 0}
-              className="flex items-center gap-2 bg-yellow-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-              Confirmar importación
-            </button>
+            <Boton icono={ArrowRight} cargando={loading} disabled={loading || validCount === 0} onClick={confirmar}>Confirmar importación</Boton>
           </div>
-        </div>
+        </Tarjeta>
       )}
 
       {/* Resultado */}
       {resultado && (
-        <div className={`flex items-center gap-4 rounded-xl p-5 ${resultado._limpiado ? "bg-red-50 border border-red-200" : "bg-yellow-50 border border-yellow-300"}`}>
-          {resultado._limpiado
-            ? <Trash2 size={24} className="text-red-500 shrink-0" />
-            : <CheckCircle size={24} className="text-yellow-600 shrink-0" />}
+        <div className={`animate-entrar flex items-center gap-4 rounded-[18px] p-5 border-2 ${resultado._limpiado ? "bg-red-50 border-red-200" : "bg-monki-y border-monki-k"}`}>
+          {resultado._limpiado ? <Trash2 size={22} className="text-red-600 shrink-0" /> : <CheckCircle size={22} className="text-monki-k shrink-0" />}
           <div>
             {resultado._limpiado ? (
               <>
-                <p className="font-semibold text-red-900">Datos eliminados</p>
+                <b className="text-red-900">Datos eliminados</b>
                 <p className="text-sm text-red-700 mt-0.5">Todos los {modulo.label.toLowerCase()} fueron borrados.</p>
               </>
             ) : (
               <>
-                <p className="font-semibold text-green-900">¡Importación exitosa!</p>
-                <p className="text-sm text-yellow-700 mt-0.5">
+                <b className="text-monki-k">¡Importación exitosa!</b>
+                <p className="text-sm text-monki-k/75 mt-0.5">
                   {resultado.nuevos} {modulo.label.toLowerCase()} importados.
                   {resultado.duplicados > 0 && ` ${resultado.duplicados} omitidos (ya existían).`}
                 </p>
               </>
             )}
           </div>
-          <button onClick={() => setResultado(null)} className="ml-auto text-slate-400 hover:text-slate-700">
-            <X size={16} />
-          </button>
+          <span className="ml-auto"><BotonIcono icono={X} titulo="Cerrar" onClick={() => setResultado(null)}/></span>
         </div>
       )}
+      {dialogo}
     </div>
   );
 }
@@ -628,77 +576,42 @@ function ImportarHacienda() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Explicación */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
-        <div className="flex gap-3">
-          <Globe size={20} className="text-blue-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-blue-900 text-sm">¿Qué importa desde Hacienda?</p>
-            <p className="text-sm text-blue-700 mt-1">
-              Con tus credenciales de ATV (Administración Tributaria Virtual) jala automáticamente
-              todas tus facturas electrónicas emitidas y recibidas, crea los clientes/proveedores
-              y genera el historial de CXC — sin escribir nada a mano.
-            </p>
-          </div>
+    <div className="space-y-4 max-w-3xl">
+      <div className="flex gap-3 bg-monki-k text-white rounded-[18px] p-5">
+        <div className="w-9 h-9 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Globe size={17} className="text-monki-k" /></div>
+        <div>
+          <b className="text-monki-y text-sm">¿Qué importa desde Hacienda?</b>
+          <p className="text-sm text-white/75 mt-1">
+            Con tus credenciales de ATV (Administración Tributaria Virtual) jala automáticamente
+            todas tus facturas electrónicas emitidas y recibidas, crea los clientes/proveedores
+            y genera el historial de CXC — sin escribir nada a mano.
+          </p>
         </div>
       </div>
 
-      {/* Formulario */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-slate-900">Credenciales ATV de Hacienda</h3>
-
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Usuario ATV *</span>
-            <input value={form.usuario} onChange={(e) => u("usuario", e.target.value)}
-              placeholder="cédula o usuario"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Contraseña ATV *</span>
-            <input type="password" value={form.password} onChange={(e) => u("password", e.target.value)}
-              placeholder="••••••••"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Desde</span>
-            <input type="date" value={form.desde} onChange={(e) => u("desde", e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Hasta</span>
-            <input type="date" value={form.hasta} onChange={(e) => u("hasta", e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-          </label>
+      <Tarjeta titulo="Credenciales ATV de Hacienda" cuerpo="px-5 pb-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Campo etiqueta="Usuario ATV *"><Entrada value={form.usuario} onChange={(e) => u("usuario", e.target.value)} placeholder="cédula o usuario"/></Campo>
+          <Campo etiqueta="Contraseña ATV *"><Entrada type="password" value={form.password} onChange={(e) => u("password", e.target.value)} placeholder="••••••••"/></Campo>
+          <Campo etiqueta="Desde"><Entrada type="date" value={form.desde} onChange={(e) => u("desde", e.target.value)}/></Campo>
+          <Campo etiqueta="Hasta"><Entrada type="date" value={form.hasta} onChange={(e) => u("hasta", e.target.value)}/></Campo>
         </div>
-
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-4 py-3 text-sm text-red-700">
+          <div className="flex items-center gap-2 bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-3 text-sm text-red-700">
             <AlertTriangle size={14} className="shrink-0" /> {error}
           </div>
         )}
+        <Boton icono={RefreshCw} cargando={loading} disabled={loading} onClick={importar}>
+          {loading ? "Conectando con Hacienda…" : "Importar desde Hacienda"}
+        </Boton>
+      </Tarjeta>
 
-        <button
-          onClick={importar}
-          disabled={loading}
-          className="flex items-center gap-2 bg-yellow-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading
-            ? <><Loader2 size={14} className="animate-spin" /> Conectando con Hacienda…</>
-            : <><RefreshCw size={14} /> Importar desde Hacienda</>}
-        </button>
-      </div>
-
-      {/* Resultado */}
       {resultado && (
-        <div className="flex items-center gap-4 bg-yellow-50 border border-yellow-300 rounded-xl p-5">
-          <CheckCircle size={24} className="text-yellow-600 shrink-0" />
+        <div className="animate-entrar flex items-center gap-4 bg-monki-y border-2 border-monki-k rounded-[18px] p-5">
+          <CheckCircle size={22} className="text-monki-k shrink-0" />
           <div>
-            <p className="font-semibold text-green-900">¡Importación desde Hacienda exitosa!</p>
-            <p className="text-sm text-yellow-700 mt-0.5">
-              {resultado.facturas} facturas · {resultado.contactos} clientes/proveedores importados.
-            </p>
+            <b className="text-monki-k">¡Importación desde Hacienda exitosa!</b>
+            <p className="text-sm text-monki-k/75 mt-0.5">{resultado.facturas} facturas · {resultado.contactos} clientes/proveedores importados.</p>
           </div>
         </div>
       )}
@@ -717,53 +630,29 @@ export default function MigracionScreen() {
   const [tab, setTab] = useState("excel");
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Hero */}
-      <div className="bg-white border-b border-slate-200 px-8 py-6">
-        <div className="max-w-3xl">
-          <h1 className="text-xl font-bold text-slate-900">Importar datos</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Migrá desde cualquier sistema en minutos. Descargá una plantilla Excel, pegá tus datos y confirmá —
-            o conectá tu ATV de Hacienda y jalamos todo automáticamente.
-          </p>
-        </div>
-
-        {/* Pasos */}
-        <div className="flex items-center gap-3 mt-5 text-xs text-slate-500">
-          {["Elegí el módulo", "Descargá la plantilla", "Pegá tus datos", "Subí y confirmá"].map((s, i) => (
-            <React.Fragment key={s}>
-              <span className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-yellow-600 text-white flex items-center justify-center font-bold text-[10px]">{i + 1}</span>
-                {s}
+    <Modulo
+      seccion="Herramientas"
+      titulo="Importar datos"
+      descripcion="Migrá desde cualquier sistema en minutos: descargá la plantilla Excel, pegá tus datos y confirmá — o conectá tu ATV de Hacienda."
+      indicadores={
+        <div className="flex flex-wrap items-center gap-2 text-xs text-monki-k/60">
+          {["Elegí el módulo", "Descargá la plantilla", "Pegá tus datos", "Subí y confirmá"].map((paso, i) => (
+            <React.Fragment key={paso}>
+              <span className="flex items-center gap-2 bg-white border-2 border-black/10 rounded-full pl-1 pr-3 py-1 font-semibold">
+                <span className="w-5 h-5 rounded-full bg-monki-y text-monki-k flex items-center justify-center font-black text-[10px]">{i + 1}</span>
+                {paso}
               </span>
-              {i < 3 && <ChevronRight size={12} className="text-slate-300" />}
+              {i < 3 && <ChevronRight size={12} className="text-monki-k/30" />}
             </React.Fragment>
           ))}
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 px-8 pt-5">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium border-b-2 transition-colors
-              ${tab === t.id
-                ? "border-slate-800 text-slate-900 bg-white"
-                : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            <t.icon size={14} />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 px-8 pb-8 pt-4">
+      }
+      pestanas={{ activa: tab, onCambiar: setTab, items: TABS.map(t => ({ key: t.id, label: t.label })) }}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
         {tab === "excel"    && <ImportarExcel />}
         {tab === "hacienda" && <ImportarHacienda />}
       </div>
-    </div>
+    </Modulo>
   );
 }
