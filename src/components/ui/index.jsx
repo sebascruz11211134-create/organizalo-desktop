@@ -15,7 +15,7 @@ const cx = (...c) => c.filter(Boolean).join(" ");
 export function Modulo({ seccion, titulo, descripcion, acciones, indicadores, pestanas, children, sinRelleno = false }) {
   return (
     <div className="flex flex-col h-full min-h-0">
-      <header className="shrink-0 px-4 md:px-6 pt-5 pb-3">
+      <div className="ui-modulo-cabecera shrink-0 px-4 md:px-6 pt-5 pb-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             {seccion && <p className="monki-tag text-monki-k/55 mb-1">{seccion}</p>}
@@ -28,7 +28,7 @@ export function Modulo({ seccion, titulo, descripcion, acciones, indicadores, pe
         </div>
         {indicadores && <div className="mt-4">{indicadores}</div>}
         {pestanas && <Pestanas {...pestanas} className="mt-4" />}
-      </header>
+      </div>
       <div className={cx("flex-1 min-h-0 flex flex-col", !sinRelleno && "px-4 md:px-6 pb-5")}>{children}</div>
     </div>
   );
@@ -125,7 +125,8 @@ export function Pestanas({ items, activa, onCambiar, className }) {
 }
 
 // ── Tarjeta y tabla ─────────────────────────────────────────────────────────
-export function Tarjeta({ children, className, titulo, acciones }) {
+// `cuerpo`: clases para envolver el contenido (relleno) sin afectar el título.
+export function Tarjeta({ children, className, titulo, acciones, cuerpo }) {
   return (
     <section className={cx("ui-tarjeta bg-white rounded-[18px] border-2 border-black/10", className)}>
       {(titulo || acciones) && (
@@ -134,7 +135,7 @@ export function Tarjeta({ children, className, titulo, acciones }) {
           {acciones}
         </div>
       )}
-      {children}
+      {cuerpo ? <div className={cuerpo}>{children}</div> : children}
     </section>
   );
 }

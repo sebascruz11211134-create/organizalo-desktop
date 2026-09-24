@@ -354,8 +354,8 @@ export default function InventarioScreen() {
       )}
 
       {tab === "kardex" && (
-        <div className="flex-1 min-h-0 flex gap-3">
-          <Tarjeta className="w-60 shrink-0 flex flex-col min-h-0">
+        <div className="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3">
+          <Tarjeta className="w-full lg:w-60 shrink-0 flex flex-col max-h-60 lg:max-h-none min-h-0">
             <div className="p-3"><Buscador valor={busqK} onCambio={setBusqK} className="!min-w-0 !max-w-none"/></div>
             <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
               {prodsFiltK.length===0 && <p className="text-center text-monki-k/40 text-xs py-8">Sin productos</p>}
@@ -368,7 +368,7 @@ export default function InventarioScreen() {
               ))}
             </div>
           </Tarjeta>
-          <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          <div className="flex-1 min-w-0 flex flex-col min-h-[320px] lg:min-h-0">
             {!prodKardex ? (
               <Tarjeta className="flex-1 flex items-center justify-center">
                 <Vacio icono={Package} titulo="Elegí un producto" texto="Seleccioná un producto de la lista para ver todos sus movimientos."/>

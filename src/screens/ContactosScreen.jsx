@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Users, Briefcase, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Users, Briefcase, Trash2, Loader2, Edit2, Contact } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { genId } from "../utils/fmt";
@@ -76,137 +77,57 @@ function ContactoModal({ contacto, onClose, onSave }) {
 
   const TIPO_CED_LABEL = { "01": "Física", "02": "Jurídica", "03": "DIMEX", "04": "NITE" };
 
+  const alerta = situacion && (situacion.moroso === "SI" || situacion.omiso === "SI");
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 bg-slate-700 border-b border-slate-600">
-          <h3 className="text-sm font-bold text-white">{contacto ? "Editar contacto" : "Nuevo contacto"}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-xs">✕</button>
+    <Modal titulo={contacto ? "Editar contacto" : "Nuevo contacto"} subtitulo={contacto ? contacto.nombre : "Cliente o proveedor"} onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar} disabled={!nombre.trim()}>Guardar contacto</Boton></>}>
+      <div className="space-y-4">
+        <Campo etiqueta="Cédula" error={cedulaError} ayuda={buscando ? "Consultando Hacienda…" : "Enter o la lupa para traer el nombre desde Hacienda"}>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Entrada value={cedula} onChange={(e) => { setCedula(e.target.value); setCedulaError(""); setSituacion(null); }}
+                onKeyDown={(e) => e.key === "Enter" && buscarEnHacienda()} placeholder="Número de cédula" className="pr-11" />
+              <button type="button" onClick={buscarEnHacienda} disabled={buscando || !cedula.trim()} title="Consultar Hacienda CR"
+                className="ui-boton absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center bg-monki-y text-monki-k hover:scale-105 transition-transform disabled:opacity-30 disabled:hover:scale-100">
+                {buscando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              </button>
+            </div>
+            <Seleccion value={tipoCedula} onChange={(e) => setTipoCedula(e.target.value)} className="!w-32"
+              opciones={[["01","Física"],["02","Jurídica"],["03","DIMEX"],["04","NITE"]].map(([v,l]) => ({ value: v, label: `${v} · ${l}` }))} />
+          </div>
+          {situacion && (
+            <div className="mt-2">
+              <Estado tono={alerta ? "peligro" : "exito"}>
+                {situacion.moroso === "SI" && situacion.omiso === "SI" ? "Moroso + Omiso" :
+                 situacion.moroso === "SI" ? "Moroso" : situacion.omiso === "SI" ? "Omiso" : "Al día con Hacienda"}
+              </Estado>
+            </div>
+          )}
+        </Campo>
+        <div className="grid grid-cols-[1fr_7.5rem] gap-3">
+          <Campo etiqueta="Nombre *"><Entrada value={nombre} onChange={(e) => setNombre(e.target.value)} /></Campo>
+          <Campo etiqueta="Código"><Entrada value={codigoCli} onChange={(e) => setCodigoCli(e.target.value.toUpperCase())} placeholder="CLI-0001" className="font-mono" /></Campo>
         </div>
-        <div className="p-5 space-y-3">
-          {/* Cédula + lookup Hacienda */}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula / RUC</label>
-            <div className="flex gap-2">
-              <div className="flex flex-1">
-                <input
-                  value={cedula}
-                  onChange={(e) => { setCedula(e.target.value); setCedulaError(""); setSituacion(null); }}
-                  onKeyDown={(e) => e.key === "Enter" && buscarEnHacienda()}
-                  placeholder="Número de cédula"
-                  className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 border-r-0"
-                />
-                <button
-                  type="button"
-                  onClick={buscarEnHacienda}
-                  disabled={buscando || !cedula.trim()}
-                  title="Consultar Hacienda CR"
-                  className="flex items-center justify-center px-3 border border-gray-300 rounded-r-lg bg-slate-50 hover:bg-yellow-50 hover:border-yellow-300 hover:text-yellow-700 text-slate-500 transition-colors disabled:opacity-40"
-                >
-                  {buscando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-                </button>
-              </div>
-              <select
-                value={tipoCedula}
-                onChange={(e) => setTipoCedula(e.target.value)}
-                className="border border-gray-300 rounded-lg px-2 py-2.5 text-xs text-slate-600 focus:outline-none"
-              >
-                <option value="01">01 – Física</option>
-                <option value="02">02 – Jurídica</option>
-                <option value="03">03 – DIMEX</option>
-                <option value="04">04 – NITE</option>
-              </select>
-            </div>
-            {cedulaError && <p className="mt-1 text-xs text-red-500">{cedulaError}</p>}
-            {situacion && (
-              <div className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border
-                ${situacion.moroso === "SI" || situacion.omiso === "SI"
-                  ? "bg-red-50 text-red-700 border-red-200"
-                  : "bg-green-50 text-yellow-700 border-yellow-300"}`}>
-                <span>{situacion.moroso === "SI" || situacion.omiso === "SI" ? "⚠️" : "✓"}</span>
-                <span>
-                  {situacion.moroso === "SI" && situacion.omiso === "SI" ? "Moroso + Omiso" :
-                   situacion.moroso === "SI" ? "Moroso" :
-                   situacion.omiso  === "SI" ? "Omiso" :
-                   "Al día · Hacienda"}
-                </span>
-              </div>
-            )}
-            {buscando && (
-              <p className="mt-1 text-xs text-slate-400 flex items-center gap-1">
-                <Loader2 size={11} className="animate-spin" /> Consultando Hacienda…
-              </p>
-            )}
+        <Campo etiqueta="Tipo">
+          <div className="grid grid-cols-3 gap-2">
+            {[["cliente","Cliente"],["proveedor","Proveedor"],["ambos","Ambos"]].map(([v,l]) => (
+              <button key={v} type="button" onClick={() => setTipo(v)}
+                className={`ui-boton py-2 rounded-full text-sm font-bold transition-all duration-300 ease-monki ${tipo===v ? "bg-monki-k text-monki-y" : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>{l}</button>
+            ))}
           </div>
-
-          {/* Nombre + Código */}
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre *</label>
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </div>
-            <div className="w-28">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código</label>
-              <input value={codigoCli} onChange={(e) => setCodigoCli(e.target.value.toUpperCase())}
-                placeholder="CLI-0001"
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </div>
-          </div>
-
-          {/* Tipo contacto */}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tipo</label>
-            <select value={tipo} onChange={(e) => setTipo(e.target.value)}
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm">
-              <option value="cliente">Cliente</option>
-              <option value="proveedor">Proveedor</option>
-              <option value="ambos">Ambos</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-            <input value={tel} onChange={(e) => setTel(e.target.value)}
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm" />
-          </div>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
-              <textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2}
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm resize-none" />
-            </div>
-            <div className="w-32">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                {tipo === "proveedor" ? "Días pago" : "Días crédito"}
-              </label>
-              <div className="relative">
-                <input
-                  type="number" min="0" max="365"
-                  value={diasCredito}
-                  onChange={(e) => setDiasCredito(e.target.value)}
-                  placeholder="0 = contado"
-                  className="w-full border border-slate-200 rounded px-2.5 py-2 text-sm text-right focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                />
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">días</span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                {tipo === "proveedor" ? "Plazo para pagarle" : "Plazo que le das"}
-              </p>
-            </div>
-          </div>
+        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Correo"><Entrada type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Campo>
+          <Campo etiqueta="Teléfono"><Entrada value={tel} onChange={(e) => setTel(e.target.value)} /></Campo>
         </div>
-        <div className="flex gap-3 mt-4 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-yellow-600 rounded text-sm font-semibold text-white hover:bg-yellow-700">Guardar</button>
+        <div className="grid grid-cols-[1fr_8rem] gap-3">
+          <Campo etiqueta="Notas"><AreaTexto value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} /></Campo>
+          <Campo etiqueta={tipo === "proveedor" ? "Días de pago" : "Días de crédito"} ayuda={tipo === "proveedor" ? "Plazo para pagarle" : "Plazo que le das"}>
+            <Entrada type="number" min="0" max="365" value={diasCredito} onChange={(e) => setDiasCredito(e.target.value)} placeholder="0 = contado" className="text-right" />
+          </Campo>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -223,8 +144,9 @@ export default function ContactosScreen() {
     setContactos(c);
   }, []);
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (c) => {
-    if (!confirm(`¿Eliminar el contacto "${c.nombre}"?`)) return;
+    if (!(await confirmar("Eliminar contacto", `¿Eliminar a "${c.nombre}"? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getContactos();
     await db.setContactos(todos.filter((x) => x.id !== c.id));
     setSelected(null);
@@ -244,94 +166,68 @@ export default function ContactosScreen() {
   });
 
   const sel = visibles.find(c => c.id === selected);
-  const TIPO_CLS = { cliente: "bg-blue-100 text-blue-700", proveedor: "bg-yellow-100 text-yellow-700", ambos: "bg-violet-100 text-violet-700" };
+  const TONO_TIPO = { cliente: "exito", proveedor: "alerta", ambos: "oscuro" };
+  const TIPO_LABEL = { cliente: "Cliente", proveedor: "Proveedor", ambos: "Ambos" };
+  const nClientes = contactos.filter(c => c.tipo === "cliente" || c.tipo === "ambos").length;
+  const nProv = contactos.filter(c => c.tipo === "proveedor" || c.tipo === "ambos").length;
+  const nCredito = contactos.filter(c => c.dias_credito > 0).length;
+
+  const columnas = [
+    { key: "codigo", titulo: "Código", render: c => c.codigoCliente ? <span className="font-mono text-xs font-bold bg-monki-cream px-2 py-0.5 rounded-md">{c.codigoCliente}</span> : <span className="text-monki-k/25">—</span> },
+    { key: "nombre", titulo: "Nombre", render: c => (
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0 text-[12px] font-black text-monki-k">{(c.nombre || "?").trim().charAt(0).toUpperCase()}</span>
+        <span className="font-bold text-monki-k">{c.nombre}</span>
+      </div>) },
+    { key: "cedula", titulo: "Cédula", render: c => <span className="font-mono text-xs text-monki-k/55">{c.cedula || "—"}</span> },
+    { key: "tipo", titulo: "Tipo", render: c => <Estado tono={TONO_TIPO[c.tipo] || "neutro"}>{TIPO_LABEL[c.tipo] || c.tipo}</Estado> },
+    { key: "credito", titulo: "Crédito", render: c => c.dias_credito > 0 ? <b>{c.dias_credito} días</b> : <span className="text-monki-k/40">Contado</span> },
+    { key: "email", titulo: "Correo", render: c => <span className="text-monki-k/60">{c.email || "—"}</span> },
+    { key: "tel", titulo: "Teléfono", render: c => <span className="text-monki-k/60">{c.tel || "—"}</span> },
+    { key: "acciones", titulo: "", alinear: "right", render: c => (
+      <div className="flex justify-end gap-0.5" onClick={e => e.stopPropagation()}>
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={() => setModal(c)} />
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={() => eliminar(c)} />
+      </div>) },
+  ];
+
+  const FILTROS = [["todos","Todos"],["cliente","Clientes"],["proveedor","Proveedores"]];
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar oscuro — igual que CXC */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setModal({})}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <Plus size={13}/> Nuevo
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <button
-          disabled={!sel}
-          onClick={() => sel && setModal(sel)}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold">
-          Editar
-        </button>
-        <button
-          disabled={!sel}
-          onClick={() => sel && eliminar(sel)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <Trash2 size={13}/> Eliminar
-        </button>
-        <div className="flex-1"/>
-        <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
-          <option value="todos">Todos</option>
-          <option value="cliente">Clientes</option>
-          <option value="proveedor">Proveedores</option>
-        </select>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300"/>
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
-        </div>
-      </div>
-
-      {/* Barra de selección */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
-          <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">{sel.nombre}</span>
-          <span className="text-slate-500">{sel.cedula || "Sin cédula"}</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[sel.tipo] || ""}`}>{sel.tipo}</span>
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="px-4 py-1.5 bg-slate-50 border-b border-slate-100 text-xs text-slate-400">
-          {visibles.length} contacto{visibles.length !== 1 ? "s" : ""} — clic en una fila para seleccionar
+    <Modulo
+      seccion="Contactos"
+      titulo="Contactos"
+      descripcion="Clientes y proveedores, con su cédula validada en Hacienda."
+      acciones={<Boton icono={Plus} onClick={() => setModal({})}>Nuevo contacto</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Contactos" valor={contactos.length} detalle="En total" icono={Contact} delay={40} onClick={() => setFiltro("todos")} />
+          <Indicador etiqueta="Clientes" valor={nClientes} detalle="Incluye ‘ambos’" icono={Users} delay={90} onClick={() => setFiltro("cliente")} />
+          <Indicador etiqueta="Proveedores" valor={nProv} detalle="Incluye ‘ambos’" icono={Briefcase} delay={140} onClick={() => setFiltro("proveedor")} />
+          <Indicador etiqueta="Con crédito" valor={nCredito} detalle="Plazo mayor a 0 días" destacado delay={190} />
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: FILTROS.map(([key,label]) => ({ key, label })) }}
+    >
+      <BarraFiltros resumen={`${visibles.length} de ${contactos.length}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por nombre, cédula o código…" />
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={visibles} seleccionada={selected}
+        onFila={c => setSelected(c.id === selected ? null : c.id)}
+        vacio={<Vacio icono={Users} titulo={contactos.length ? "Sin resultados" : "Todavía no hay contactos"}
+          texto={contactos.length ? "Probá con otra búsqueda o filtro." : "Agregá tu primer cliente o proveedor."}
+          accion={!contactos.length && <Boton icono={Plus} onClick={() => setModal({})}>Nuevo contacto</Boton>} />} />
+      {sel && (
+        <div className="animate-desplegar mt-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionado</span>
+          <b>{sel.nombre}</b><span className="text-white/60 font-mono text-xs">{sel.cedula || "Sin cédula"}</span>
+          <div className="flex-1" />
+          <Boton variante="amarillo" tamano="sm" icono={Edit2} onClick={() => setModal(sel)}>Editar</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
-
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead><tr><th>Código</th><th>Nombre</th><th>Cédula / RUC</th><th>Tipo</th><th>Crédito</th><th>Email</th><th>Teléfono</th><th>Notas</th></tr></thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin contactos</td></tr>
-            ) : visibles.map((c) => {
-              const isSel = c.id === selected;
-              return (
-                <tr key={c.id}
-                  className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : "hover:bg-slate-50"}`}
-                  onClick={() => setSelected(isSel ? null : c.id)}>
-                  <td>
-                    {c.codigoCliente
-                      ? <span className="font-mono text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold">{c.codigoCliente}</span>
-                      : <span className="text-slate-300 text-xs">—</span>}
-                  </td>
-                  <td className="font-semibold">{c.nombre}</td>
-                  <td className="font-mono text-sm text-slate-500">{c.cedula || "—"}</td>
-                  <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${TIPO_CLS[c.tipo] || "bg-gray-100 text-slate-600"}`}>{c.tipo}</span></td>
-                  <td>
-                    {c.dias_credito > 0
-                      ? <span className="text-xs font-semibold text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">{c.dias_credito}d</span>
-                      : <span className="text-xs text-slate-400">contado</span>}
-                  </td>
-                  <td className="text-slate-500">{c.email || "—"}</td>
-                  <td className="text-slate-500">{c.tel || "—"}</td>
-                  <td className="text-slate-400 text-xs">{c.notas || "—"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
       {modal && <ContactoModal contacto={modal.id ? modal : null} onClose={() => setModal(null)} onSave={cargar} />}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }

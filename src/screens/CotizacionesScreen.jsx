@@ -1,6 +1,7 @@
 import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, FileText, Send, Copy, ChevronDown, Search, X, Check } from "lucide-react";
+import { Plus, Trash2, FileText, Send, Copy, X, Check, Edit2, Clock, CheckCircle2 } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Tarjeta, Campo, Entrada, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
@@ -8,11 +9,11 @@ import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 const IVA_PCT = { "01":0,"02":1,"03":2,"04":4,"05":0,"06":4,"07":8,"08":13 };
 
 const ESTADOS = [
-  { value:"borrador",  label:"Borrador",   color:"bg-slate-100 text-slate-600" },
-  { value:"enviada",   label:"Enviada",    color:"bg-blue-100 text-blue-700" },
-  { value:"aceptada",  label:"Aceptada",   color:"bg-green-100 text-yellow-700" },
-  { value:"rechazada", label:"Rechazada",  color:"bg-red-100 text-red-600" },
-  { value:"vencida",   label:"Vencida",    color:"bg-yellow-100 text-yellow-700" },
+  { value:"borrador",  label:"Borrador",   tono:"neutro" },
+  { value:"enviada",   label:"Enviada",    tono:"oscuro" },
+  { value:"aceptada",  label:"Aceptada",   tono:"exito" },
+  { value:"rechazada", label:"Rechazada",  tono:"peligro" },
+  { value:"vencida",   label:"Vencida",    tono:"alerta" },
 ];
 
 function calcLinea(l) {
@@ -29,99 +30,74 @@ function lineaVacia() {
 
 const BADGE = (estado) => {
   const e = ESTADOS.find(x=>x.value===estado) || ESTADOS[0];
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${e.color}`}>{e.label}</span>;
+  return <Estado tono={e.tono}>{e.label}</Estado>;
 };
 
 // ── Vista lista ───────────────────────────────────────────────────────────────
-function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, onEliminar, busq, setBusq }) {
+function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, onEliminar, busq, setBusq, dialogo }) {
   const [selected, setSelected] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState("todas");
 
   const filtradas = cotizaciones.filter(c =>
-    c.numero?.includes(busq) ||
-    c.cliente?.nombre?.toLowerCase().includes(busq.toLowerCase())
+    (c.numero?.includes(busq) || c.cliente?.nombre?.toLowerCase().includes(busq.toLowerCase())) &&
+    (filtroEstado === "todas" || (c.estado || "borrador") === filtroEstado)
   );
   const sel = filtradas.find(c => c.id === selected);
+  const totalDe = c => c.total || (c.lineas||[]).map(calcLinea).reduce((s,l)=>s+l.total,0);
+  const abiertas = cotizaciones.filter(c => ["borrador","enviada"].includes(c.estado || "borrador"));
+  const aceptadas = cotizaciones.filter(c => c.estado === "aceptada");
+
+  const columnas = [
+    { key:"numero", titulo:"N.°", render:c => <span className="font-mono text-xs font-bold">{c.numero}</span> },
+    { key:"cliente", titulo:"Cliente", render:c => <b className="text-monki-k">{c.cliente?.nombre || "—"}</b> },
+    { key:"fecha", titulo:"Fecha", render:c => <div><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },
+    { key:"validez", titulo:"Válida por", render:c => <span className="text-monki-k/60">{c.validez ? `${c.validez} días` : "—"}</span> },
+    { key:"total", titulo:"Total", alinear:"right", render:c => <b>{fmtMoney(totalDe(c),"CRC")}</b> },
+    { key:"estado", titulo:"Estado", render:c => BADGE(c.estado) },
+    { key:"acciones", titulo:"", alinear:"right", render:c => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        <BotonIcono icono={Send} titulo="Convertir en factura" onClick={()=>onConvertir(c)} />
+        <BotonIcono icono={Copy} titulo="Duplicar" onClick={()=>onDuplicar(c)} />
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>onEditar(c)} />
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>onEliminar(c.id)} />
+      </div>) },
+  ];
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
-        <button onClick={onNueva}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-semibold px-3 py-1.5 rounded">
-          <Plus size={13}/> Nueva
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&onEditar(sel)}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          Editar
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&onConvertir(sel)}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          <Send size={11}/> Facturar
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&onDuplicar(sel)}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          <Copy size={11}/> Duplicar
-        </button>
-        <button disabled={!sel} onClick={()=>sel&&onEliminar(sel.id)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded disabled:opacity-30">
-          <Trash2 size={13}/> Eliminar
-        </button>
-        <div className="ml-auto flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)} placeholder="Buscar…"
-            className="bg-transparent text-white text-xs outline-none w-44 placeholder-slate-400"/>
-        </div>
-      </div>
-      {sel ? (
-        <div className="flex items-center gap-3 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs shrink-0">
-          <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold">{sel.numero}</span>
-          <span className="text-slate-400">{sel.cliente?.nombre}</span>
-          <button onClick={()=>setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕</button>
-        </div>
-      ) : (
-        <div className="px-4 py-1.5 bg-slate-50 border-b text-[10px] text-slate-400 shrink-0">
-          {filtradas.length} cotizaciones — clic en fila para seleccionar
+    <Modulo
+      seccion="Ventas"
+      titulo="Cotizaciones"
+      descripcion="Proformas para tus clientes. Cuando te dicen que sí, se convierten en factura con un clic."
+      acciones={<Boton icono={Plus} onClick={onNueva}>Nueva cotización</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Cotizaciones" valor={cotizaciones.length} detalle="En total" icono={FileText} delay={40} onClick={()=>setFiltroEstado("todas")} />
+          <Indicador etiqueta="Abiertas" valor={abiertas.length} detalle="Borrador o enviada" icono={Clock} delay={90} onClick={()=>setFiltroEstado("enviada")} />
+          <Indicador etiqueta="Aceptadas" valor={aceptadas.length} detalle="Ya facturadas" icono={CheckCircle2} delay={140} onClick={()=>setFiltroEstado("aceptada")} />
+          <Indicador etiqueta="Monto abierto" valor={fmtMoney(abiertas.reduce((t,c)=>t+totalDe(c),0),"CRC")} detalle="Por cerrar" destacado delay={190} />
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${filtradas.length} de ${cotizaciones.length}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por número o cliente…" />
+        <Selector valor={filtroEstado} onCambio={setFiltroEstado} opciones={[{value:"todas",label:"Todos los estados"}, ...ESTADOS]} />
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={filtradas} seleccionada={selected}
+        onFila={c=>setSelected(selected===c.id?null:c.id)}
+        vacio={<Vacio icono={FileText} titulo={cotizaciones.length ? "Sin resultados" : "Todavía no hay cotizaciones"}
+          texto={cotizaciones.length ? "Probá con otra búsqueda o estado." : "Creá una proforma y enviásela a tu cliente."}
+          accion={!cotizaciones.length && <Boton icono={Plus} onClick={onNueva}>Nueva cotización</Boton>} />} />
+      {sel && (
+        <div className="animate-desplegar mt-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.numero}</b><span className="text-white/60">{sel.cliente?.nombre}</span>
+          <div className="flex-1" />
+          <Boton variante="amarillo" tamano="sm" icono={Send} onClick={()=>onConvertir(sel)}>Facturar</Boton>
+          <Boton variante="secundario" tamano="sm" icono={Edit2} onClick={()=>onEditar(sel)}>Editar</Boton>
         </div>
       )}
-
-      <div className="flex-1 overflow-auto">
-        {filtradas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-            <FileText size={40} className="text-slate-200"/>
-            <p className="text-sm">No hay cotizaciones. Creá una nueva.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-100 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">N.°</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Cliente</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Fecha</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Válida por</th>
-                <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Total</th>
-                <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtradas.map(c => {
-                const totCalc = (c.lineas||[]).map(calcLinea).reduce((s,l)=>s+l.total,0);
-                return (
-                  <tr key={c.id} onClick={()=>setSelected(selected===c.id?null:c.id)}
-                    className={`cursor-pointer transition-colors ${selected===c.id?"bg-blue-50 border-l-4 border-blue-500":"hover:bg-slate-50"}`}>
-                    <td className="px-4 py-2.5 font-mono text-xs font-bold text-slate-600">{c.numero}</td>
-                    <td className="px-3 py-2.5 font-semibold text-slate-800">{c.cliente?.nombre || "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500"><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {c.creadoPor}</div>}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{c.validez ? `${c.validez} días` : "—"}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-slate-800">{fmtMoney(c.total||totCalc,"CRC")}</td>
-                    <td className="px-3 py-2.5">{BADGE(c.estado)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
 
@@ -153,156 +129,99 @@ function FormView({ cotizacion, contactos, productos, onGuardar, onCancelar }) {
     onGuardar({ id: cotizacion?.id || genId(), numero:num, cliente, estado, fecha, validez, notas, lineas:lineasCalc, subtotal, totalIVA, total, creadoEn: cotizacion?.creadoEn || new Date().toISOString(), creadoPor: cotizacion?.creadoPor || getAutorSync() });
   };
 
-  const INP = "w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400";
-  const LBL = "block text-[10px] font-bold text-slate-500 uppercase mb-1";
+  const CELDA = "w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded-lg focus:bg-monki-y/25 transition-colors";
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
-        <button onClick={onCancelar} className="flex items-center gap-1.5 border border-slate-500 text-slate-300 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold">
-          <X size={13}/> Cancelar
-        </button>
-        <span className="text-slate-300 text-xs font-bold flex-1">{esNueva ? "Nueva cotización" : cotizacion.numero}</span>
-        <div className="flex items-center gap-2 text-xs text-slate-300">
-          <span className="text-white font-black">{fmtMoney(total,"CRC")}</span>
-        </div>
-        <select value={estado} onChange={e=>setEstado(e.target.value)}
-          className="text-xs border border-slate-500 bg-slate-600 text-white rounded px-2 py-1.5 focus:outline-none">
-          {ESTADOS.map(e=><option key={e.value} value={e.value}>{e.label}</option>)}
-        </select>
-        <button onClick={guardar} className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded text-xs font-semibold">
-          <Check size={13}/> Guardar
-        </button>
-      </div>
-
-      {/* Body 3 paneles */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Panel izquierdo */}
-        <div className="w-64 shrink-0 bg-slate-50 border-r border-slate-200 overflow-y-auto px-3 py-3 space-y-3">
-          <div>
-            <label className={LBL}>Cliente</label>
-            <div className="relative">
-              <input value={busqCliente} autoComplete="off"
+    <Modulo
+      seccion="Cotizaciones"
+      titulo={esNueva ? "Nueva cotización" : cotizacion.numero}
+      descripcion={esNueva ? "Llená el cliente y las líneas. Se guarda como borrador." : `Cliente: ${cliente.nombre || "—"}`}
+      acciones={<>
+        <Selector valor={estado} onCambio={setEstado} opciones={ESTADOS} />
+        <Boton variante="fantasma" icono={X} onClick={onCancelar}>Cancelar</Boton>
+        <Boton icono={Check} onClick={guardar}>Guardar</Boton>
+      </>}
+    >
+      <div className="lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[15rem_1fr_15rem] gap-3">
+        <Tarjeta titulo="Cliente" className="overflow-y-auto" cuerpo="px-4 pb-4 pt-1 space-y-3">
+          <div className="relative">
+            <Campo etiqueta="Nombre">
+              <Entrada value={busqCliente} autoComplete="off"
                 onChange={e=>{setBusqCliente(e.target.value);setCliente(p=>({...p,nombre:e.target.value}));setShowClientes(true);}}
                 onFocus={()=>setShowClientes(true)} onBlur={()=>setTimeout(()=>setShowClientes(false),150)}
-                placeholder="Nombre del cliente…" className={INP}/>
-              {showClientes && filtrados.length>0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
-                  {filtrados.map(c=>(
-                    <button key={c.id} onMouseDown={()=>{setCliente({nombre:c.nombre,cedula:c.cedula||"",email:c.email||"",tipo:c.tipoCedula||"01"});setBusqCliente(c.nombre);setShowClientes(false);}}
-                      className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0">
-                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
-                      <span className="font-semibold">{c.nombre}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                placeholder="Buscar cliente…" />
+            </Campo>
+            {showClientes && filtrados.length>0 && (
+              <div className="animate-desplegar absolute top-full left-0 w-full mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-44 overflow-auto">
+                {filtrados.map(c=>(
+                  <button key={c.id} type="button" onMouseDown={()=>{setCliente({nombre:c.nombre,cedula:c.cedula||"",email:c.email||"",tipo:c.tipoCedula||"01"});setBusqCliente(c.nombre);setShowClientes(false);}}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                    {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-cream px-1.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                    <span className="font-semibold">{c.nombre}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div>
-            <label className={LBL}>Cédula</label>
-            <input value={cliente.cedula} onChange={e=>setCliente(p=>({...p,cedula:e.target.value}))} placeholder="Número…" className={INP}/>
-          </div>
-          <div>
-            <label className={LBL}>Correo</label>
-            <input value={cliente.email} onChange={e=>setCliente(p=>({...p,email:e.target.value}))} placeholder="cliente@…" className={INP}/>
-          </div>
-          <div className="border-t border-slate-200"/>
-          <div>
-            <label className={LBL}>Fecha</label>
-            <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} className={INP}/>
-          </div>
-          <div>
-            <label className={LBL}>Válida por (días)</label>
-            <input type="number" value={validez} onChange={e=>setValidez(e.target.value)} min="1" className={INP}/>
-          </div>
-        </div>
+          <Campo etiqueta="Cédula"><Entrada value={cliente.cedula} onChange={e=>setCliente(p=>({...p,cedula:e.target.value}))} placeholder="Número…" /></Campo>
+          <Campo etiqueta="Correo"><Entrada value={cliente.email} onChange={e=>setCliente(p=>({...p,email:e.target.value}))} placeholder="cliente@…" /></Campo>
+          <div className="border-t border-black/10" />
+          <Campo etiqueta="Fecha"><Entrada type="date" value={fecha} onChange={e=>setFecha(e.target.value)} /></Campo>
+          <Campo etiqueta="Válida por (días)"><Entrada type="number" value={validez} onChange={e=>setValidez(e.target.value)} min="1" /></Campo>
+        </Tarjeta>
 
-        {/* Panel central: líneas */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <Tarjeta titulo="Líneas" acciones={<Boton variante="secundario" tamano="sm" icono={Plus} onClick={()=>setLineas(p=>[...p,lineaVacia()])}>Agregar línea</Boton>}
+          className="flex flex-col min-h-[280px] lg:min-h-0 overflow-hidden">
           <div className="flex-1 overflow-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 z-10">
-                <tr>
-                  <th className="text-left px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">Descripción</th>
-                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Cant.</th>
-                  <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">P. Unit.</th>
-                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-14">%Desc</th>
-                  <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-20">IVA</th>
-                  <th className="text-right px-4 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">Total</th>
-                  <th className="w-8"/>
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="monki-tag text-monki-k/50 border-b-2 border-black/10">
+                  <th className="text-left px-4 py-2.5 font-medium">Descripción</th>
+                  <th className="text-center px-2 py-2.5 font-medium w-16">Cant.</th>
+                  <th className="text-right px-3 py-2.5 font-medium w-28">P. unit.</th>
+                  <th className="text-center px-2 py-2.5 font-medium w-16">% Desc</th>
+                  <th className="text-center px-2 py-2.5 font-medium w-20">IVA</th>
+                  <th className="text-right px-4 py-2.5 font-medium w-28">Total</th>
+                  <th className="w-10"/>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-black/5">
                 {lineas.map((l,i)=>(
-                  <tr key={l.id} className="group">
+                  <tr key={l.id} className="group hover:bg-monki-cream/60 transition-colors">
+                    <td className="px-2"><input value={l.descripcion} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,descripcion:e.target.value}:x))} placeholder="Descripción…" className={CELDA+" ui-sin-foco"}/></td>
+                    <td className="px-1"><input value={l.cantidad} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))} type="number" min="0" className={CELDA+" ui-sin-foco text-center"}/></td>
+                    <td className="px-1"><input value={l.precioUnit} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,precioUnit:e.target.value}:x))} type="number" min="0" placeholder="0" className={CELDA+" ui-sin-foco text-right"}/></td>
+                    <td className="px-1"><input value={l.pctDesc} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,pctDesc:e.target.value}:x))} type="number" min="0" max="100" placeholder="0" className={CELDA+" ui-sin-foco text-center"}/></td>
                     <td className="px-1">
-                      <input value={l.descripcion}
-                        onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,descripcion:e.target.value}:x))}
-                        placeholder="Descripción…"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-yellow-50"/>
-                    </td>
-                    <td className="px-1">
-                      <input value={l.cantidad} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,cantidad:e.target.value}:x))}
-                        type="number" min="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-yellow-50 text-center"/>
-                    </td>
-                    <td className="px-1">
-                      <input value={l.precioUnit} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,precioUnit:e.target.value}:x))}
-                        type="number" min="0" placeholder="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-3 rounded focus:bg-yellow-50 text-right"/>
-                    </td>
-                    <td className="px-1">
-                      <input value={l.pctDesc} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,pctDesc:e.target.value}:x))}
-                        type="number" min="0" max="100" placeholder="0"
-                        className="w-full border-0 bg-transparent text-sm outline-none py-2 px-2 rounded focus:bg-yellow-50 text-center"/>
-                    </td>
-                    <td className="px-1">
-                      <select value={l.codigoIVA} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,codigoIVA:e.target.value}:x))}
-                        className="border-0 bg-transparent text-xs outline-none py-2 px-1 rounded focus:bg-yellow-50">
-                        <option value="01">0%</option>
-                        <option value="07">8%</option>
-                        <option value="08">13%</option>
+                      <select value={l.codigoIVA} onChange={e=>setLineas(p=>p.map((x,j)=>j===i?{...x,codigoIVA:e.target.value}:x))} className={CELDA+" text-xs text-center cursor-pointer"}>
+                        <option value="01">0%</option><option value="07">8%</option><option value="08">13%</option>
                       </select>
                     </td>
-                    <td className="text-right font-semibold text-sm px-4 text-yellow-700">{fmtMoney(calcLinea(l).total,"CRC")}</td>
-                    <td>
-                      <button onClick={()=>setLineas(p=>p.filter((_,j)=>j!==i))}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
-                        <Trash2 size={12}/>
-                      </button>
-                    </td>
+                    <td className="text-right font-bold px-4">{fmtMoney(calcLinea(l).total,"CRC")}</td>
+                    <td className="pr-2"><span className="opacity-0 group-hover:opacity-100 transition-opacity"><BotonIcono icono={Trash2} titulo="Quitar línea" tono="peligro" onClick={()=>setLineas(p=>p.filter((_,j)=>j!==i))}/></span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="border-t border-slate-100 px-4 py-2">
-            <button onClick={()=>setLineas(p=>[...p,lineaVacia()])}
-              className="flex items-center gap-1.5 text-xs text-yellow-700 hover:text-yellow-900 font-semibold">
-              <Plus size={13}/> Agregar línea
-            </button>
-          </div>
-        </div>
+        </Tarjeta>
 
-        {/* Panel derecho: totales + notas */}
-        <div className="w-52 shrink-0 bg-white border-l border-slate-200 overflow-y-auto px-4 py-4 space-y-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Resumen</p>
-          <div className="flex justify-between text-xs text-slate-600"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
-          <div className="flex justify-between text-xs text-slate-500"><span>IVA</span><span>{fmtMoney(totalIVA,"CRC")}</span></div>
-          <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2">
-            <span>TOTAL</span><span className="text-yellow-700">{fmtMoney(total,"CRC")}</span>
+        <div className="flex flex-col gap-3 min-h-0">
+          <div className="animate-entrar bg-monki-k text-white rounded-[18px] p-5">
+            <p className="monki-tag text-monki-y mb-3">Resumen</p>
+            <div className="flex justify-between text-sm text-white/70 py-1"><span>Subtotal</span><span>{fmtMoney(subtotal,"CRC")}</span></div>
+            <div className="flex justify-between text-sm text-white/70 py-1"><span>IVA</span><span>{fmtMoney(totalIVA,"CRC")}</span></div>
+            <div className="border-t border-white/15 mt-2 pt-3">
+              <p className="monki-tag text-white/50">Total</p>
+              <p className="text-[26px] font-black tracking-[-0.03em] text-monki-y leading-tight">{fmtMoney(total,"CRC")}</p>
+            </div>
           </div>
-          <div className="border-t border-slate-100 pt-3">
-            <label className={LBL}>Notas / condiciones</label>
-            <textarea value={notas} onChange={e=>setNotas(e.target.value)} rows={5}
-              placeholder="Condiciones de pago, validez…"
-              className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </div>
+          <Tarjeta titulo="Notas y condiciones" className="flex-1" cuerpo="px-4 pb-4 pt-1">
+            <AreaTexto value={notas} onChange={e=>setNotas(e.target.value)} rows={6} placeholder="Condiciones de pago, validez…" />
+          </Tarjeta>
         </div>
       </div>
-    </div>
+    </Modulo>
   );
 }
 
@@ -334,8 +253,9 @@ export default function CotizacionesScreen() {
     setEditando(null);
   };
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar esta cotización?")) return;
+    if (!(await confirmar("Eliminar cotización", "¿Eliminar esta cotización? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     const all = await db.getCotizaciones();
     await db.setCotizaciones(all.filter(x=>x.id!==id));
     cargar();
@@ -384,5 +304,5 @@ export default function CotizacionesScreen() {
   return <ListView cotizaciones={cotizaciones} busq={busq} setBusq={setBusq}
     onNueva={()=>{setEditando(null);setVista("form");}}
     onEditar={c=>{setEditando(c);setVista("form");}}
-    onConvertir={convertirAFactura} onDuplicar={duplicar} onEliminar={eliminar} />;
+    onConvertir={convertirAFactura} onDuplicar={duplicar} onEliminar={eliminar} dialogo={dialogo} />;
 }
