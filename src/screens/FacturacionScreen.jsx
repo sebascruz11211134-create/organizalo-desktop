@@ -19,6 +19,7 @@ import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
 import { guardarFacturaVenta } from "../utils/efectosVenta";
+import { Modulo, Boton } from "../components/ui";
 
 import { emitir, etiquetaEstado, camposFactura, idempotencyFactura, facturaReintentable, reintentarFactura, emisionesEnCurso, registrarEmision, quitarEmision, propietarioDe, payloadVigente, cotizacionOficialDeHoy, esCredito } from "../utils/comprobantes";
 
@@ -114,15 +115,15 @@ function LineaRow({ linea, productos, onChange, onDelete }) {
           onFocus={() => setShowProd(true)}
           onBlur={() => setTimeout(() => setShowProd(false), 150)}
           placeholder="Descripción / producto…"
-          className="w-full border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50" />
+          className="w-full border-0 bg-transparent text-sm outline-none py-1 px-2 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8]" />
         {showProd && productos.filter((p) => p.nombre?.toLowerCase().includes(linea.descripcion?.toLowerCase() || "")).length > 0 && (
-          <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
+          <div className="absolute top-full left-0 w-64 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-10 max-h-40 overflow-auto">
             {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 8).map((p) => (
               <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b border-gray-50 last:border-0">
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-monki-y border-b border-black/5 last:border-0">
                 <span className="font-semibold">{p.nombre}</span>
-                <span className="text-slate-400 ml-2">{p.codigoCabys || "—"}</span>
-                <span className="text-yellow-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+                <span className="text-monki-k/45 ml-2">{p.codigoCabys || "—"}</span>
+                <span className="text-monki-k ml-2">{fmtMoney(p.precio, "CRC")}</span>
               </button>
             ))}
           </div>
@@ -130,39 +131,39 @@ function LineaRow({ linea, productos, onChange, onDelete }) {
       </td>
       <td>
         <input value={linea.codigoCabys} onChange={(e) => onChange({ ...linea, codigoCabys: e.target.value })}
-          placeholder="CABYS" className="w-24 border-0 bg-transparent text-xs outline-none py-1 px-2 rounded focus:bg-green-50 text-slate-400" />
+          placeholder="CABYS" className="w-24 border-0 bg-transparent text-xs outline-none py-1 px-2 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8] text-monki-k/45" />
       </td>
       <td>
         <input value={linea.cantidad} onChange={(e) => onChange({ ...linea, cantidad: e.target.value })}
           type="number" min="0" step="any"
-          className="w-16 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-center" />
+          className="w-16 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8] text-center" />
       </td>
       <td>
         <select value={linea.unidad} onChange={(e) => onChange({ ...linea, unidad: e.target.value })}
-          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded focus:bg-green-50">
+          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8]">
           {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
       </td>
       <td>
         <input value={linea.precioUnit} onChange={(e) => onChange({ ...linea, precioUnit: e.target.value })}
           type="number" min="0" step="any" placeholder="0"
-          className="w-24 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-right" />
+          className="w-24 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8] text-right" />
       </td>
       <td>
         <input value={linea.pctDesc} onChange={(e) => onChange({ ...linea, pctDesc: e.target.value })}
           type="number" min="0" max="100" step="0.01" placeholder="0"
-          className="w-14 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded focus:bg-green-50 text-center" />
+          className="w-14 border-0 bg-transparent text-sm outline-none py-1 px-2 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8] text-center" />
       </td>
       <td>
         <select value={linea.codigoIVA} onChange={(e) => onChange({ ...linea, codigoIVA: e.target.value })}
-          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded focus:bg-green-50">
+          className="border-0 bg-transparent text-xs outline-none py-1 px-1 rounded-lg hover:bg-black/5 focus:bg-[#FFF4B8]">
           {TIPOS_IVA.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </td>
-      <td className="text-right text-xs text-slate-500">{fmtMoney(l.montoIVA, "CRC")}</td>
+      <td className="text-right text-xs text-monki-k/60">{fmtMoney(l.montoIVA, "CRC")}</td>
       <td className="text-right font-semibold text-sm">{fmtMoney(l.total, "CRC")}</td>
       <td>
-        <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400">
+        <button onClick={onDelete} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-red-600 hover:text-white text-red-500 transition-colors">
           <Trash2 size={12} />
         </button>
       </td>
@@ -182,27 +183,27 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
   const l = calcLinea(linea);
 
   return (
-    <div className="border border-slate-200 rounded-xl p-3 space-y-2 bg-white relative">
+    <div className="border-2 border-black/10 rounded-[18px] p-3 space-y-2 bg-white relative">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold text-slate-400 uppercase">Línea {idx + 1}</span>
-        <button onClick={onDelete} className="p-1 rounded hover:bg-red-50 text-red-400"><Trash2 size={13}/></button>
+        <span className="monki-tag text-monki-k/55">Línea {idx + 1}</span>
+        <button onClick={onDelete} className="p-1.5 rounded-full hover:bg-red-600 hover:text-white text-red-500 transition-colors"><Trash2 size={13}/></button>
       </div>
       {/* Descripción */}
       <div className="relative">
-        <label className="text-[10px] font-bold text-slate-400 uppercase">Descripción / producto</label>
+        <label className="monki-tag text-monki-k/55">Descripción / producto</label>
         <input value={linea.descripcion}
           onChange={(e) => { onChange({ ...linea, descripcion: e.target.value }); setShowProd(true); }}
           onFocus={() => setShowProd(true)}
           onBlur={() => setTimeout(() => setShowProd(false), 150)}
           placeholder="Buscar o escribir…"
-          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5"/>
+          className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5"/>
         {showProd && productos.filter((p) => p.nombre?.toLowerCase().includes(linea.descripcion?.toLowerCase() || "")).length > 0 && (
-          <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg z-20 max-h-36 overflow-auto">
+          <div className="absolute top-full left-0 right-0 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-36 overflow-auto">
             {productos.filter((p) => p.nombre?.toLowerCase().includes((linea.descripcion || "").toLowerCase())).slice(0, 6).map((p) => (
               <button key={p.id} onMouseDown={() => busqProd(p.nombre)}
-                className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b border-gray-50 last:border-0">
+                className="w-full text-left px-3 py-2 text-xs hover:bg-monki-y border-b border-black/5 last:border-0">
                 <span className="font-semibold">{p.nombre}</span>
-                <span className="text-yellow-700 ml-2">{fmtMoney(p.precio, "CRC")}</span>
+                <span className="text-monki-k ml-2">{fmtMoney(p.precio, "CRC")}</span>
               </button>
             ))}
           </div>
@@ -210,53 +211,53 @@ function LineaCard({ linea, productos, onChange, onDelete, idx }) {
       </div>
       {/* CABYS */}
       <div>
-        <label className="text-[10px] font-bold text-slate-400 uppercase">Código CABYS</label>
+        <label className="monki-tag text-monki-k/55">Código CABYS</label>
         <input value={linea.codigoCabys} onChange={(e) => onChange({ ...linea, codigoCabys: e.target.value })}
           placeholder="Código CABYS (opcional)"
-          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5"/>
+          className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5"/>
       </div>
       {/* Cant + Unid + Precio */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Cant.</label>
+          <label className="monki-tag text-monki-k/55">Cant.</label>
           <input value={linea.cantidad} onChange={(e) => onChange({ ...linea, cantidad: e.target.value })}
             type="number" min="0" step="any"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-center"/>
+            className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5 text-center"/>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Unidad</label>
+          <label className="monki-tag text-monki-k/55">Unidad</label>
           <select value={linea.unidad} onChange={(e) => onChange({ ...linea, unidad: e.target.value })}
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5">
+            className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5">
             {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Precio unit.</label>
+          <label className="monki-tag text-monki-k/55">Precio unit.</label>
           <input value={linea.precioUnit} onChange={(e) => onChange({ ...linea, precioUnit: e.target.value })}
             type="number" min="0" step="any" placeholder="0"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-right"/>
+            className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5 text-right"/>
         </div>
       </div>
       {/* Desc + IVA */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Desc. %</label>
+          <label className="monki-tag text-monki-k/55">Desc. %</label>
           <input value={linea.pctDesc} onChange={(e) => onChange({ ...linea, pctDesc: e.target.value })}
             type="number" min="0" max="100" step="0.01" placeholder="0"
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5 text-center"/>
+            className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5 text-center"/>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Tarifa IVA</label>
+          <label className="monki-tag text-monki-k/55">Tarifa IVA</label>
           <select value={linea.codigoIVA} onChange={(e) => onChange({ ...linea, codigoIVA: e.target.value })}
-            className="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 mt-0.5">
+            className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors mt-0.5">
             {TIPOS_IVA.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
       </div>
       {/* Totales */}
-      <div className="flex justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
+      <div className="flex justify-between text-xs text-monki-k/60 pt-1 border-t border-black/10">
         <span>IVA: {fmtMoney(l.montoIVA, "CRC")}</span>
-        <span className="font-bold text-slate-800 text-sm">Total: {fmtMoney(l.total, "CRC")}</span>
+        <span className="font-bold text-monki-k text-sm">Total: {fmtMoney(l.total, "CRC")}</span>
       </div>
     </div>
   );
@@ -685,86 +686,86 @@ export default function FacturacionScreen() {
     const puedeReintentar = facturaReintentable(enviada);
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 fade-in overflow-y-auto py-6 px-4">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-yellow-100" : "bg-yellow-100"}`}>
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl ${esEnviada ? "bg-monki-y shadow-[4px_4px_0_#111] animate-flotar" : "bg-monki-cream border-2 border-black/10"}`}>
           {esEnviada ? "✓" : "⏳"}
         </div>
         <div className="text-center">
-          <h2 className="text-2xl font-black text-slate-900">{enviada.numero}</h2>
-          <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold ${esEnviada ? "bg-yellow-100 text-yellow-800" : "bg-yellow-100 text-yellow-800"}`}>
+          <h2 className="text-2xl font-black text-monki-k">{enviada.numero}</h2>
+          <span className={`inline-block mt-1 px-3 py-0.5 rounded-full text-xs font-bold ${esEnviada ? "bg-monki-k text-monki-y" : "bg-[#FFF4B8] text-monki-k"}`}>
             {estadoLabel}
           </span>
           {enviada.modoSimulacion && (
-            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">MODO PRUEBA</span>
+            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs bg-monki-cream text-monki-k border-2 border-black/10 font-semibold">MODO PRUEBA</span>
           )}
-          <p className="text-2xl font-black text-yellow-700 mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
+          <p className="text-2xl font-black text-monki-k mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
         </div>
 
         {/* Datos de Hacienda */}
         {(enviada.clave || enviada.numeroConsecutivo || enviada.haciendaRes) && (
-          <div className="w-full max-w-md bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
-            <p className="text-[10px] font-bold text-slate-500 uppercase">Respuesta de Hacienda</p>
+          <div className="w-full max-w-md bg-white border-2 border-black/10 rounded-[18px] p-4 space-y-2 text-xs">
+            <p className="monki-tag text-monki-k/55 font-semibold">Respuesta de Hacienda</p>
             {enviada.numeroConsecutivo && (
               <div className="flex justify-between">
-                <span className="text-slate-500">Consecutivo</span>
-                <span className="font-mono font-semibold text-slate-800">{enviada.numeroConsecutivo}</span>
+                <span className="text-monki-k/60">Consecutivo</span>
+                <span className="font-mono font-semibold text-monki-k">{enviada.numeroConsecutivo}</span>
               </div>
             )}
             {enviada.clave && (
               <div>
-                <span className="text-slate-500">Clave numérica</span>
-                <p className="font-mono text-[10px] text-slate-700 break-all mt-0.5">{enviada.clave}</p>
+                <span className="text-monki-k/60">Clave numérica</span>
+                <p className="font-mono text-[10px] text-monki-k/75 break-all mt-0.5">{enviada.clave}</p>
               </div>
             )}
             {enviada.haciendaRes?.nota && (
-              <p className="text-slate-600 italic">{enviada.haciendaRes.nota}</p>
+              <p className="text-monki-k/75 italic">{enviada.haciendaRes.nota}</p>
             )}
             {enviada.haciendaRes?.message && (
-              <p className="text-slate-600 italic">{enviada.haciendaRes.message}</p>
+              <p className="text-monki-k/75 italic">{enviada.haciendaRes.message}</p>
             )}
           </div>
         )}
 
         {enviada.errorLocal && (
-          <div className="w-full max-w-md bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900">
+          <div className="w-full max-w-md bg-[#FFF4B8] border-2 border-monki-k rounded-2xl p-3 text-xs text-monki-k">
             La factura se emitió, pero falta completar inventario, CxC o asiento: {enviada.errorLocal}
           </div>
         )}
         {enviada.error && (
-          <div className="w-full max-w-md bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+          <div className="w-full max-w-md bg-red-50 border-2 border-red-200 rounded-2xl p-3 text-xs text-red-700">
             {enviada.error}
           </div>
         )}
         {enviada.errorLocal && (
           <button onClick={() => completarRegistro(enviada)} disabled={sending}
-            className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-amber-700 disabled:opacity-50">
+            className="ui-boton flex items-center gap-2 bg-monki-y text-monki-k px-5 py-2.5 rounded-full text-[13px] font-bold hover:shadow-[4px_4px_0_#111] transition-all disabled:opacity-50">
             {sending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Completar registro
           </button>
         )}
         {!enviada.errorLocal && puedeReintentar && (
           <button onClick={() => reintentarEnvio(enviada)} disabled={sending}
-            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
+            className="ui-boton flex items-center gap-2 bg-monki-k text-monki-y px-5 py-2.5 rounded-full text-[13px] font-bold hover:shadow-[4px_4px_0_#FFD600] transition-all disabled:opacity-50">
             {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Reintentar envío
           </button>
         )}
 
         {/* QR de SINPE */}
-        <div className="flex flex-col items-center gap-1 border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
+        <div className="flex flex-col items-center gap-1 border-2 border-black/10 rounded-[18px] p-4 bg-white">
           <SinpeQR
             telefono={settings?.sinpe || settings?.telefono || "8302-6613"}
             monto={enviada.totalGeneral || enviada.total}
             descripcion={enviada.numero}
             size={130}
           />
-          <p className="text-xs text-slate-400 mt-1">Escaneá para pagar por SINPE Móvil</p>
+          <p className="text-xs text-monki-k/45 mt-1">Escaneá para pagar por SINPE Móvil</p>
         </div>
 
         <div className="flex gap-3">
           <button onClick={() => imprimirFactura(enviada)}
-            className="flex items-center gap-2 border border-slate-200 text-slate-700 px-5 py-2 rounded-lg font-semibold hover:bg-gray-50">
+            className="ui-boton flex items-center gap-2 bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] px-5 py-2.5 rounded-full text-[13px] font-bold hover:bg-monki-k hover:text-monki-y transition-colors">
             <Printer size={15}/> Imprimir / PDF
           </button>
           <button onClick={() => setEnviada(null)}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-yellow-700">
+            className="ui-boton flex items-center gap-2 bg-monki-k text-monki-y px-6 py-2.5 rounded-full text-[13px] font-bold hover:shadow-[4px_4px_0_#FFD600] transition-all">
             <Plus size={16} /> Nueva factura
           </button>
         </div>
@@ -777,81 +778,67 @@ export default function FacturacionScreen() {
   // (ya existe activeTab arriba)
 
   return (
-    <div className="flex flex-col h-full">
+    <Modulo
+      seccion="Ventas"
+      titulo="Facturación"
+      descripcion="Factura electrónica y tiquete Hacienda v4.4 — se firma y envía desde el servidor."
+      acciones={<>
+        <div className="flex items-center gap-3 bg-monki-k text-white rounded-full pl-4 pr-1.5 py-1.5 text-xs">
+          {totalDesc > 0 && <span className="text-red-300">Desc −{fmtMoney(totalDesc, moneda)}</span>}
+          <span className="text-white/60">IVA {fmtMoney(totalIVA, moneda)}</span>
+          <span className="bg-monki-y text-monki-k font-black text-sm rounded-full px-3 py-1 tabular-nums">{fmtMoney(totalFact, moneda)}</span>
+        </div>
+        {situacionFiscal && (
+          <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+            situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI"
+              ? "bg-red-600 text-white" : "bg-monki-y text-monki-k"}`}>
+            {situacionFiscal.moroso === "SI" ? "⚠ Moroso" : situacionFiscal.omiso === "SI" ? "⚠ Omiso" : "✓ Al día"}
+          </span>
+        )}
+        <Boton variante="fantasma" icono={Plus} onClick={resetForm}>Nueva</Boton>
+        <Boton variante="secundario" icono={Save} onClick={handleGuardar} disabled={sending}>Guardar</Boton>
+        <Boton icono={Send} cargando={sending} onClick={handleEnviar} disabled={sending || totalFact === 0}>{sending ? "Enviando…" : "Emitir"}</Boton>
+      </>}
+    >
 
       {enCurso.length > 0 && (
-        <div className="px-4 py-2 bg-amber-50 border-b border-amber-300 text-xs text-amber-900 space-y-1 shrink-0">
-          <p className="font-semibold">⚠ {enCurso.length === 1 ? "Una factura no terminó" : `${enCurso.length} facturas no terminaron`} de emitirse (se cerró la app o se cortó la conexión). Reanudala: no se va a duplicar.</p>
+        <div className="shrink-0 mb-3 px-4 py-3 bg-[#FFF4B8] border-2 border-monki-k rounded-2xl text-xs text-monki-k space-y-1.5">
+          <p className="font-bold">⚠ {enCurso.length === 1 ? "Una factura no terminó" : `${enCurso.length} facturas no terminaron`} de emitirse (se cerró la app o se cortó la conexión). Reanudala: no se va a duplicar.</p>
           {enCurso.map(i => (
             <div key={i.id} className="flex items-center gap-3">
               <span className="font-mono">{i.numero}</span>
               <span>{i.cliente?.nombre || "Consumidor Final"}</span>
               <span className="font-semibold">{fmtMoney(i.total, i.moneda)}</span>
-              <button onClick={() => reanudarEmision(i)} disabled={sending}
-                className="ml-auto bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white px-2 py-0.5 rounded font-semibold">
-                Reanudar
-              </button>
+              <Boton tamano="sm" className="ml-auto" onClick={() => reanudarEmision(i)} disabled={sending}>Reanudar</Boton>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── TOOLBAR OSCURO ──────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600 shrink-0">
-        <button onClick={handleGuardar} disabled={sending}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Save size={13}/> Guardar
-        </button>
-        <button onClick={handleEnviar} disabled={sending || totalFact === 0}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          {sending ? <span className="animate-spin text-xs">⏳</span> : <Send size={13}/>}
-          {sending ? "Enviando…" : "Emitir"}
-        </button>
-        <button onClick={resetForm}
-          className="flex items-center gap-1.5 border border-slate-500 text-slate-300 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13}/> Nueva
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        {/* Totales en toolbar — siempre visibles */}
-        <div className="flex items-center gap-3 text-xs">
-          {totalDesc > 0 && <span className="text-red-300">Desc: −{fmtMoney(totalDesc, moneda)}</span>}
-          <span className="text-slate-300">IVA: {fmtMoney(totalIVA, moneda)}</span>
-          <span className="text-white font-black text-sm">{fmtMoney(totalFact, moneda)}</span>
-        </div>
-        {/* Badge situación fiscal (si está disponible) */}
-        {situacionFiscal && (
-          <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-            situacionFiscal.moroso === "SI" || situacionFiscal.omiso === "SI"
-              ? "bg-red-500 text-white" : "bg-green-500 text-white"}`}>
-            {situacionFiscal.moroso === "SI" ? "⚠ Moroso" : situacionFiscal.omiso === "SI" ? "⚠ Omiso" : "✓ Al día"}
-          </span>
-        )}
-      </div>
-
       {/* ── TAB BAR — solo móvil/iPad ────────────────────────────────────── */}
-      <div className="xl:hidden flex shrink-0 bg-white border-b border-gray-200">
+      <div className="xl:hidden flex shrink-0 gap-1 p-1 mb-3 bg-white rounded-full border-2 border-black/10">
         {["encabezado","lineas"].map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
-            className={`flex-1 py-2.5 text-sm font-semibold border-b-2 transition-colors capitalize
-              ${activeTab === t ? "border-yellow-500 text-yellow-600" : "border-transparent text-slate-400"}`}>
+            className={`ui-boton flex-1 py-1.5 rounded-full text-[13px] font-bold transition-all duration-300 ease-monki
+              ${activeTab === t ? "bg-monki-k text-monki-y" : "text-monki-k/60"}`}>
             {t === "lineas" ? `Líneas (${lineas.length})` : "Encabezado"}
           </button>
         ))}
       </div>
 
       {/* ── BODY — 3 columnas en desktop, tabs en móvil ─────────────────── */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="ui-tarjeta flex-1 min-h-0 flex overflow-hidden bg-white rounded-[18px] border-2 border-black/10">
 
         {/* ═══ PANEL IZQUIERDO: Encabezado (desktop fijo, móvil tab) ════════ */}
         <div className={`
-          xl:flex xl:flex-col xl:w-72 xl:shrink-0 xl:border-r xl:border-slate-200 xl:bg-slate-50 xl:overflow-y-auto
+          xl:flex xl:flex-col xl:w-72 xl:shrink-0 xl:border-r-2 xl:border-black/10 xl:bg-monki-cream/50 xl:overflow-y-auto
           ${activeTab === "encabezado" ? "flex flex-col flex-1 overflow-y-auto bg-white" : "hidden xl:flex"}
         `}>
           <div className="px-3 py-3 space-y-3">
 
             {/* Cliente */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cliente</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Cliente</label>
               <div className="relative">
                 <input value={busqCliente}
                   onChange={(e) => { setBusqCliente(e.target.value); setCliente((p) => ({ ...p, nombre: e.target.value })); setShowClientes(true); }}
@@ -859,19 +846,19 @@ export default function FacturacionScreen() {
                   onBlur={() => setTimeout(() => setShowClientes(false), 150)}
                   placeholder="Nombre, código CLI-XXXX…"
                   autoComplete="off"
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400 bg-white"/>
+                  className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"/>
                 {showClientes && clientesFiltrados.length > 0 && (
-                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded shadow-lg z-20 max-h-40 overflow-auto">
+                  <div className="absolute top-full left-0 w-full bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-40 overflow-auto">
                     {clientesFiltrados.map((c) => (
                       <button key={c.id} onMouseDown={() => {
                         setCliente({ nombre: c.nombre, cedula: c.cedula || "", email: c.email || "", tipo: c.tipoCedula || "01", dias_credito: c.dias_credito || 0 });
                         setBusqCliente(c.nombre); setShowClientes(false);
                         if (c.dias_credito > 0) { setCondPago("02"); setPlazo(String(c.dias_credito)); }
-                      }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-yellow-50 border-b last:border-0">
-                        {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 rounded mr-1">{c.codigoCliente}</span>}
+                      }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-monki-y border-b border-black/5 last:border-0">
+                        {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-k text-monki-y px-1 rounded mr-1">{c.codigoCliente}</span>}
                         <span className="font-semibold">{c.nombre}</span>
-                        <span className="text-slate-400 ml-1.5 text-[10px]">{c.cedula}</span>
-                        {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-yellow-600 font-semibold">{c.dias_credito}d</span>}
+                        <span className="text-monki-k/45 ml-1.5 text-[10px]">{c.cedula}</span>
+                        {c.dias_credito > 0 && <span className="ml-1.5 text-[10px] text-monki-k font-semibold">{c.dias_credito}d</span>}
                       </button>
                     ))}
                   </div>
@@ -881,10 +868,10 @@ export default function FacturacionScreen() {
 
             {/* Cédula */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Cédula / ID</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Cédula / ID</label>
               <div className="flex gap-1">
                 <select value={cliente.tipo} onChange={(e) => setCliente((p) => ({ ...p, tipo: e.target.value }))}
-                  className="w-20 border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                  className="w-20 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                   <option value="01">Física</option><option value="02">Jurídica</option>
                   <option value="03">DIMEX</option><option value="04">NITE</option>
                   <option value="05">Extranjero</option><option value="06">No contrib.</option>
@@ -893,9 +880,9 @@ export default function FacturacionScreen() {
                   onChange={(e) => { setCliente((p) => ({ ...p, cedula: e.target.value })); setCedulaError(""); setSituacionFiscal(null); }}
                   onKeyDown={(e) => e.key === "Enter" && buscarPorCedula()}
                   placeholder="Número…"
-                  className="flex-1 border border-slate-200 rounded-l px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                  className="flex-1 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"/>
                 <button onClick={buscarPorCedula} disabled={buscandoCedula || !cliente.cedula.trim()}
-                  className="flex items-center justify-center w-8 border border-slate-200 rounded-r bg-slate-100 hover:bg-yellow-50 text-slate-500 disabled:opacity-40">
+                  className="flex items-center justify-center w-9 shrink-0 rounded-xl bg-monki-k text-monki-y hover:shadow-[3px_3px_0_#FFD600] transition-all disabled:opacity-40">
                   {buscandoCedula ? <Loader2 size={12} className="animate-spin"/> : <Search size={12}/>}
                 </button>
               </div>
@@ -904,19 +891,19 @@ export default function FacturacionScreen() {
 
             {/* Email */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Correo</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Correo</label>
               <input value={cliente.email} onChange={(e) => setCliente((p) => ({ ...p, email: e.target.value }))}
                 placeholder="cliente@empresa.com"
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"/>
             </div>
 
-            <div className="border-t border-slate-200"/>
+            <div className="border-t border-black/10"/>
 
             {/* Tipo de documento */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de documento</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Tipo de documento</label>
               <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                 {TIPOS_DOC.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
@@ -924,14 +911,14 @@ export default function FacturacionScreen() {
             {/* Fecha + Moneda en fila */}
             <div className="flex gap-2">
               <div className="flex-1">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                <label className="block monki-tag text-monki-k/55 mb-1.5">Fecha</label>
                 <input type="date" value={fechaEm} onChange={(e) => setFechaEm(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                  className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors"/>
               </div>
               <div className="w-20">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Moneda</label>
+                <label className="block monki-tag text-monki-k/55 mb-1.5">Moneda</label>
                 <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-1.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                  className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                   <option value="CRC">₡ CRC</option><option value="USD">$ USD</option>
                 </select>
               </div>
@@ -939,34 +926,34 @@ export default function FacturacionScreen() {
 
             {/* Condición + Medio pago */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Condición de pago</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Condición de pago</label>
               <select value={condPago} onChange={(e) => setCondPago(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                 {CONDICIONES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
             {esCredito(condPago) && (
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Plazo (días)</label>
+                <label className="block monki-tag text-monki-k/55 mb-1.5">Plazo (días)</label>
                 <input type="number" value={plazo} onChange={(e) => setPlazo(e.target.value)} placeholder="30" min="1"
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                  className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"/>
               </div>
             )}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Medio de pago</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Medio de pago</label>
               <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                 {MEDIOS_PAGO.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
 
-            <div className="border-t border-slate-200"/>
+            <div className="border-t border-black/10"/>
 
             {/* Vendedor */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vendedor / Agente</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Vendedor / Agente</label>
               <select value={cliente.vendedor || ""} onChange={(e) => setCliente((p) => ({ ...p, vendedor: e.target.value }))}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                 <option value="">— Sin asignar —</option>
                 {empleados.map((e) => (
                   <option key={e.id} value={e.nombre}>{e.nombre}{e.puesto ? ` · ${e.puesto}` : ""}</option>
@@ -976,9 +963,9 @@ export default function FacturacionScreen() {
 
             {/* Lista de precio */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Lista de precio</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Lista de precio</label>
               <select value={cliente.listaPrecio || "normal"} onChange={(e) => setCliente((p) => ({ ...p, listaPrecio: e.target.value }))}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                 <option value="normal">Normal</option>
                 <option value="especial">Especial</option>
                 <option value="superespecial">Superespecial</option>
@@ -989,9 +976,9 @@ export default function FacturacionScreen() {
             {/* Proyecto */}
             {proyectos.length > 0 && (
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proyecto</label>
+                <label className="block monki-tag text-monki-k/55 mb-1.5">Proyecto</label>
                 <select value={proyectoId} onChange={e => setProyectoId(e.target.value)}
-                  className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                  className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors">
                   <option value="">— Sin proyecto —</option>
                   {proyectos.filter(p => p.estado === "Activo").map(p => (
                     <option key={p.id} value={p.id}>{p.nombre}{p.codigo ? ` (${p.codigo})` : ""}</option>
@@ -1011,7 +998,7 @@ export default function FacturacionScreen() {
                 onChange={(v) => updateLinea(i, v)} onDelete={() => deleteLinea(i)} />
             ))}
             <button onClick={agregarLinea}
-              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-yellow-300 text-yellow-700 text-sm font-semibold py-3 rounded-xl hover:bg-yellow-50">
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-black/20 text-monki-k text-sm font-bold py-3 rounded-[18px] hover:border-monki-k hover:bg-monki-y transition-colors">
               <Plus size={15}/> Agregar línea
             </button>
           </div>
@@ -1019,21 +1006,21 @@ export default function FacturacionScreen() {
           <div className="hidden xl:flex xl:flex-col flex-1">
             <div className="flex-1 overflow-auto">
               <table className="w-full text-sm" style={{ minWidth: 720 }}>
-                <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 z-10">
+                <thead className="sticky top-0 bg-white border-b-2 border-black/10 z-10">
                   <tr>
-                    <th className="text-left px-3 py-2 text-[10px] font-bold text-slate-500 uppercase min-w-[200px]">Descripción</th>
-                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">CABYS</th>
-                    <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Cant.</th>
-                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-20">Unid.</th>
-                    <th className="text-right px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-24">P. Unit.</th>
-                    <th className="text-center px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-16">Desc %</th>
-                    <th className="text-left px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">IVA</th>
-                    <th className="text-right px-2 py-2 text-[10px] font-bold text-slate-500 uppercase w-24">Mto. IVA</th>
-                    <th className="text-right px-3 py-2 text-[10px] font-bold text-slate-500 uppercase w-28">Total</th>
+                    <th className="text-left px-3 py-2 monki-tag text-monki-k/55 font-semibold min-w-[200px]">Descripción</th>
+                    <th className="text-left px-2 py-2 monki-tag text-monki-k/55 font-semibold w-28">CABYS</th>
+                    <th className="text-center px-2 py-2 monki-tag text-monki-k/55 font-semibold w-16">Cant.</th>
+                    <th className="text-left px-2 py-2 monki-tag text-monki-k/55 font-semibold w-20">Unid.</th>
+                    <th className="text-right px-2 py-2 monki-tag text-monki-k/55 font-semibold w-24">P. Unit.</th>
+                    <th className="text-center px-2 py-2 monki-tag text-monki-k/55 font-semibold w-16">Desc %</th>
+                    <th className="text-left px-2 py-2 monki-tag text-monki-k/55 font-semibold w-28">IVA</th>
+                    <th className="text-right px-2 py-2 monki-tag text-monki-k/55 font-semibold w-24">Mto. IVA</th>
+                    <th className="text-right px-3 py-2 monki-tag text-monki-k/55 font-semibold w-28">Total</th>
                     <th className="w-6"/>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-black/5">
                   {lineas.map((l, i) => (
                     <LineaRow key={l.id} linea={l} productos={productos}
                       onChange={(v) => updateLinea(i, v)} onDelete={() => deleteLinea(i)} />
@@ -1041,9 +1028,9 @@ export default function FacturacionScreen() {
                 </tbody>
               </table>
             </div>
-            <div className="border-t border-slate-100 px-4 py-2">
+            <div className="border-t border-black/10 px-4 py-2">
               <button onClick={agregarLinea}
-                className="flex items-center gap-2 text-yellow-700 text-sm font-semibold hover:text-yellow-900">
+                className="ui-boton flex items-center gap-2 bg-monki-y text-monki-k text-[13px] font-bold rounded-full px-4 py-1.5 hover:shadow-[3px_3px_0_#111] transition-all">
                 <Plus size={14}/> Agregar línea
               </button>
             </div>
@@ -1051,10 +1038,10 @@ export default function FacturacionScreen() {
         </div>
 
         {/* ═══ PANEL DERECHO: Totales + Notas (solo desktop) ════════════════ */}
-        <div className="hidden xl:flex xl:flex-col xl:w-56 xl:shrink-0 xl:border-l xl:border-slate-200 xl:bg-white xl:overflow-y-auto">
+        <div className="hidden xl:flex xl:flex-col xl:w-56 xl:shrink-0 xl:border-l-2 xl:border-black/10 xl:bg-white xl:overflow-y-auto">
           <div className="px-4 py-4 space-y-2">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Resumen</p>
-            <div className="flex justify-between text-xs text-slate-600">
+            <p className="monki-tag text-monki-k/55 mb-3">Resumen</p>
+            <div className="flex justify-between text-xs text-monki-k/75">
               <span>Subtotal</span><span>{fmtMoney(subtotal, moneda)}</span>
             </div>
             {totalDesc > 0 && (
@@ -1062,23 +1049,23 @@ export default function FacturacionScreen() {
                 <span>Descuentos</span><span>− {fmtMoney(totalDesc, moneda)}</span>
               </div>
             )}
-            <div className="flex justify-between text-xs text-slate-600">
+            <div className="flex justify-between text-xs text-monki-k/75">
               <span>IVA</span><span>{fmtMoney(totalIVA, moneda)}</span>
             </div>
-            <div className="flex justify-between text-base font-black text-slate-900 border-t border-slate-200 pt-2 mt-1">
-              <span>TOTAL</span><span className="text-yellow-700">{fmtMoney(totalFact, moneda)}</span>
+            <div className="flex justify-between text-base font-black text-monki-k border-t border-black/10 pt-2 mt-1">
+              <span>TOTAL</span><span className="text-monki-k">{fmtMoney(totalFact, moneda)}</span>
             </div>
 
-            <div className="border-t border-slate-100 pt-3">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+            <div className="border-t border-black/10 pt-3">
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Observaciones</label>
               <textarea value={notas} onChange={(e) => setNotas(e.target.value)}
                 rows={4} placeholder="Notas, condiciones…"
-                className="w-full border border-slate-200 rounded px-2.5 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3 py-2 text-xs text-monki-k placeholder:text-monki-k/35 transition-colors resize-none"/>
             </div>
 
             {/* QR SINPE mini */}
-            <div className="border-t border-slate-100 pt-3 flex flex-col items-center gap-1">
-              <p className="text-[10px] text-slate-400">SINPE Móvil</p>
+            <div className="border-t border-black/10 pt-3 flex flex-col items-center gap-1">
+              <p className="text-[10px] text-monki-k/45">SINPE Móvil</p>
               <SinpeQR
                 telefono={settings?.sinpe || settings?.telefono || ""}
                 monto={totalFact}
@@ -1090,6 +1077,6 @@ export default function FacturacionScreen() {
         </div>
 
       </div>{/* fin body */}
-    </div>
+    </Modulo>
   );
 }
