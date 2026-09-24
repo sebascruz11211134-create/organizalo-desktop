@@ -2,7 +2,8 @@
  * NotasCreditoScreen — Gestión de Notas de Crédito (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Printer, FileSpreadsheet, X, Trash2, Ban, Send, Loader2 } from "lucide-react";
+import { Plus, Printer, FileSpreadsheet, Trash2, Ban, Send, FileMinus } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import { getToken } from "../utils/auth";
 import { emitir, reenviar, camposHacienda, etiquetaEstado, yaEnviada, referenciaDeFactura, payloadVigente } from "../utils/comprobantes";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -74,88 +75,43 @@ function NuevaNCtModal({ settings, facturas, contactos = [], onClose, onSave }) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">Nueva nota de crédito</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400 hover:text-slate-700" /></button>
-        </div>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Cliente *</span>
-              <div className="relative mt-1">
-                <input value={busqCli}
-                  onChange={(e) => { setBusqCli(e.target.value); u("cliente", e.target.value); setShowCli(true); }}
-                  onFocus={() => setShowCli(true)}
-                  onBlur={() => setTimeout(() => setShowCli(false), 150)}
-                  placeholder="Nombre o código CLI-XXXX…"
-                  className="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-                {showCli && filtCli.length > 0 && (
-                  <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-36 overflow-auto">
-                    {filtCli.map((c) => (
-                      <button key={c.id} onMouseDown={() => { setBusqCli(c.nombre); u("cliente", c.nombre); setShowCli(false); }}
-                        className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b last:border-0">
-                        {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
-                        <span className="font-semibold">{c.nombre}</span>
-                        <span className="text-slate-400 ml-2">{c.cedula}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+    <Modal titulo="Nueva nota de crédito" subtitulo="Devolución, descuento o corrección de una factura" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Crear nota</Boton></>}>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2 relative">
+          <Campo etiqueta="Cliente *">
+            <Entrada value={busqCli}
+              onChange={(e) => { setBusqCli(e.target.value); u("cliente", e.target.value); setShowCli(true); }}
+              onFocus={() => setShowCli(true)} onBlur={() => setTimeout(() => setShowCli(false), 150)}
+              placeholder="Nombre o código CLI-XXXX…"/>
+          </Campo>
+          {showCli && filtCli.length > 0 && (
+            <div className="animate-desplegar absolute top-full left-0 w-full mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-40 overflow-auto">
+              {filtCli.map((c) => (
+                <button key={c.id} type="button" onMouseDown={() => { setBusqCli(c.nombre); u("cliente", c.nombre); setShowCli(false); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                  {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-cream px-1.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                  <span className="font-semibold">{c.nombre}</span>
+                  <span className="text-monki-k/40 ml-2 font-mono text-xs">{c.cedula}</span>
+                </button>
+              ))}
             </div>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Factura ref.</span>
-              <input value={form.facturaRef} onChange={(e) => u("facturaRef", e.target.value)}
-                placeholder="FE-00001"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Fecha</span>
-              <input type="date" value={form.fecha} onChange={(e) => u("fecha", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </label>
-            <label className="block col-span-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Motivo *</span>
-              <select value={form.motivo} onChange={(e) => u("motivo", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                {MOTIVOS.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Moneda</span>
-              <select value={form.moneda} onChange={(e) => u("moneda", e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                <option value="CRC">₡ CRC</option>
-                <option value="USD">$ USD</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Monto *</span>
-              <input type="number" value={form.monto} onChange={(e) => u("monto", e.target.value)}
-                placeholder="0" min="0" step="any"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </label>
-            <label className="block col-span-2">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Observaciones</span>
-              <input value={form.notas} onChange={(e) => u("notas", e.target.value)}
-                placeholder="Detalles adicionales…"
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-            </label>
-          </div>
+          )}
         </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Crear nota</button>
-        </div>
+        <Campo etiqueta="Factura de referencia" ayuda="Número local o clave de 50 dígitos"><Entrada value={form.facturaRef} onChange={(e) => u("facturaRef", e.target.value)} placeholder="FE-00001" className="font-mono"/></Campo>
+        <Campo etiqueta="Fecha"><Entrada type="date" value={form.fecha} onChange={(e) => u("fecha", e.target.value)}/></Campo>
+        <Campo etiqueta="Motivo *" className="col-span-2"><Seleccion value={form.motivo} onChange={(e) => u("motivo", e.target.value)} opciones={MOTIVOS}/></Campo>
+        <Campo etiqueta="Moneda"><Seleccion value={form.moneda} onChange={(e) => u("moneda", e.target.value)} opciones={[{value:"CRC",label:"₡ CRC"},{value:"USD",label:"$ USD"}]}/></Campo>
+        <Campo etiqueta="Monto *"><Entrada type="number" value={form.monto} onChange={(e) => u("monto", e.target.value)} placeholder="0" min="0" step="any"/></Campo>
+        <Campo etiqueta="Observaciones" className="col-span-2"><Entrada value={form.notas} onChange={(e) => u("notas", e.target.value)} placeholder="Detalles adicionales…"/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
 export default function NotasCreditoScreen() {
   const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
+  const { confirmar, dialogo } = useConfirmar();
   const [notas,     setNotas]     = useState([]);
   const [settings,  setSettings]  = useState({});
   const [facturas,  setFacturas]  = useState([]);
@@ -177,14 +133,14 @@ export default function NotasCreditoScreen() {
 
   const anular = async () => {
     if (!sel) return;
-    if (!confirm(`¿Anular la nota de crédito ${sel.numero}? Quedará marcada como anulada.`)) return;
+    if (!(await confirmar("Anular nota de crédito", `¿Anular la nota de crédito ${sel.numero}? Quedará marcada como anulada.`, { peligro: true, boton: "Anular" }))) return;
     const todas = await db.getNotasCredito();
     await db.setNotasCredito(todas.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
     cargar();
   };
 
   const eliminar = async (n) => {
-    if (!confirm(`¿Eliminar la nota de crédito ${n.numero}? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar nota de crédito", `¿Eliminar la nota de crédito ${n.numero}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todas = await db.getNotasCredito();
     await db.setNotasCredito(todas.filter(x => x.id !== n.id));
     // Desvincular de la factura si aplica
@@ -264,112 +220,62 @@ export default function NotasCreditoScreen() {
   const totUSD = visibles.filter(n => n.moneda === "USD").reduce((s, n) => s + (n.monto || 0), 0);
   const sel = visibles.find(n => n.id === selected);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar oscuro estilo TecApro */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setModal(true)}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Nueva NC
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button
-          disabled={!sel || sel.estado === "anulada"}
-          onClick={anular}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Ban size={13} /> Anular
-        </button>
-        <button
-          disabled={!sel}
-          onClick={() => sel && eliminar(sel)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13} /> Eliminar
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button
-          disabled={!sel || enviando || sel.estado === "anulada" || yaEnviada(sel)}
-          onClick={() => sel && enviarHacienda(sel)}
-          title={sel?.haciendaClave ? `Clave: ${sel.haciendaClave}` : "Enviar NC-01 a Hacienda"}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          {enviando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          {!sel?.haciendaEstado ? "Enviar Hacienda"
-            : !yaEnviada(sel) ? "Reintentar envío"
-            : `Hacienda: ${etiquetaEstado(sel.haciendaEstado)}`}
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button onClick={() => printHTML(htmlNotasCredito(visibles, settings))}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Printer size={13} /> Imprimir
-        </button>
-        <button onClick={() => exportExcel(sheetsNotasCredito(visibles), "notas-credito")}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <FileSpreadsheet size={13} /> Excel
-        </button>
-        <div className="flex-1" />
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300" />
-          <input value={busq} onChange={e => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400" />
-        </div>
-      </div>
+  const TONO_HACIENDA = e => ["aceptado","enviado","simulado"].includes(e) ? "exito" : e === "rechazado" ? "peligro" : "alerta";
+  const columnas = [
+    { key: "numero", titulo: "N.°", render: n => <span className="font-mono text-xs font-bold">{n.numero}</span> },
+    { key: "fecha", titulo: "Fecha", render: n => fmtDate(n.fecha) },
+    { key: "cliente", titulo: "Cliente", render: n => <b className="text-monki-k">{n.cliente}</b> },
+    { key: "ref", titulo: "Factura ref.", render: n => <span className="font-mono text-xs text-monki-k/50">{n.facturaRef || "—"}</span> },
+    { key: "motivo", titulo: "Motivo", render: n => <span className="text-monki-k/70">{n.motivo}</span> },
+    { key: "monto", titulo: "Monto", alinear: "right", render: n => <b className="text-red-600">{fmtMoney(n.monto, n.moneda)}</b> },
+    { key: "hacienda", titulo: "Hacienda", render: n => n.estado === "anulada" ? <Estado>Anulada</Estado> : n.haciendaEstado ? <Estado tono={TONO_HACIENDA(n.haciendaEstado)}>{etiquetaEstado(n.haciendaEstado)}</Estado> : <span className="text-monki-k/25">—</span> },
+    { key: "obs", titulo: "Obs.", render: n => <span className="text-monki-k/45 text-xs">{n.notas || "—"}</span> },
+  ];
 
-      {/* Barra de registro seleccionado / totales */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-red-50 border-b border-red-200 text-xs">
-          <span className="text-red-700 font-semibold">Seleccionada:</span>
-          <span className="font-bold text-slate-800">{sel.numero}</span>
-          <span className="text-slate-500">{sel.cliente}</span>
-          {sel.facturaRef && <span className="text-slate-400">→ {sel.facturaRef}</span>}
-          <span className="font-bold text-red-600">{fmtMoney(sel.monto, sel.moneda)}</span>
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-red-50 border-b border-red-100 text-xs text-slate-500">
-          {totCRC > 0 && <span>CRC: <strong className="text-red-800">{fmtMoney(totCRC, "CRC")}</strong></span>}
-          {totUSD > 0 && <span>USD: <strong className="text-red-800">{fmtMoney(totUSD, "USD")}</strong></span>}
-          <span className="ml-auto">{visibles.length} nota{visibles.length !== 1 ? "s" : ""} — clic en fila para seleccionar</span>
+  return (
+    <Modulo
+      seccion="Facturación"
+      titulo="Notas de crédito"
+      descripcion="Devoluciones, descuentos y correcciones sobre facturas ya emitidas."
+      acciones={<>
+        <Boton variante="secundario" icono={Printer} onClick={() => printHTML(htmlNotasCredito(visibles, settings))}>Imprimir</Boton>
+        <Boton variante="secundario" icono={FileSpreadsheet} onClick={() => exportExcel(sheetsNotasCredito(visibles), "notas-credito")}>Excel</Boton>
+        <Boton icono={Plus} onClick={() => setModal(true)}>Nueva nota</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Notas" valor={visibles.length} icono={FileMinus} delay={40}/>
+          <Indicador etiqueta="Total CRC" valor={fmtMoney(totCRC, "CRC")} destacado delay={90}/>
+          <Indicador etiqueta="Total USD" valor={fmtMoney(totUSD, "USD")} delay={140}/>
+          <Indicador etiqueta="Sin enviar" valor={notas.filter(n => n.estado !== "anulada" && !yaEnviada(n)).length} detalle="A Hacienda" icono={Send} delay={190}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${visibles.length} nota${visibles.length !== 1 ? "s" : ""}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por cliente, número o motivo…"/>
+      </BarraFiltros>
+      {sel && (
+        <div className="animate-desplegar mb-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.numero}</b><span className="text-white/60">{sel.cliente}</span>
+          {sel.facturaRef && <span className="font-mono text-xs text-white/50">→ {sel.facturaRef}</span>}
+          <b className="text-monki-y">{fmtMoney(sel.monto, sel.moneda)}</b>
+          <div className="flex-1"/>
+          <Boton variante="amarillo" tamano="sm" icono={Send} cargando={enviando}
+            disabled={enviando || sel.estado === "anulada" || yaEnviada(sel)}
+            title={sel?.haciendaClave ? `Clave: ${sel.haciendaClave}` : "Enviar la nota a Hacienda"}
+            onClick={() => enviarHacienda(sel)}>
+            {!sel?.haciendaEstado ? "Enviar a Hacienda" : !yaEnviada(sel) ? "Reintentar envío" : `Hacienda: ${etiquetaEstado(sel.haciendaEstado)}`}
+          </Boton>
+          <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={anular}>Anular</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>N°</th><th>Fecha</th><th>Cliente</th><th>Factura ref.</th>
-              <th>Motivo</th><th>Moneda</th><th>Monto</th><th>Hacienda</th><th>Obs.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-16 text-slate-400">Sin notas de crédito</td></tr>
-            ) : visibles.map(n => {
-              const isSel = selected === n.id;
-              return (
-                <tr key={n.id}
-                  className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : "hover:bg-slate-50"}`}
-                  onClick={() => setSelected(isSel ? null : n.id)}>
-                  <td className="font-mono text-xs text-red-700 font-bold">{n.numero}</td>
-                  <td className="text-slate-500">{fmtDate(n.fecha)}</td>
-                  <td className="font-semibold text-slate-900">{n.cliente}</td>
-                  <td className="text-slate-400 text-xs font-mono">{n.facturaRef || "—"}</td>
-                  <td className="text-slate-700">{n.motivo}</td>
-                  <td className="text-slate-500">{n.moneda}</td>
-                  <td className="font-bold text-red-600">{fmtMoney(n.monto, n.moneda)}</td>
-                  <td>
-                    {n.haciendaEstado
-                      ? <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${n.haciendaEstado === "aceptado" || n.haciendaEstado === "enviado" || n.haciendaEstado === "simulado" ? "bg-green-100 text-green-700" : n.haciendaEstado === "rechazado" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>{n.haciendaEstado}</span>
-                      : <span className="text-slate-300 text-[10px]">—</span>}
-                  </td>
-                  <td className="text-slate-400 text-xs">{n.notas || "—"}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
+      <Tabla columnas={columnas} filas={visibles} seleccionada={selected} onFila={n => setSelected(selected === n.id ? null : n.id)}
+        vacio={<Vacio icono={FileMinus} titulo="Sin notas de crédito" texto="Creá una para devolver o corregir una factura emitida."
+          accion={<Boton icono={Plus} onClick={() => setModal(true)}>Nueva nota</Boton>}/>}/>
       {modal && <NuevaNCtModal settings={settings} facturas={facturas} contactos={contactos} onClose={() => setModal(false)} onSave={cargar} />}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
