@@ -62,7 +62,7 @@ function EmpleadoModal({ emp, onClose, onSave }) {
           <div className="flex items-end pb-2"><Interruptor activo={!!form.conyuge} onCambio={v => u("conyuge", v)} etiqueta="Cónyuge (crédito fiscal)"/></div>
         </>)}
         <Campo etiqueta="Tarifa por hora (₡, opcional)" className="col-span-2"><Entrada type="number" min="0" value={form.tarifaHora || ""} onChange={e => u("tarifaHora", e.target.value)} placeholder="Vacío = salario ÷ 240"/></Campo>
-        <div className="col-span-2"><Interruptor activo={form.activo !== false} onCambio={v => u("activo", v)} etiqueta="Activo"/></div>
+        <div className="col-span-2"><Interruptor activo={!!form.activo} onCambio={v => u("activo", v)} etiqueta="Activo"/></div>
       </div>
     </Modal>
   );
@@ -145,6 +145,14 @@ const fmt = (n) => "₡" + (Number(n) || 0).toLocaleString("es-CR", { minimumFra
 const TABS = ["Nómina mensual", "Horas (semanal)", "Préstamos"];
 
 // ── Screen ────────────────────────────────────────────────────────────────────
+// Tabla con el estilo del kit (definida fuera para no perder el foco al escribir horas)
+const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 whitespace-nowrap";
+const TablaSimple = ({ children }) => (
+  <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+    <div className="flex-1 min-h-0 overflow-auto"><table className="ui-tabla w-full text-sm">{children}</table></div>
+  </div>
+);
+
 export default function PlanillasScreen() {
   const { confirmar, dialogo } = useConfirmar();
   const [tab, setTab] = useState(0);
@@ -243,12 +251,6 @@ export default function PlanillasScreen() {
       alert("Error al crear asiento: " + e.message);
     }
   };
-  const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 whitespace-nowrap";
-  const TablaSimple = ({ children }) => (
-    <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
-      <div className="flex-1 min-h-0 overflow-auto"><table className="ui-tabla w-full text-sm">{children}</table></div>
-    </div>
-  );
 
   return (
     <Modulo
