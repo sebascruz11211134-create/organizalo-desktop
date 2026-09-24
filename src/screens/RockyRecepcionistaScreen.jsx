@@ -10,6 +10,7 @@ import {
   AlertCircle, ExternalLink, RefreshCw, Copy,
 } from "lucide-react";
 import { getToken } from "../utils/auth";
+import { Modulo, Boton, BotonIcono, Tarjeta, Vacio, Indicadores, Indicador, Campo, Entrada, AreaTexto, Interruptor } from "../components/ui";
 import { fetchWithTimeout } from "../utils/fetchTimeout";
 
 import { BACKEND } from "../utils/config";
@@ -63,28 +64,24 @@ function LlamadaCard({ llamada }) {
     ? new Date(llamada.fecha).toLocaleString("es-CR", { dateStyle: "short", timeStyle: "short" })
     : "";
   return (
-    <div className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-        ${exitosa ? "bg-yellow-100" : "bg-yellow-50"}`}>
-        {exitosa
-          ? <CheckCircle2 size={15} className="text-yellow-600" />
-          : <XCircle size={15} className="text-yellow-500" />}
-      </div>
+    <div className="animate-desplegar flex items-start gap-3 p-3.5 rounded-2xl border-2 border-black/10 bg-white hover:border-black/25 transition-colors">
+      <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${exitosa ? "bg-monki-y text-monki-k" : "bg-monki-cream text-monki-k/50"}`}>
+        {exitosa ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+      </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-slate-700">{llamada.telefono || "Desconocido"}</span>
-          <span className="text-[11px] text-slate-400">{fecha}</span>
+          <span className="text-sm font-bold text-monki-k">{llamada.telefono || "Desconocido"}</span>
+          <span className="font-mono text-[10px] text-monki-k/45">{fecha}</span>
         </div>
-        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{llamada.resumen || llamada.pregunta}</p>
+        <p className="text-xs text-monki-k/60 mt-0.5 line-clamp-2">{llamada.resumen || llamada.pregunta}</p>
         {llamada.accion && llamada.accion !== "NINGUNA" && (
-          <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200">
+          <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-bold bg-monki-k text-monki-y px-2 py-0.5 rounded-full">
             <ChevronRight size={10} />
             {llamada.accion === "PEDIDO" ? "Pedido creado" : llamada.accion === "CITA" ? "Cita agendada" : llamada.accion}
           </span>
         )}
       </div>
-      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0
-        ${exitosa ? "bg-yellow-100 text-yellow-700" : "bg-yellow-100 text-yellow-700"}`}>
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${exitosa ? "bg-[#dcfce7] text-[#166534]" : "bg-black/5 text-monki-k/60"}`}>
         {exitosa ? "OK" : llamada.resultado || "N/D"}
       </span>
     </div>
@@ -182,292 +179,151 @@ export default function RockyRecepcionistaScreen() {
   const pedidosCreados = historial.filter(l => l.accion === "PEDIDO").length;
   const citasCreadas   = historial.filter(l => l.accion === "CITA").length;
 
+  const TITULO = "text-[15px] font-extrabold tracking-[-0.02em] text-monki-k";
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200 shrink-0">
-        <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-700 rounded-lg flex items-center justify-center shrink-0">
-          <Phone size={16} className="text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-slate-800 text-sm leading-none">Rocky Recepcionista</h1>
-          <p className="text-[11px] text-slate-400 mt-0.5">Agente IA que atiende llamadas 24/7</p>
-        </div>
-        <span className="flex-1" />
-
-        {/* Toggle activo */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <div
-            onClick={() => set("activo", !config.activo)}
-            className={`relative w-10 h-6 rounded-full transition-colors ${config.activo ? "bg-yellow-500" : "bg-slate-300"}`}
-          >
-            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${config.activo ? "translate-x-5" : "translate-x-1"}`} />
-          </div>
-          <span className={`text-xs font-medium ${config.activo ? "text-yellow-700" : "text-slate-500"}`}>
-            {config.activo ? "Activo" : "Inactivo"}
-          </span>
-        </label>
-
-        <button
-          onClick={guardar}
-          disabled={guardando}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${guardado ? "bg-yellow-500 text-white" : "bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"}`}
-        >
-          {guardado ? <><CheckCircle2 size={14} /> Guardado</> : guardando ? "Guardando…" : "Guardar"}
-        </button>
-      </div>
-
+    <Modulo
+      seccion="Rocky IA"
+      titulo="Rocky recepcionista"
+      descripcion="Un agente de IA que contesta las llamadas de tu negocio, 24/7."
+      acciones={<>
+        <div className="bg-white rounded-full border-2 border-black/10 px-3 py-1.5"><Interruptor activo={config.activo} onCambio={v=>set("activo", v)} etiqueta={config.activo ? "Activo" : "Inactivo"}/></div>
+        <Boton icono={guardado ? CheckCircle2 : undefined} onClick={guardar} cargando={guardando} disabled={guardando}>{guardado ? "Guardado" : guardando ? "Guardando…" : "Guardar"}</Boton>
+      </>}
+      pestanas={{ activa: tab, onCambiar: setTab, items: [
+        { key: "config", label: "Configuración" },
+        { key: "historial", label: "Llamadas", cuenta: totalLlamadas },
+        { key: "ayuda", label: "Cómo activarlo" },
+      ] }}
+    >
       {error && (
-        <div className="mx-6 mt-3 flex items-center gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          <AlertCircle size={13} /> {error}
+        <div className="animate-desplegar mb-3 flex items-center gap-2 text-sm font-bold text-red-700 bg-red-100 rounded-full px-4 py-2">
+          <AlertCircle size={14} /> {error}
         </div>
       )}
-
-      {/* ── Tabs ────────────────────────────────────────────────────────────── */}
-      <div className="flex border-b border-slate-200 bg-white shrink-0">
-        {[
-          { id: "config",    label: "Configuración",  icon: Settings2 },
-          { id: "historial", label: `Llamadas (${totalLlamadas})`, icon: PhoneIncoming },
-          { id: "ayuda",     label: "Cómo activar",  icon: Sparkles },
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-2.5 text-xs font-medium border-b-2 transition-colors
-              ${tab === t.id ? "border-violet-500 text-violet-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-          >
-            <t.icon size={13} /> {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Contenido ───────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto p-6">
-
-        {/* ══ TAB: Configuración ══ */}
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
         {tab === "config" && (
-          <div className="max-w-2xl space-y-6">
-
-            {/* Tipo de negocio */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 mb-3">¿Qué hace Rocky en tu negocio?</h2>
-              <div className="grid grid-cols-3 gap-3">
-                {TIPOS_NEGOCIO.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => set("tipoNegocio", t.id)}
-                    className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all
-                      ${config.tipoNegocio === t.id ? t.activeBg : "border-slate-200 hover:border-slate-300 bg-white"}`}
-                  >
-                    <t.icon size={20} className={config.tipoNegocio === t.id ? t.color : "text-slate-400"} />
-                    <div>
-                      <p className={`text-xs font-semibold ${config.tipoNegocio === t.id ? "text-slate-800" : "text-slate-600"}`}>
-                        {t.label}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">{t.desc}</p>
-                    </div>
-                  </button>
-                ))}
+          <div className="max-w-3xl space-y-3">
+            <Tarjeta titulo="¿Qué hace Rocky en tu negocio?" cuerpo="px-4 pb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {TIPOS_NEGOCIO.map(t => {
+                  const activo = config.tipoNegocio === t.id;
+                  return (
+                    <button key={t.id} type="button" onClick={() => set("tipoNegocio", t.id)}
+                      className={`ui-boton flex flex-col items-start gap-2 p-4 rounded-2xl border-2 text-left transition-all duration-300 ease-monki
+                        ${activo ? "bg-monki-y border-monki-k shadow-[4px_4px_0_#111] -translate-x-0.5 -translate-y-0.5" : "border-black/10 hover:border-black/30 bg-white"}`}>
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center ${activo ? "bg-monki-k text-monki-y" : "bg-monki-cream text-monki-k/60"}`}><t.icon size={17} /></span>
+                      <div>
+                        <p className="text-sm font-extrabold text-monki-k">{t.label}</p>
+                        <p className="text-[11px] text-monki-k/55 mt-0.5 leading-relaxed">{t.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </Tarjeta>
 
-            {/* Número Twilio */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 mb-1">Número de teléfono (Twilio)</h2>
-              <p className="text-xs text-slate-400 mb-2">
-                El número que tus clientes llaman. Rocky contesta automáticamente.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={config.numeroTwilio}
-                  onChange={e => set("numeroTwilio", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400"
-                />
-                <a
-                  href="https://www.twilio.com/console/phone-numbers/incoming"
-                  target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-500 hover:bg-slate-50"
-                >
-                  <ExternalLink size={12} /> Twilio Console
+            <Tarjeta titulo="Número de teléfono (Twilio)" cuerpo="px-4 pb-4">
+              <p className="text-sm text-monki-k/55 mb-2">El número que tus clientes llaman. Rocky contesta automáticamente.</p>
+              <div className="flex flex-wrap gap-2">
+                <Entrada value={config.numeroTwilio} onChange={e => set("numeroTwilio", e.target.value)} placeholder="+1 (555) 000-0000" className="flex-1 min-w-[200px] font-mono"/>
+                <a href="https://www.twilio.com/console/phone-numbers/incoming" target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold shadow-[inset_0_0_0_2px_#111] hover:bg-monki-k hover:text-monki-y transition-colors">
+                  <ExternalLink size={13} /> Consola de Twilio
                 </a>
               </div>
-            </div>
+            </Tarjeta>
 
-            {/* Horario */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 mb-3">Horario de atención</h2>
-              <div className="flex gap-4 mb-3">
-                {[{ id: "24h", label: "24/7 siempre activo" }, { id: "custom", label: "Personalizado" }].map(h => (
-                  <label key={h.id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio" name="horario" value={h.id}
-                      checked={config.horario === h.id}
-                      onChange={() => set("horario", h.id)}
-                      className="accent-violet-500"
-                    />
-                    <span className="text-sm text-slate-600">{h.label}</span>
-                  </label>
+            <Tarjeta titulo="Horario de atención" cuerpo="px-4 pb-4">
+              <div className="grid grid-cols-2 gap-2 max-w-md mb-3">
+                {[{ id: "24h", label: "24/7, siempre activo" }, { id: "custom", label: "Personalizado" }].map(h => (
+                  <button key={h.id} type="button" onClick={() => set("horario", h.id)}
+                    className={`ui-boton py-2 rounded-full text-sm font-bold transition-all duration-300 ease-monki ${config.horario === h.id ? "bg-monki-k text-monki-y" : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>{h.label}</button>
                 ))}
               </div>
-
               {config.horario === "custom" && (
-                <div className="space-y-3 pl-4 border-l-2 border-violet-200">
-                  <div className="flex gap-2 flex-wrap">
+                <div className="animate-desplegar space-y-3 bg-monki-cream rounded-2xl p-3">
+                  <div className="flex gap-1.5 flex-wrap">
                     {DIAS.map((d, i) => (
-                      <button
-                        key={i}
-                        onClick={() => toggleDia(i)}
-                        className={`w-9 h-9 rounded-lg text-xs font-medium transition-colors
-                          ${config.diasActivos.includes(i) ? "bg-violet-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
-                      >
-                        {d}
-                      </button>
+                      <button key={i} type="button" onClick={() => toggleDia(i)}
+                        className={`ui-boton w-11 h-11 rounded-full text-xs font-bold transition-all duration-200 ${config.diasActivos.includes(i) ? "bg-monki-k text-monki-y" : "bg-white text-monki-k/55 hover:text-monki-k"}`}>{d}</button>
                     ))}
                   </div>
                   <div className="flex items-center gap-3">
-                    <input type="time" value={config.horaInicio}
-                      onChange={e => set("horaInicio", e.target.value)}
-                      className="border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
-                    <span className="text-slate-400 text-sm">a</span>
-                    <input type="time" value={config.horaFin}
-                      onChange={e => set("horaFin", e.target.value)}
-                      className="border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30" />
+                    <Entrada type="time" value={config.horaInicio} onChange={e => set("horaInicio", e.target.value)} className="!w-auto"/>
+                    <span className="monki-tag text-monki-k/50">a</span>
+                    <Entrada type="time" value={config.horaFin} onChange={e => set("horaFin", e.target.value)} className="!w-auto"/>
                   </div>
                 </div>
               )}
-            </div>
+            </Tarjeta>
 
-            {/* Mensaje de bienvenida */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 mb-1">Mensaje de bienvenida</h2>
-              <p className="text-xs text-slate-400 mb-2">Lo primero que Rocky dice al contestar. Dejá vacío para usar el predeterminado.</p>
-              <textarea
-                value={config.bienvenida}
-                onChange={e => set("bienvenida", e.target.value)}
-                placeholder={`Ej: "Gracias por llamar. Soy Rocky, ¿en qué te puedo ayudar?"`}
-                rows={3}
-                className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/30 resize-none"
-              />
-            </div>
+            <Tarjeta titulo="Mensaje de bienvenida" cuerpo="px-4 pb-4">
+              <Campo ayuda="Lo primero que Rocky dice al contestar. Si lo dejás vacío usa el predeterminado.">
+                <AreaTexto value={config.bienvenida} onChange={e => set("bienvenida", e.target.value)} rows={3}
+                  placeholder={`Ej: "Gracias por llamar. Soy Rocky, ¿en qué te puedo ayudar?"`}/>
+              </Campo>
+            </Tarjeta>
 
-            {/* Confirmaciones */}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 mb-3">Confirmaciones automáticas</h2>
-              <div className="space-y-2">
-                {[
-                  { key: "emailConfirmacion",      label: "Email al negocio",    icon: Mail,          desc: "Recibís un email por cada llamada completada" },
-                  { key: "whatsappConfirmacion",    label: "WhatsApp al cliente", icon: MessageSquare, desc: "Envía confirmación por WhatsApp si el cliente dejó número" },
-                ].map(opt => (
-                  <label key={opt.key} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={config[opt.key]}
-                      onChange={e => set(opt.key, e.target.checked)}
-                      className="accent-violet-500 w-4 h-4 shrink-0"
-                    />
-                    <opt.icon size={15} className="text-slate-400 shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{opt.label}</p>
-                      <p className="text-[11px] text-slate-400">{opt.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <Tarjeta titulo="Confirmaciones automáticas" cuerpo="px-4 pb-4 space-y-2">
+              {[
+                { key: "emailConfirmacion",   label: "Correo al negocio",   icon: Mail,          desc: "Recibís un correo por cada llamada completada" },
+                { key: "whatsappConfirmacion", label: "WhatsApp al cliente", icon: MessageSquare, desc: "Confirma por WhatsApp si el cliente dejó su número" },
+              ].map(opt => (
+                <div key={opt.key} className="flex items-center gap-3 p-3 rounded-2xl bg-monki-cream/60">
+                  <span className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0"><opt.icon size={15} /></span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-monki-k">{opt.label}</p>
+                    <p className="text-[11px] text-monki-k/50">{opt.desc}</p>
+                  </div>
+                  <Interruptor activo={config[opt.key]} onCambio={v => set(opt.key, v)} />
+                </div>
+              ))}
+            </Tarjeta>
           </div>
         )}
 
-        {/* ══ TAB: Historial ══ */}
         {tab === "historial" && (
-          <div className="max-w-2xl">
-            {/* Stats */}
-            <div className="grid grid-cols-4 gap-3 mb-5">
-              {[
-                { label: "Total llamadas", value: totalLlamadas, color: "text-slate-700" },
-                { label: "Completadas",    value: completadas,   color: "text-yellow-600" },
-                { label: "Pedidos",        value: pedidosCreados,color: "text-orange-600" },
-                { label: "Citas",          value: citasCreadas,  color: "text-blue-600" },
-              ].map(s => (
-                <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-3 text-center">
-                  <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{s.label}</p>
-                </div>
-              ))}
+          <div className="max-w-3xl space-y-3">
+            <Indicadores>
+              <Indicador etiqueta="Llamadas" valor={totalLlamadas} icono={PhoneIncoming} delay={40}/>
+              <Indicador etiqueta="Completadas" valor={completadas} icono={CheckCircle2} destacado delay={90}/>
+              <Indicador etiqueta="Pedidos" valor={pedidosCreados} icono={UtensilsCrossed} delay={140}/>
+              <Indicador etiqueta="Citas" valor={citasCreadas} icono={CalendarCheck} delay={190}/>
+            </Indicadores>
+            <div className="flex items-center justify-between">
+              <h2 className={TITULO}>Llamadas recientes</h2>
+              <Boton variante="fantasma" tamano="sm" icono={RefreshCw} onClick={cargar} cargando={cargando}>Actualizar</Boton>
             </div>
-
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-slate-700">Llamadas recientes</h2>
-              <button onClick={cargar} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600">
-                <RefreshCw size={12} /> Actualizar
-              </button>
-            </div>
-
             {historial.length === 0 ? (
-              <div className="text-center py-12">
-                <PhoneIncoming size={32} className="text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">Sin llamadas registradas aún.</p>
-                <p className="text-xs text-slate-400 mt-1">Las llamadas aparecen aquí cuando Rocky empieza a funcionar.</p>
-              </div>
+              <Tarjeta><Vacio icono={PhoneIncoming} titulo="Sin llamadas todavía" texto="Las llamadas aparecen acá cuando Rocky empieza a contestar."/></Tarjeta>
             ) : (
-              <div className="space-y-2">
-                {historial.map((l, i) => <LlamadaCard key={i} llamada={l} />)}
-              </div>
+              <div className="space-y-2">{historial.map((l, i) => <LlamadaCard key={i} llamada={l} />)}</div>
             )}
           </div>
         )}
 
-        {/* ══ TAB: Cómo activar ══ */}
         {tab === "ayuda" && (
-          <div className="max-w-xl space-y-4">
-            <div className="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-5">
-              <h2 className="text-sm font-bold text-violet-800 mb-4">Pasos para activar Rocky</h2>
+          <div className="max-w-2xl space-y-3">
+            <div className="animate-entrar bg-monki-k text-white rounded-[22px] p-6">
+              <p className="monki-tag text-monki-y mb-4">Pasos para activar a Rocky</p>
               <ol className="space-y-4">
                 {[
-                  {
-                    n: "1", title: "Crear cuenta en Twilio",
-                    body: "Entrá a twilio.com, creá una cuenta gratuita y comprá un número de teléfono (~$1/mes).",
-                    link: "https://www.twilio.com/try-twilio", linkLabel: "Ir a Twilio →",
-                  },
-                  {
-                    n: "2", title: "Configurar el número arriba",
-                    body: "Pegá el número de Twilio en el campo de la pestaña Configuración y guardá.",
-                  },
-                  {
-                    n: "3", title: "Apuntar el webhook en Twilio",
-                    body: "En la consola de Twilio, buscá tu número → Voice → Webhook, y pegá esta URL:",
-                    webhook: webhookUrl,
-                  },
-                  {
-                    n: "4", title: "Activar Rocky",
-                    body: "Usá el toggle 'Activo' en la parte superior y guardá la configuración.",
-                  },
-                  {
-                    n: "5", title: "¡Listo!",
-                    body: "Llamá al número y Rocky te atenderá. Los pedidos y citas aparecen automáticamente en el sistema.",
-                  },
+                  { n: "1", title: "Crear una cuenta en Twilio", body: "Entrá a twilio.com, creá una cuenta gratuita y comprá un número de teléfono (unos $1 al mes).", link: "https://www.twilio.com/try-twilio", linkLabel: "Ir a Twilio" },
+                  { n: "2", title: "Poner el número acá", body: "Pegá el número de Twilio en la pestaña Configuración y guardá." },
+                  { n: "3", title: "Configurar el webhook en Twilio", body: "En la consola de Twilio: tu número → Voice → Webhook, y pegá esta dirección:", webhook: webhookUrl },
+                  { n: "4", title: "Activar a Rocky", body: "Encendé el interruptor de arriba y guardá." },
+                  { n: "5", title: "¡Listo!", body: "Llamá al número y Rocky te atiende. Los pedidos y citas aparecen solos en el sistema." },
                 ].map(s => (
                   <li key={s.n} className="flex gap-3">
-                    <span className="w-6 h-6 rounded-full bg-violet-500 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {s.n}
-                    </span>
+                    <span className="w-7 h-7 rounded-full bg-monki-y text-monki-k text-xs font-black flex items-center justify-center shrink-0">{s.n}</span>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-slate-700">{s.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{s.body}</p>
-                      {s.link && (
-                        <a href={s.link} target="_blank" rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline mt-1">
-                          <ExternalLink size={11} /> {s.linkLabel}
-                        </a>
-                      )}
+                      <p className="text-sm font-extrabold">{s.title}</p>
+                      <p className="text-sm text-white/65 mt-0.5">{s.body}</p>
+                      {s.link && <a href={s.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-monki-y font-bold hover:underline mt-1"><ExternalLink size={12} /> {s.linkLabel}</a>}
                       {s.webhook && (
-                        <div className="flex items-center gap-2 mt-2 bg-white border border-violet-200 rounded-lg px-3 py-2">
-                          <code className="flex-1 text-xs text-violet-700 font-mono truncate">{s.webhook}</code>
-                          <button onClick={copiarWebhook} className="shrink-0 text-violet-500 hover:text-violet-700">
-                            <Copy size={13} />
-                          </button>
+                        <div className="flex items-center gap-2 mt-2 bg-white/10 rounded-full pl-4 pr-1 py-1">
+                          <code className="flex-1 text-xs text-monki-y font-mono truncate">{s.webhook}</code>
+                          <button type="button" onClick={copiarWebhook} title="Copiar" className="ui-boton w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/15"><Copy size={13} /></button>
                         </div>
                       )}
                     </div>
@@ -475,21 +331,20 @@ export default function RockyRecepcionistaScreen() {
                 ))}
               </ol>
             </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex gap-3">
-              <AlertCircle size={15} className="text-yellow-500 shrink-0 mt-0.5" />
+            <div className="bg-monki-y/40 border-2 border-monki-y rounded-2xl p-4 flex gap-3">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-semibold text-yellow-800">Emails de confirmación</p>
-                <p className="text-xs text-yellow-700 mt-0.5">
-                  Para que Rocky envíe emails necesitás una cuenta gratuita en{" "}
-                  <a href="https://resend.com" target="_blank" rel="noreferrer" className="underline">resend.com</a>
-                  {" "}y agregar la API key en el servidor (RESEND_API_KEY en .env.vps).
+                <p className="text-sm font-extrabold text-monki-k">Correos de confirmación</p>
+                <p className="text-sm text-monki-k/70 mt-0.5">
+                  Para que Rocky mande correos necesitás una cuenta gratuita en{" "}
+                  <a href="https://resend.com" target="_blank" rel="noreferrer" className="underline font-bold">resend.com</a>
+                  {" "}y poner la clave en el servidor (RESEND_API_KEY).
                 </p>
               </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </Modulo>
   );
 }
