@@ -3,7 +3,8 @@
  * Apertura → movimientos del día → cierre con arqueo físico
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, X, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Trash2 } from "lucide-react";
+import { Plus, Lock, Unlock, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Trash2, Wallet } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Tabla, Tarjeta, Vacio, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy, fechaLocal } from "../utils/fmt";
@@ -74,46 +75,25 @@ function MovModal({ onClose, onSave }) {
 
   const esIngreso = ["Venta efectivo","Fondo de cambio","Depósito a banco","Otro ingreso"].includes(form.tipo);
 
+  const Opcion = ({ activo, onClick, children, peligro }) => (
+    <button type="button" onClick={onClick}
+      className={`ui-boton flex-1 py-2 rounded-full text-sm font-bold transition-all duration-300 ease-monki ${activo ? (peligro ? "bg-red-600 text-white" : "bg-monki-k text-monki-y") : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>{children}</button>
+  );
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-base font-bold text-slate-900">Nuevo movimiento</h2>
-          <button onClick={onClose}><X size={16} className="text-slate-400"/></button>
-        </div>
-        <div className="space-y-3">
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Tipo</span>
-            <select value={form.tipo} onChange={e=>u("tipo",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              {TIPOS_MOV.map(t=><option key={t} value={t}>{t}</option>)}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Monto (₡)</span>
-            <input type="number" min="0" step="any" value={form.monto} onChange={e=>u("monto",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Es</span>
-            <div className="flex gap-2 mt-1">
-              <button onClick={()=>u("esIngreso",true)} className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${form.esIngreso?"border-yellow-300 bg-green-50 text-yellow-700":"border-slate-200 text-slate-500"}`}>↑ Ingreso</button>
-              <button onClick={()=>u("esIngreso",false)} className={`flex-1 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${!form.esIngreso?"border-red-500 bg-red-50 text-red-600":"border-slate-200 text-slate-500"}`}>↓ Egreso</button>
-            </div>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
-            <input value={form.descripcion} onChange={e=>u("descripcion",e.target.value)}
-              placeholder="Detalle del movimiento…"
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-          </label>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Agregar</button>
-        </div>
+    <Modal titulo="Nuevo movimiento" subtitulo="Entrada o salida de efectivo de la caja" onCerrar={onClose} ancho="max-w-sm"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton icono={Plus} onClick={guardar}>Agregar</Boton></>}>
+      <div className="space-y-3">
+        <Campo etiqueta="Tipo"><Seleccion value={form.tipo} onChange={e=>u("tipo",e.target.value)} opciones={TIPOS_MOV}/></Campo>
+        <Campo etiqueta="Monto (₡)"><Entrada type="number" min="0" step="any" value={form.monto} onChange={e=>u("monto",e.target.value)}/></Campo>
+        <Campo etiqueta="Es">
+          <div className="flex gap-2">
+            <Opcion activo={form.esIngreso} onClick={()=>u("esIngreso",true)}>↑ Ingreso</Opcion>
+            <Opcion activo={!form.esIngreso} peligro onClick={()=>u("esIngreso",false)}>↓ Egreso</Opcion>
+          </div>
+        </Campo>
+        <Campo etiqueta="Descripción"><Entrada value={form.descripcion} onChange={e=>u("descripcion",e.target.value)} placeholder="Detalle del movimiento…"/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -126,51 +106,27 @@ function CierreModal({ saldoEsperado, onClose, onCerrar }) {
   const diferencia  = totalFisico - saldoEsperado;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-base font-bold text-slate-900">Cierre de caja — Arqueo</h2>
-          <button onClick={onClose}><X size={16} className="text-slate-400"/></button>
-        </div>
-
-        <p className="text-sm text-slate-500 mb-4">Contá el efectivo físico en caja:</p>
-
-        <div className="space-y-1.5">
-          {BILLETES.map(b=>(
-            <div key={b} className="flex items-center gap-3">
-              <span className="w-16 text-right text-sm font-semibold text-slate-700">₡{b.toLocaleString("es-CR")}</span>
-              <span className="text-slate-400 text-xs">×</span>
-              <input type="number" min="0" value={conteo[b]||""} onChange={e=>u(b,e.target.value)}
-                className="w-20 border border-slate-200 rounded-md px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-              <span className="text-xs text-slate-400">= {fmtMoney(b*(conteo[b]||0),"CRC")}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 space-y-2 border-t border-slate-200 pt-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-500">Saldo esperado (sistema)</span>
-            <span className="font-semibold">{fmtMoney(saldoEsperado,"CRC")}</span>
+    <Modal titulo="Cierre de caja" subtitulo="Contá el efectivo que hay físicamente en la caja" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton icono={Lock} onClick={()=>onCerrar({ conteo, totalFisico, diferencia })}>Confirmar cierre</Boton></>}>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+        {BILLETES.map(b=>(
+          <div key={b} className="flex items-center gap-2">
+            <span className="w-16 text-right text-sm font-bold text-monki-k">₡{b.toLocaleString("es-CR")}</span>
+            <span className="text-monki-k/35 text-xs">×</span>
+            <input type="number" min="0" value={conteo[b]||""} onChange={e=>u(b,e.target.value)}
+              className="w-16 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-2 py-1 text-sm text-center"/>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-slate-500">Conteo físico</span>
-            <span className="font-semibold">{fmtMoney(totalFisico,"CRC")}</span>
-          </div>
-          <div className={`flex justify-between text-sm font-bold border-t border-slate-200 pt-2 ${diferencia===0?"text-yellow-700":diferencia>0?"text-blue-700":"text-red-600"}`}>
-            <span>Diferencia</span>
-            <span>{diferencia>=0?"+":""}{fmtMoney(diferencia,"CRC")}</span>
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={()=>onCerrar({ conteo, totalFisico, diferencia })}
-            className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-            Confirmar cierre
-          </button>
+        ))}
+      </div>
+      <div className="mt-4 bg-monki-k text-white rounded-2xl p-4 space-y-1.5 text-sm">
+        <div className="flex justify-between text-white/65"><span>Saldo esperado (sistema)</span><span>{fmtMoney(saldoEsperado,"CRC")}</span></div>
+        <div className="flex justify-between text-white/65"><span>Conteo físico</span><span>{fmtMoney(totalFisico,"CRC")}</span></div>
+        <div className="flex justify-between items-end border-t border-white/15 pt-2">
+          <span className="monki-tag text-white/55">Diferencia</span>
+          <span className={`text-[20px] font-black ${diferencia===0?"text-monki-y":diferencia>0?"text-white":"text-red-300"}`}>{diferencia>=0?"+":""}{fmtMoney(diferencia,"CRC")}</span>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -214,8 +170,9 @@ export default function CajaScreen() {
     await db.setCaja(upd); cargar();
   };
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminarMovimiento = async (movId) => {
-    if (!confirm("¿Eliminar este movimiento de caja?")) return;
+    if (!(await confirmar("Eliminar movimiento", "¿Eliminar este movimiento de caja?", { peligro: true, boton: "Eliminar" }))) return;
     const todas = await db.getCaja();
     const upd   = todas.map(c=>c.fecha===fecha?{...c,movimientos:c.movimientos.filter(m=>m.id!==movId)}:c);
     await db.setCaja(upd); cargar();
@@ -232,123 +189,69 @@ export default function CajaScreen() {
     cargar(); setModal(null);
   };
 
+  const columnas = [
+    { key: "hora", titulo: "Hora", render: m => <span className="font-mono text-xs text-monki-k/55">{m.hora}</span> },
+    { key: "tipo", titulo: "Tipo", render: m => <b className="text-monki-k">{m.tipo}</b> },
+    { key: "desc", titulo: "Descripción", render: m => <span className="text-monki-k/55 text-xs">{m.descripcion||"—"}</span> },
+    { key: "ing", titulo: "Ingreso", alinear: "right", render: m => m.esIngreso ? <b>{fmtMoney(m.monto,"CRC")}</b> : "" },
+    { key: "egr", titulo: "Egreso", alinear: "right", render: m => !m.esIngreso ? <b className="text-red-600">{fmtMoney(m.monto,"CRC")}</b> : "" },
+    { key: "acc", titulo: "", alinear: "right", render: m => abierta && <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminarMovimiento(m.id)}/> },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Nav de fecha */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-        <button onClick={()=>setFecha(prevDia(fecha))} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft size={15}/></button>
-        <span className="text-sm font-semibold text-slate-800 min-w-[220px] text-center capitalize">{labelFecha(fecha)}</span>
-        <button onClick={()=>setFecha(nextDia(fecha))} disabled={fecha>=fechaHoy()} className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30"><ChevronRight size={15}/></button>
-        <div className="flex-1"/>
-        {abierta && (
-          <>
-            <button onClick={()=>setModal("movimiento")}
-              className="flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
-              <Plus size={14}/> Movimiento
-            </button>
-            <button onClick={()=>setModal("cierre")}
-              className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-              <Lock size={14}/> Cerrar caja
-            </button>
-          </>
-        )}
-        {!cajaDia && (
-          <button onClick={()=>setModal("apertura")}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-            <Unlock size={14}/> Abrir caja
-          </button>
-        )}
-      </div>
-
-      {/* Estado sin caja */}
-      {!cajaDia && (
-        <div className="flex flex-col items-center justify-center flex-1 text-slate-400 gap-3">
-          <Unlock size={36} className="text-slate-300"/>
-          <p className="text-lg font-semibold">Caja no abierta</p>
-          <p className="text-sm">Abrí la caja para empezar a registrar movimientos.</p>
-          <button onClick={()=>setModal("apertura")} className="btn-primary mt-2">Abrir caja del día</button>
+    <Modulo
+      seccion="Operaciones"
+      titulo="Control de caja"
+      descripcion="Abrí la caja, anotá cada entrada y salida de efectivo, y cerrá con el arqueo."
+      acciones={<>
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Día anterior" onClick={()=>setFecha(prevDia(fecha))}/>
+          <span className="text-sm font-bold min-w-[200px] text-center capitalize">{labelFecha(fecha)}</span>
+          <BotonIcono icono={ChevronRight} titulo="Día siguiente" onClick={()=>setFecha(nextDia(fecha))} disabled={fecha>=fechaHoy()}/>
         </div>
+        {abierta && <>
+          <Boton variante="secundario" icono={Plus} onClick={()=>setModal("movimiento")}>Movimiento</Boton>
+          <Boton icono={Lock} onClick={()=>setModal("cierre")}>Cerrar caja</Boton>
+        </>}
+        {!cajaDia && <Boton icono={Unlock} onClick={()=>setModal("apertura")}>Abrir caja</Boton>}
+      </>}
+      indicadores={cajaDia && (
+        <Indicadores>
+          <Indicador etiqueta="Saldo inicial" valor={fmtMoney(cajaDia.saldoInicial,"CRC")} icono={Wallet} delay={40}/>
+          <Indicador etiqueta="Ingresos" valor={fmtMoney(totalIngresos,"CRC")} icono={TrendingUp} delay={90}/>
+          <Indicador etiqueta="Egresos" valor={fmtMoney(totalEgresos,"CRC")} icono={TrendingDown} delay={140}/>
+          <Indicador etiqueta={cerrada?"Saldo al cierre":"Saldo actual"} valor={fmtMoney(cerrada?(cajaDia.arqueo?.totalFisico||saldoEsperado):saldoEsperado,"CRC")} destacado delay={190}/>
+        </Indicadores>
       )}
-
-      {/* Caja activa */}
-      {cajaDia && (
-        <>
-          {/* Resumen */}
-          <div className="grid grid-cols-4 gap-0 border-b border-slate-200 bg-white text-center">
-            {[
-              ["Saldo inicial",     fmtMoney(cajaDia.saldoInicial,"CRC"), "text-slate-700"],
-              ["Ingresos",          fmtMoney(totalIngresos,"CRC"),         "text-yellow-700"],
-              ["Egresos",           fmtMoney(totalEgresos,"CRC"),          "text-red-600"],
-              [cerrada?"Saldo al cierre":"Saldo actual", fmtMoney(cerrada?(cajaDia.arqueo?.totalFisico||saldoEsperado):saldoEsperado,"CRC"), "text-slate-900 font-black"],
-            ].map(([lbl,val,cls])=>(
-              <div key={lbl} className="py-3 px-4 border-r border-slate-100 last:border-r-0">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase">{lbl}</p>
-                <p className={`text-sm mt-0.5 ${cls}`}>{val}</p>
-              </div>
-            ))}
+    >
+      {!cajaDia ? (
+        <Tarjeta className="flex-1 flex items-center justify-center">
+          <Vacio icono={Unlock} titulo="La caja no está abierta" texto="Abrí la caja para empezar a registrar movimientos del día."
+            accion={<Boton icono={Unlock} onClick={()=>setModal("apertura")}>Abrir caja del día</Boton>}/>
+        </Tarjeta>
+      ) : (<>
+        {cerrada && cajaDia.arqueo && (
+          <div className={`animate-desplegar mb-3 flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-full text-sm font-bold
+            ${cajaDia.arqueo.diferencia===0?"bg-[#dcfce7] text-[#166534]":cajaDia.arqueo.diferencia>0?"bg-monki-y text-monki-k":"bg-red-100 text-red-700"}`}>
+            {cajaDia.arqueo.diferencia===0?<CheckCircle size={16}/>:<AlertTriangle size={16}/>}
+            Caja cerrada · diferencia en el arqueo {cajaDia.arqueo.diferencia>=0?"+":""}{fmtMoney(cajaDia.arqueo.diferencia,"CRC")}
+            <span className="font-mono text-[11px] font-normal opacity-70">{cajaDia.cierreEn ? new Date(cajaDia.cierreEn).toLocaleTimeString("es-CR",{hour:"2-digit",minute:"2-digit"}) : ""}</span>
           </div>
+        )}
+        <Tabla columnas={columnas} filas={cajaDia.movimientos}
+          vacio={<Vacio icono={Wallet} titulo="Sin movimientos registrados" texto="Anotá cada venta en efectivo, pago o retiro."
+            accion={abierta && <Boton icono={Plus} onClick={()=>setModal("movimiento")}>Agregar movimiento</Boton>}/>}/>
+      </>)}
 
-          {/* Diferencia arqueo si cerrada */}
-          {cerrada && cajaDia.arqueo && (
-            <div className={`flex items-center gap-3 px-6 py-3 border-b text-sm font-semibold
-              ${cajaDia.arqueo.diferencia===0?"bg-green-50 border-yellow-300 text-green-800":cajaDia.arqueo.diferencia>0?"bg-blue-50 border-blue-100 text-blue-800":"bg-red-50 border-red-100 text-red-700"}`}>
-              {cajaDia.arqueo.diferencia===0?<CheckCircle size={16}/>:<AlertTriangle size={16}/>}
-              Caja cerrada · Diferencia en arqueo: {cajaDia.arqueo.diferencia>=0?"+":""}{fmtMoney(cajaDia.arqueo.diferencia,"CRC")}
-              <span className="ml-2 font-normal text-xs opacity-70">Cerrada {cajaDia.cierreEn ? new Date(cajaDia.cierreEn).toLocaleTimeString("es-CR",{hour:"2-digit",minute:"2-digit"}) : ""}</span>
-            </div>
-          )}
-
-          {/* Movimientos */}
-          <div className="flex-1 overflow-auto">
-            {cajaDia.movimientos.length===0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <p className="font-semibold">Sin movimientos registrados</p>
-                {abierta && <button onClick={()=>setModal("movimiento")} className="mt-3 btn-primary">+ Agregar movimiento</button>}
-              </div>
-            ) : (
-              <table className="table-base">
-                <thead>
-                  <tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th className="text-right">Ingreso</th><th className="text-right">Egreso</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {cajaDia.movimientos.map(m=>(
-                    <tr key={m.id}>
-                      <td className="text-slate-400 text-xs font-mono">{m.hora}</td>
-                      <td className="text-slate-700">{m.tipo}</td>
-                      <td className="text-slate-500 text-xs">{m.descripcion||"—"}</td>
-                      <td className="text-right font-semibold text-yellow-700">{m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
-                      <td className="text-right font-semibold text-red-600">{!m.esIngreso?fmtMoney(m.monto,"CRC"):""}</td>
-                      <td>{abierta && <button onClick={()=>eliminarMovimiento(m.id)} className="p-1 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={13}/></button>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Modal apertura */}
       {modal==="apertura" && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={()=>setModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e=>e.stopPropagation()}>
-            <h2 className="text-base font-bold text-slate-900 mb-4">Apertura de caja</h2>
-            <label className="block">
-              <span className="text-xs font-semibold text-slate-500 uppercase">Saldo inicial en efectivo (₡)</span>
-              <input type="number" min="0" step="any" value={apertura} onChange={e=>setApertura(e.target.value)}
-                placeholder="0" autoFocus
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </label>
-            <div className="flex gap-3 mt-5">
-              <button onClick={()=>setModal(null)} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-              <button onClick={abrirCaja} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Abrir caja</button>
-            </div>
-          </div>
-        </div>
+        <Modal titulo="Apertura de caja" subtitulo="Con cuánto efectivo arranca el día" onCerrar={()=>setModal(null)} ancho="max-w-sm"
+          pie={<><Boton variante="fantasma" onClick={()=>setModal(null)}>Cancelar</Boton><Boton icono={Unlock} onClick={abrirCaja}>Abrir caja</Boton></>}>
+          <Campo etiqueta="Saldo inicial en efectivo (₡)"><Entrada type="number" min="0" step="any" value={apertura} onChange={e=>setApertura(e.target.value)} placeholder="0"/></Campo>
+        </Modal>
       )}
-
       {modal==="movimiento" && <MovModal onClose={()=>setModal(null)} onSave={addMovimiento}/>}
       {modal==="cierre"     && <CierreModal saldoEsperado={saldoEsperado} onClose={()=>setModal(null)} onCerrar={cerrarCaja}/>}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
