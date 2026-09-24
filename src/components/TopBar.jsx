@@ -2,6 +2,25 @@ import React, { useState } from "react";
 import { LogOut, ChevronDown, Users, Pencil, Check, X } from "lucide-react";
 import { BACKEND } from "../utils/config.js";
 import { getToken } from "../utils/auth.js";
+import { useIdioma } from "../utils/idioma";
+
+// Selector de idioma ES | EN (se recuerda en este navegador)
+export function SelectorIdioma({ oscuro = false }) {
+  const { lang, cambiar, tr } = useIdioma();
+  return (
+    <div role="radiogroup" aria-label={tr("Idioma")} title={tr("Idioma")}
+      className={`flex items-center p-0.5 rounded-full font-mono text-[10px] font-bold ${oscuro ? "bg-white/10" : "bg-white/70 border border-black/10"}`}>
+      {["es", "en"].map(l => (
+        <button key={l} type="button" role="radio" aria-checked={lang === l} onClick={() => cambiar(l)}
+          className={`px-2 py-0.5 rounded-full uppercase transition-all duration-200 ${lang === l
+            ? "bg-monki-k text-monki-y"
+            : oscuro ? "text-white/60 hover:text-white" : "text-monki-k/50 hover:text-monki-k"}`}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMobileMenu, onUserUpdate }) {
   const [menuOpen,    setMenuOpen]    = useState(false);
@@ -9,6 +28,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [saving,      setSaving]      = useState(false);
   const [errorMsg,    setErrorMsg]    = useState("");
+  const { tr } = useIdioma();
 
   function abrirEdicion() {
     setNuevoNombre(user?.nombre || "");
@@ -52,11 +72,12 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
 
         <h1 key={title} className="animate-desplegar text-[15px] font-extrabold text-monki-k tracking-[-0.02em] truncate max-w-[160px] sm:max-w-none">{title}<span className="text-monki-y" style={{ WebkitTextStroke: "0.5px #111" }}>.</span></h1>
 
-        <div className="no-drag flex items-center gap-4">
+        <div className="no-drag flex items-center gap-3">
+          <SelectorIdioma />
           {/* Sync dot */}
           <button
             onClick={onSync}
-            title={syncStatus === "syncing" ? "Sincronizando…" : syncStatus === "error" ? "Error de sync — clic para reintentar" : "Sincronizado"}
+            title={tr(syncStatus === "syncing" ? "Sincronizando…" : syncStatus === "error" ? "Error de sync — clic para reintentar" : "Sincronizado")}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-slate-600 hover:bg-black/5 transition-colors"
           >
             <span className={`w-2 h-2 rounded-full inline-block
@@ -65,7 +86,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                                            "bg-[#35e06b] animate-pulso"}`}
             />
             <span className="hidden sm:inline">
-              {syncStatus === "syncing" ? "Sincronizando" : syncStatus === "error" ? "Sin sync" : "Sincronizado"}
+              {tr(syncStatus === "syncing" ? "Sincronizando" : syncStatus === "error" ? "Sin sync" : "Sincronizado")}
             </span>
           </button>
 
@@ -93,7 +114,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full
                           ${user.plan==="activo" ? "bg-brand-100 text-brand-700" : "bg-yellow-100 text-yellow-700"}`}>
-                          {user.plan === "activo" ? "Plan Activo" : "Prueba gratis"}
+                          {tr(user.plan === "activo" ? "Plan Activo" : "Prueba gratis")}
                         </span>
                         {(user.rol === "admin" || user.rol === "superadmin") && (
                           <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
@@ -108,7 +129,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                       className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                       <Pencil size={12} />
-                      Editar perfil
+                      {tr("Editar perfil")}
                     </button>
 
                     {(user.rol === "admin" || user.rol === "superadmin") && (
@@ -118,7 +139,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                         className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-slate-600 hover:bg-slate-50 transition-colors"
                       >
                         <Users size={12} />
-                        Gestionar usuarios
+                        {tr("Gestionar usuarios")}
                       </a>
                     )}
 
@@ -127,7 +148,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                       className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogOut size={12} />
-                      Cerrar sesión
+                      {tr("Cerrar sesión")}
                     </button>
                   </div>
                 </>
@@ -141,15 +162,15 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
       {editando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-80 p-6">
-            <h2 className="text-[14px] font-semibold text-slate-800 mb-4">Editar perfil</h2>
-            <label className="block text-[11px] text-slate-500 mb-1">Nombre visible</label>
+            <h2 className="text-[14px] font-semibold text-slate-800 mb-4">{tr("Editar perfil")}</h2>
+            <label className="block text-[11px] text-slate-500 mb-1">{tr("Nombre visible")}</label>
             <input
               autoFocus
               value={nuevoNombre}
               onChange={(e) => setNuevoNombre(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") guardarPerfil(); if (e.key === "Escape") setEditando(false); }}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 mb-4"
-              placeholder="Tu nombre"
+              placeholder={tr("Tu nombre")}
             />
             {errorMsg && (
               <p className="text-[11px] text-red-500 mb-3">{errorMsg}</p>
@@ -159,14 +180,14 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
                 onClick={() => setEditando(false)}
                 className="flex items-center gap-1 px-3 py-1.5 text-[12px] text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X size={12} /> Cancelar
+                <X size={12} /> {tr("Cancelar")}
               </button>
               <button
                 onClick={guardarPerfil}
                 disabled={saving || nuevoNombre.trim().length < 2}
                 className="flex items-center gap-1 px-4 py-1.5 text-[12px] bg-monki-k text-monki-y font-bold rounded-full hover:shadow-[3px_3px_0_#FFD600] hover:-translate-x-0.5 hover:-translate-y-0.5 disabled:opacity-50 transition-all duration-300"
               >
-                <Check size={12} /> {saving ? "Guardando…" : "Guardar"}
+                <Check size={12} /> {tr(saving ? "Guardando…" : "Guardar")}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { AlarmClock, X, LayoutDashboard, Receipt, Package, DollarSign, Settings,
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import LoginScreen from "./screens/LoginScreen";
+import { useIdioma } from "./utils/idioma";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { syncAll, startAutoSync, connectSocket, disconnectSocket, processQueue, onSyncUpdate } from "./utils/sync";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
@@ -188,6 +189,7 @@ function TrialBanner({ plan }) {
 
 // ── Bottom Tab Bar (solo móvil, < 768px) ─────────────────────────────────────
 function BottomTabBar() {
+  const { tr } = useIdioma();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -217,7 +219,7 @@ function BottomTabBar() {
               ${active ? "text-yellow-600" : "text-slate-400"}`}
           >
             <tab.icon size={20} className={active ? "text-yellow-600" : "text-slate-400"} />
-            <span>{tab.label}</span>
+            <span>{tr(tab.label)}</span>
           </button>
         );
       })}
@@ -247,7 +249,8 @@ export default function App() {
   const [showOnboarding,     setShowOnboarding]     = useState(false);
   const location = useLocation();
 
-  const titulo = TITULOS[location.pathname] || "Monki.AI";
+  const { tr } = useIdioma();
+  const titulo = tr(TITULOS[location.pathname] || "Monki.AI");
 
   // ── Verificar sesión al arrancar ───────────────────────────────────────────
   useEffect(() => {

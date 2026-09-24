@@ -15,14 +15,17 @@ i18n
     },
     fallbackLng: "es",
     supportedLngs: ["es", "en"],
+    // Español por defecto: solo cambia si el usuario eligió otro idioma.
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
-      lookupLocalStorage: "organizalo_lang",
+      lookupLocalStorage: "monki_idioma", // clave nueva: la vieja guardaba el idioma del navegador sin que el usuario eligiera
     },
     interpolation: {
       escapeValue: false,
     },
   });
+
+document.documentElement.lang = (i18n.resolvedLanguage || "es").slice(0, 2);
 
 export default i18n;
