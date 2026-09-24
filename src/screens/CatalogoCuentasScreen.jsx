@@ -3,19 +3,21 @@
  * Permite ver, agregar y editar cuentas. Viene pre-cargado con el plan estándar CR.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Edit2, X, ChevronRight } from "lucide-react";
+import { Plus, Edit2, ChevronRight, RotateCcw, ListTree, FolderTree } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, Interruptor, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { PLAN_DEFAULT, TIPOS_CUENTA } from "../utils/planCuentas";
 import { genId } from "../utils/fmt";
 
 const TIPO_BADGE = {
-  activo:     "bg-blue-50 text-blue-700",
-  pasivo:     "bg-red-50 text-red-700",
-  patrimonio: "bg-purple-50 text-purple-700",
-  ingreso:    "bg-green-50 text-yellow-700",
-  costo:      "bg-yellow-50 text-yellow-700",
-  gasto:      "bg-slate-100 text-slate-600",
+  activo:     "oscuro",
+  pasivo:     "peligro",
+  patrimonio: "neutro",
+  ingreso:    "exito",
+  costo:      "alerta",
+  gasto:      "neutro",
 };
+const capital = t => t.charAt(0).toUpperCase()+t.slice(1);
 
 function CuentaModal({ cuenta, cuentas, onClose, onSave }) {
   const esNueva = !cuenta?.id;
@@ -36,47 +38,19 @@ function CuentaModal({ cuenta, cuentas, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">{esNueva?"Nueva cuenta":"Editar cuenta"}</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400"/></button>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[["Código *","codigo","text",""],["Nombre *","nombre","text","col-span-2"]].map(([lbl,key,type,cls])=>(
-            <label key={key} className={`block ${cls}`}>
-              <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
-              <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-            </label>
-          ))}
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Tipo</span>
-            <select value={form.tipo} onChange={e=>u("tipo",e.target.value)}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              {TIPOS_CUENTA.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-500 uppercase">Nivel</span>
-            <select value={form.nivel} onChange={e=>u("nivel",parseInt(e.target.value))}
-              className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-              <option value={1}>1 — Grupo mayor</option>
-              <option value={2}>2 — Sub-grupo</option>
-              <option value={3}>3 — Cuenta detalle</option>
-            </select>
-          </label>
-          <label className="flex items-center gap-2 col-span-2">
-            <input type="checkbox" checked={form.esGrupo} onChange={e=>u("esGrupo",e.target.checked)} className="rounded"/>
-            <span className="text-sm text-slate-700">Es cuenta de grupo (no recibe asientos directamente)</span>
-          </label>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
-        </div>
+    <Modal titulo={esNueva?"Nueva cuenta":"Editar cuenta"} subtitulo="Plan de cuentas NIIF PYMES" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar cuenta</Boton></>}>
+      <div className="grid grid-cols-2 gap-3">
+        <Campo etiqueta="Código *"><Entrada value={form.codigo||""} onChange={e=>u("codigo",e.target.value)} className="font-mono"/></Campo>
+        <Campo etiqueta="Tipo"><Seleccion value={form.tipo} onChange={e=>u("tipo",e.target.value)} opciones={TIPOS_CUENTA.map(t=>({value:t,label:capital(t)}))}/></Campo>
+        <Campo etiqueta="Nombre *" className="col-span-2"><Entrada value={form.nombre||""} onChange={e=>u("nombre",e.target.value)}/></Campo>
+        <Campo etiqueta="Nivel" className="col-span-2">
+          <Seleccion value={form.nivel} onChange={e=>u("nivel",parseInt(e.target.value))}
+            opciones={[{value:1,label:"1 — Grupo mayor"},{value:2,label:"2 — Subgrupo"},{value:3,label:"3 — Cuenta de detalle"}]}/>
+        </Campo>
+        <div className="col-span-2"><Interruptor activo={form.esGrupo} onCambio={v=>u("esGrupo",v)} etiqueta="Cuenta de grupo (no recibe asientos directamente)"/></div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -107,90 +81,54 @@ export default function CatalogoCuentasScreen() {
     return true;
   });
 
+  const { confirmar, dialogo } = useConfirmar();
   const resetPlan = async () => {
-    if (!confirm("¿Restaurar el plan de cuentas estándar? Esto borra las cuentas personalizadas.")) return;
+    if (!(await confirmar("Restaurar plan estándar", "¿Restaurar el plan de cuentas estándar de Costa Rica? Se borran las cuentas personalizadas.", { peligro: true, boton: "Restaurar" }))) return;
     const plan = PLAN_DEFAULT.map(c=>({...c,id:c.codigo}));
     await db.setCuentasContables(plan);
     setCuentas(plan);
   };
 
+  const columnas = [
+    { key: "codigo", titulo: "Código", render: c => <span className={`font-mono text-xs ${c.nivel===1?"font-black":c.nivel===2?"font-bold":"text-monki-k/55"}`} style={{ paddingLeft: `${(c.nivel-1)*14}px` }}>{c.codigo}</span> },
+    { key: "nombre", titulo: "Nombre", render: c => (
+      <span className={c.nivel===1?"font-black text-monki-k":c.nivel===2?"font-extrabold text-monki-k":"text-monki-k/80"} style={{ paddingLeft: `${(c.nivel-1)*14}px` }}>
+        {c.nivel > 1 && <ChevronRight size={11} className="inline text-monki-k/30 mr-1"/>}{c.nombre}
+      </span>) },
+    { key: "tipo", titulo: "Tipo", render: c => <Estado tono={TIPO_BADGE[c.tipo]||"neutro"}>{capital(c.tipo||"")}</Estado> },
+    { key: "nivel", titulo: "Nivel", alinear: "center", render: c => <span className="font-mono text-xs text-monki-k/45">{c.nivel}</span> },
+    { key: "grupo", titulo: "Grupo", alinear: "center", render: c => c.esGrupo ? <span className="font-bold">Sí</span> : <span className="text-monki-k/30">—</span> },
+    { key: "acciones", titulo: "", alinear: "right", render: c => !c.esGrupo && <span onClick={e=>e.stopPropagation()}><BotonIcono icono={Edit2} titulo="Editar" onClick={()=>setModal(c)}/></span> },
+  ];
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-2 flex-1 bg-gray-100 rounded-lg px-3 py-2">
-          <Search size={14} className="text-slate-400"/>
-          <input value={busq} onChange={e=>setBusq(e.target.value)}
-            placeholder="Buscar por código o nombre…" className="bg-transparent text-sm flex-1 outline-none"/>
-        </div>
-        <select value={tipo} onChange={e=>setTipo(e.target.value)}
-          className="border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-          <option value="Todos">Todos los tipos</option>
-          {TIPOS_CUENTA.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
-        </select>
-        <button onClick={resetPlan} className="text-xs text-slate-400 hover:text-slate-600 border border-slate-200 px-3 py-2 rounded-lg">
-          Restaurar plan CR
-        </button>
-        <button onClick={()=>setModal({})}
-          className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-          <Plus size={14}/> Nueva cuenta
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="flex gap-4 px-6 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
-        <span>{cuentas.filter(c=>!c.esGrupo).length} cuentas de detalle</span>
-        <span>{cuentas.filter(c=>c.esGrupo).length} grupos</span>
-        <span>{visibles.length} mostrando</span>
-      </div>
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Nivel</th>
-              <th>Grupo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.map(c => (
-              <tr key={c.id||c.codigo}
-                className={c.nivel===1 ? "bg-slate-50 font-bold" : c.nivel===2 ? "bg-white font-semibold" : ""}>
-                <td className={`font-mono text-xs ${c.nivel===1?"text-slate-900":"c.nivel===2"?"text-slate-700":"text-slate-500"}`}>
-                  {"  ".repeat(c.nivel-1)}{c.codigo}
-                </td>
-                <td className={c.nivel===1?"text-slate-900 font-black":c.nivel===2?"text-slate-800 font-bold":"text-slate-700"}>
-                  {c.nivel > 1 && <ChevronRight size={10} className="inline text-slate-300 mr-1"/>}
-                  {c.nombre}
-                </td>
-                <td>
-                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${TIPO_BADGE[c.tipo]||"bg-slate-100 text-slate-500"}`}>
-                    {c.tipo}
-                  </span>
-                </td>
-                <td className="text-slate-400 text-xs">{c.nivel}</td>
-                <td className="text-slate-400 text-xs">{c.esGrupo?"Sí":"—"}</td>
-                <td>
-                  {!c.esGrupo && (
-                    <button onClick={()=>setModal(c)} className="p-1.5 rounded hover:bg-gray-100 text-slate-400 hover:text-slate-700">
-                      <Edit2 size={12}/>
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Catálogo de cuentas"
+      descripcion="Plan de cuentas NIIF PYMES para Costa Rica. Podés agregar las tuyas."
+      acciones={<>
+        <Boton variante="secundario" icono={RotateCcw} onClick={resetPlan}>Restaurar plan CR</Boton>
+        <Boton icono={Plus} onClick={()=>setModal({})}>Nueva cuenta</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Cuentas de detalle" valor={cuentas.filter(c=>!c.esGrupo).length} icono={ListTree} delay={40}/>
+          <Indicador etiqueta="Grupos" valor={cuentas.filter(c=>c.esGrupo).length} icono={FolderTree} delay={90}/>
+          <Indicador etiqueta="Ingresos" valor={cuentas.filter(c=>c.tipo==="ingreso").length} delay={140} onClick={()=>setTipo("ingreso")}/>
+          <Indicador etiqueta="Gastos" valor={cuentas.filter(c=>c.tipo==="gasto").length} destacado delay={190} onClick={()=>setTipo("gasto")}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${visibles.length} de ${cuentas.length}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por código o nombre…"/>
+        <Selector valor={tipo} onCambio={setTipo} opciones={[{value:"Todos",label:"Todos los tipos"}, ...TIPOS_CUENTA.map(t=>({value:t,label:capital(t)}))]}/>
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={visibles} claveFila={c=>c.id||c.codigo} onFila={c=>!c.esGrupo && setModal(c)}
+        vacio={<Vacio icono={ListTree} titulo="Sin resultados" texto="Probá con otra búsqueda o tipo."/>}/>
       {modal !== null && (
         <CuentaModal cuenta={Object.keys(modal).length>0?modal:null} cuentas={cuentas} onClose={()=>setModal(null)} onSave={cargar}/>
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }

@@ -3,7 +3,8 @@
  * Permite ingresar presupuesto mensual por cuenta, y compara vs asientos reales.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Save, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Target, TrendingUp, ListTree } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Pestanas, Tarjeta, Vacio, Indicadores, Indicador } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney } from "../utils/fmt";
 
@@ -78,58 +79,48 @@ export default function PresupuestoScreen() {
   const totalRealMes    = cuentasRelevantes.reduce((s,c)=>s+realPorCuentaMes(asientos,c.codigo,ano,mesVista),0);
   const varianza        = totalRealMes - totalPresupMes;
 
+  const TH = "monki-tag text-monki-k/50 font-medium px-4 py-3 border-b-2 border-black/10";
+  const pctTotal = totalPresupMes>0 ? totalRealMes/totalPresupMes*100 : null;
+  const pastilla = pct => pct>=80 ? "bg-[#dcfce7] text-[#166534]" : pct>=50 ? "bg-monki-y text-monki-k" : "bg-red-100 text-red-700";
+
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Presupuesto vs Real</h1>
-            <p className="text-sm text-slate-500">Comparación por cuenta contable · Año {ano}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <button onClick={()=>setAno(a=>a-1)} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft size={14}/></button>
-              <span className="text-sm font-bold text-slate-800 w-12 text-center">{ano}</span>
-              <button onClick={()=>setAno(a=>a+1)} className="p-2 rounded-lg hover:bg-gray-100"><ChevronRight size={14}/></button>
-            </div>
-            {editado && (
-              <button onClick={guardar} className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-                <Save size={14}/> Guardar
-              </button>
-            )}
-          </div>
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Presupuesto"
+      descripcion={`Lo que planeaste contra lo que pasó, por cuenta contable · ${ano}`}
+      acciones={<>
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Año anterior" onClick={()=>setAno(a=>a-1)}/>
+          <span className="text-sm font-black w-14 text-center">{ano}</span>
+          <BotonIcono icono={ChevronRight} titulo="Año siguiente" onClick={()=>setAno(a=>a+1)}/>
         </div>
-      </div>
-
-      {/* Selector de mes */}
-      <div className="flex gap-1 px-8 py-3 bg-white border-b border-slate-100 overflow-x-auto">
-        {MESES.map((m,i)=>(
-          <button key={i} onClick={()=>setMesVista(i)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
-              ${mesVista===i?"bg-yellow-600 text-white":"text-slate-500 hover:bg-slate-100"}`}>
-            {m}
-          </button>
-        ))}
-      </div>
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto px-4 py-4">
-        {cuentasRelevantes.length===0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <p className="font-semibold">Sin cuentas contables configuradas</p>
-            <p className="text-sm mt-1">Andá a Contabilidad → Catálogo de cuentas y configurá tu plan.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-500 uppercase w-64">Cuenta</th>
-                  <th className="text-right px-4 py-3 text-[11px] font-bold text-slate-500 uppercase">Presupuesto {MESES[mesVista]}</th>
-                  <th className="text-right px-4 py-3 text-[11px] font-bold text-slate-500 uppercase">Real {MESES[mesVista]}</th>
-                  <th className="text-right px-4 py-3 text-[11px] font-bold text-slate-500 uppercase">Varianza</th>
-                  <th className="text-right px-4 py-3 text-[11px] font-bold text-slate-500 uppercase">% Ejec.</th>
+        {editado && <Boton icono={Save} onClick={guardar}>Guardar cambios</Boton>}
+      </>}
+      indicadores={cuentasRelevantes.length>0 && (
+        <Indicadores>
+          <Indicador etiqueta={`Presupuesto ${MESES[mesVista]}`} valor={fmtMoney(totalPresupMes,"CRC")} icono={Target} delay={40}/>
+          <Indicador etiqueta={`Real ${MESES[mesVista]}`} valor={fmtMoney(totalRealMes,"CRC")} icono={TrendingUp} delay={90}/>
+          <Indicador etiqueta="Varianza" valor={`${varianza>=0?"+":""}${fmtMoney(varianza,"CRC")}`} alerta={varianza<0} delay={140}/>
+          <Indicador etiqueta="Ejecución" valor={pctTotal!=null ? `${pctTotal.toFixed(0)}%` : "—"} detalle={`${cuentasRelevantes.length} cuentas`} icono={ListTree} destacado delay={190}/>
+        </Indicadores>
+      )}
+    >
+      <Pestanas activa={mesVista} onCambiar={setMesVista} className="mb-3 overflow-x-auto" items={MESES.map((m,i)=>({ key:i, label:m }))}/>
+      {cuentasRelevantes.length===0 ? (
+        <Tarjeta className="flex-1 flex items-center justify-center">
+          <Vacio icono={ListTree} titulo="Sin cuentas contables configuradas" texto="Andá a Contabilidad → Catálogo de cuentas y configurá tu plan."/>
+        </Tarjeta>
+      ) : (
+        <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <table className="ui-tabla w-full text-sm">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr>
+                  <th className={TH+" text-left w-72"}>Cuenta</th>
+                  <th className={TH+" text-right"}>Presupuesto {MESES[mesVista]}</th>
+                  <th className={TH+" text-right"}>Real {MESES[mesVista]}</th>
+                  <th className={TH+" text-right"}>Varianza</th>
+                  <th className={TH+" text-right"}>Ejecución</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,55 +131,39 @@ export default function PresupuestoScreen() {
                   const pct   = presp>0 ? (real/presp*100).toFixed(0) : null;
                   const ok    = var_ >= 0;
                   return (
-                    <tr key={c.codigo} className="border-b border-slate-100 hover:bg-slate-50">
+                    <tr key={c.codigo} className="border-b border-black/5 hover:bg-monki-cream/60 transition-colors">
                       <td className="px-4 py-2.5">
-                        <p className="font-medium text-slate-800">{c.nombre}</p>
-                        <p className="text-[11px] text-slate-400">{c.codigo} · {c.tipo}</p>
+                        <p className="font-bold text-monki-k">{c.nombre}</p>
+                        <p className="font-mono text-[10px] text-monki-k/45">{c.codigo} · {c.tipo}</p>
                       </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <input
-                          type="number" min="0" step="any"
+                      <td className="px-4 py-2 text-right">
+                        <input type="number" min="0" step="any"
                           value={presupuestos?.[ano]?.[c.codigo]?.[mesVista]||""}
-                          onChange={e=>setPresup(c.codigo,mesVista,e.target.value)}
-                          placeholder="0"
-                          className="w-28 border border-slate-200 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
+                          onChange={e=>setPresup(c.codigo,mesVista,e.target.value)} placeholder="0"
+                          className="w-32 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-2.5 py-1.5 text-sm text-right transition-colors"/>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-slate-700">{fmtMoney(real,"CRC")}</td>
-                      <td className={`px-4 py-2.5 text-right font-bold ${presp===0?"text-slate-400":ok?"text-yellow-700":"text-red-600"}`}>
+                      <td className="px-4 py-2.5 text-right font-bold tabular-nums">{fmtMoney(real,"CRC")}</td>
+                      <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${presp===0?"text-monki-k/30":ok?"text-monki-k":"text-red-600"}`}>
                         {presp===0?"—":`${var_>=0?"+":""}${fmtMoney(var_,"CRC")}`}
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        {pct!==null ? (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${parseInt(pct)>=80?"bg-green-50 text-yellow-700":parseInt(pct)>=50?"bg-yellow-50 text-yellow-700":"bg-red-50 text-red-600"}`}>
-                            {pct}%
-                          </span>
-                        ) : <span className="text-slate-300">—</span>}
+                        {pct!==null ? <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${pastilla(parseInt(pct))}`}>{pct}%</span> : <span className="text-monki-k/25">—</span>}
                       </td>
                     </tr>
                   );
                 })}
-
-                {/* Totales */}
-                <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold">
-                  <td className="px-4 py-3 text-slate-900">TOTAL</td>
-                  <td className="px-4 py-3 text-right text-slate-700">{fmtMoney(totalPresupMes,"CRC")}</td>
-                  <td className="px-4 py-3 text-right text-slate-900">{fmtMoney(totalRealMes,"CRC")}</td>
-                  <td className={`px-4 py-3 text-right ${varianza>=0?"text-yellow-700":"text-red-600"}`}>
-                    {varianza>=0?"+":""}{fmtMoney(varianza,"CRC")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {totalPresupMes>0 && (
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${(totalRealMes/totalPresupMes)>=0.8?"bg-green-50 text-yellow-700":"bg-red-50 text-red-600"}`}>
-                        {(totalRealMes/totalPresupMes*100).toFixed(0)}%
-                      </span>
-                    )}
-                  </td>
+                <tr className="bg-monki-k text-white font-black">
+                  <td className="px-4 py-3 monki-tag text-monki-y">Total</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(totalPresupMes,"CRC")}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(totalRealMes,"CRC")}</td>
+                  <td className={`px-4 py-3 text-right tabular-nums ${varianza>=0?"text-monki-y":"text-red-300"}`}>{varianza>=0?"+":""}{fmtMoney(varianza,"CRC")}</td>
+                  <td className="px-4 py-3 text-right">{pctTotal!=null && <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${pastilla(pctTotal)}`}>{pctTotal.toFixed(0)}%</span>}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </Modulo>
   );
 }
