@@ -7,7 +7,8 @@
  *   - Saldo a pagar o a favor
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Printer, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer, AlertTriangle, CheckCircle, Info, FileText, Receipt, ShoppingCart } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Tarjeta, Indicadores, Indicador } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 
@@ -127,149 +128,108 @@ export default function D104Screen() {
     w.print();
   };
 
+  const TH = "monki-tag text-monki-k/50 font-medium px-4 py-2.5 border-b-2 border-black/10";
+  const TD = "px-4 py-2.5 border-b border-black/5";
+
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Declaración D-104 — IVA</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Resumen automático para declarar ante Hacienda</p>
-          </div>
-          {/* Navegador de mes */}
-          <div className="flex items-center gap-2">
-            <button onClick={()=>setMes(prevMes(mes))} className="p-2 rounded-lg hover:bg-gray-100 border border-slate-200">
-              <ChevronLeft size={15} className="text-slate-600"/>
-            </button>
-            <span className="text-sm font-semibold text-slate-800 min-w-[160px] text-center capitalize">{etiqs}</span>
-            <button onClick={()=>setMes(nextMes(mes))} className="p-2 rounded-lg hover:bg-gray-100 border border-slate-200">
-              <ChevronRight size={15} className="text-slate-600"/>
-            </button>
-            <button onClick={imprimir}
-              className="ml-4 flex items-center gap-2 border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50">
-              <Printer size={14}/> Imprimir / PDF
-            </button>
-          </div>
+    <Modulo
+      seccion="Impuestos"
+      titulo="Declaración D-104"
+      descripcion="IVA del mes calculado desde tus facturas y compras, listo para pasar a Hacienda."
+      acciones={<>
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Mes anterior" onClick={()=>setMes(prevMes(mes))}/>
+          <span className="text-sm font-bold min-w-[140px] text-center capitalize">{etiqs}</span>
+          <BotonIcono icono={ChevronRight} titulo="Mes siguiente" onClick={()=>setMes(nextMes(mes))}/>
         </div>
-      </div>
-
-      <div className="px-8 py-6 space-y-6 max-w-4xl">
-        {/* Info */}
-        <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
+        <Boton variante="secundario" icono={Printer} onClick={imprimir}>Imprimir / PDF</Boton>
+      </>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Facturas emitidas" valor={facMes.length} icono={FileText} delay={40}/>
+          <Indicador etiqueta="IVA devengado" valor={fmtMoney(totalIvaDev,"CRC")} detalle="Por ventas" icono={Receipt} delay={90}/>
+          <Indicador etiqueta="Crédito fiscal" valor={fmtMoney(creditoFiscal,"CRC")} detalle="Por compras" icono={ShoppingCart} delay={140}/>
+          <Indicador etiqueta={saldo>0 ? "A pagar" : "A favor"} valor={fmtMoney(Math.abs(saldo),"CRC")} destacado={saldo<=0} alerta={saldo>0} delay={190}/>
+        </Indicadores>
+      }
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-3 max-w-5xl">
+        <div className="flex items-start gap-3 bg-monki-y/40 border-2 border-monki-y rounded-2xl px-4 py-3 text-sm text-monki-k">
           <Info size={16} className="shrink-0 mt-0.5"/>
-          <span>Los datos se calculan automáticamente desde tus facturas y compras del período. Verificá los montos antes de declarar en <strong>Hacienda ATV → D-104</strong>.</span>
+          <span>Se calcula solo con tus facturas y compras del mes. Revisá los montos antes de declarar en <b>Hacienda ATV → D-104</b>.</span>
         </div>
 
-        {/* Resumen rápido */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            ["Facturas emitidas",     facMes.length,                ""],
-            ["IVA devengado (ventas)", fmtMoney(totalIvaDev,"CRC"), "text-slate-900 font-black"],
-            ["Crédito fiscal (compras)", fmtMoney(creditoFiscal,"CRC"), "text-yellow-700"],
-          ].map(([lbl,val,cls])=>(
-            <div key={lbl} className="bg-white border border-slate-200 rounded-xl p-5">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase">{lbl}</p>
-              <p className={`text-xl font-bold mt-1 ${cls}`}>{val}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* IVA por tarifa */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="font-semibold text-slate-900">IVA devengado — desglose por tarifa</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{facMes.length} facturas emitidas en {etiqs}</p>
-          </div>
-          <table className="table-base">
-            <thead>
-              <tr>
-                <th>Tarifa</th>
-                <th className="text-right">Base imponible</th>
-                <th className="text-right">IVA devengado</th>
-              </tr>
-            </thead>
+        <Tarjeta titulo="IVA devengado por tarifa" acciones={<span className="font-mono text-[11px] text-monki-k/45">{facMes.length} facturas</span>} className="overflow-hidden">
+          <table className="ui-tabla w-full text-sm">
+            <thead><tr><th className={TH+" text-left"}>Tarifa</th><th className={TH+" text-right"}>Base imponible</th><th className={TH+" text-right"}>IVA devengado</th></tr></thead>
             <tbody>
               {Object.entries(ivaVentasMap).length === 0 && ivaDirecto === 0 ? (
-                <tr><td colSpan={3} className="text-center py-8 text-slate-400">Sin facturas en {etiqs}</td></tr>
+                <tr><td colSpan={3} className="text-center py-10 text-monki-k/40">Sin facturas en {etiqs}</td></tr>
               ) : (
                 <>
                   {Object.entries(ivaVentasMap).map(([pct,v]) => (
-                    <tr key={pct}>
-                      <td className="text-slate-700">Tarifa {pct}%</td>
-                      <td className="text-right">{fmtMoney(v.base,"CRC")}</td>
-                      <td className="text-right font-semibold">{fmtMoney(v.iva,"CRC")}</td>
+                    <tr key={pct} className="hover:bg-monki-cream/60 transition-colors">
+                      <td className={TD}><span className="font-mono text-xs bg-monki-cream px-2 py-0.5 rounded-md">{pct}%</span></td>
+                      <td className={TD+" text-right tabular-nums"}>{fmtMoney(v.base,"CRC")}</td>
+                      <td className={TD+" text-right font-bold tabular-nums"}>{fmtMoney(v.iva,"CRC")}</td>
                     </tr>
                   ))}
                   {ivaDirecto > 0 && (
-                    <tr>
-                      <td className="text-slate-500 italic">Facturas sin desglose de líneas</td>
-                      <td className="text-right text-slate-400">—</td>
-                      <td className="text-right font-semibold">{fmtMoney(ivaDirecto,"CRC")}</td>
-                    </tr>
+                    <tr><td className={TD+" text-monki-k/55 italic"}>Facturas sin desglose de líneas</td><td className={TD+" text-right text-monki-k/35"}>—</td><td className={TD+" text-right font-bold"}>{fmtMoney(ivaDirecto,"CRC")}</td></tr>
                   )}
-                  <tr className="bg-slate-50 font-bold border-t-2 border-slate-200">
-                    <td>Total base imponible</td>
-                    <td className="text-right">{fmtMoney(totalBaseVentas,"CRC")}</td>
-                    <td className="text-right text-slate-900">{fmtMoney(totalIvaDev,"CRC")}</td>
+                  <tr className="bg-monki-k text-white font-black">
+                    <td className="px-4 py-3 monki-tag text-monki-y">Total</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(totalBaseVentas,"CRC")}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-monki-y">{fmtMoney(totalIvaDev,"CRC")}</td>
                   </tr>
                 </>
               )}
             </tbody>
           </table>
-        </div>
+        </Tarjeta>
 
-        {/* Crédito fiscal */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h3 className="font-semibold text-slate-900">Crédito fiscal — compras del período</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{compMes.length} facturas de proveedor en {etiqs}</p>
-          </div>
-          <table className="table-base">
-            <thead>
-              <tr><th>Proveedor</th><th>Fecha</th><th className="text-right">Subtotal</th><th className="text-right">IVA pagado</th></tr>
-            </thead>
+        <Tarjeta titulo="Crédito fiscal de compras" acciones={<span className="font-mono text-[11px] text-monki-k/45">{compMes.length} compras</span>} className="overflow-hidden">
+          <table className="ui-tabla w-full text-sm">
+            <thead><tr><th className={TH+" text-left"}>Proveedor</th><th className={TH+" text-left"}>Fecha</th><th className={TH+" text-right"}>Subtotal</th><th className={TH+" text-right"}>IVA pagado</th></tr></thead>
             <tbody>
               {compMes.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-8 text-slate-400">Sin compras registradas en {etiqs}</td></tr>
+                <tr><td colSpan={4} className="text-center py-10 text-monki-k/40">Sin compras registradas en {etiqs}</td></tr>
               ) : compMes.map(c=>(
-                <tr key={c.id}>
-                  <td className="font-semibold text-slate-900">{c.proveedor||c.nombre||"—"}</td>
-                  <td className="text-slate-500">{fmtDate(c.fecha)}</td>
-                  <td className="text-right">{fmtMoney(parseFloat(c.subtotal||0),"CRC")}</td>
-                  <td className="text-right font-semibold text-yellow-700">{fmtMoney(parseFloat(c.montoImpuesto||c.ivaTotal||0),"CRC")}</td>
+                <tr key={c.id} className="hover:bg-monki-cream/60 transition-colors">
+                  <td className={TD+" font-bold text-monki-k"}>{c.proveedor||c.nombre||"—"}</td>
+                  <td className={TD+" text-monki-k/55"}>{fmtDate(c.fecha)}</td>
+                  <td className={TD+" text-right tabular-nums"}>{fmtMoney(parseFloat(c.subtotal||0),"CRC")}</td>
+                  <td className={TD+" text-right font-bold tabular-nums"}>{fmtMoney(parseFloat(c.montoImpuesto||c.ivaTotal||0),"CRC")}</td>
                 </tr>
               ))}
               {compMes.length>0 && (
-                <tr className="bg-green-50 font-bold border-t-2 border-yellow-300">
-                  <td colSpan={3} className="text-green-800">Total crédito fiscal</td>
-                  <td className="text-right text-green-800">{fmtMoney(creditoFiscal,"CRC")}</td>
+                <tr className="bg-monki-y font-black">
+                  <td colSpan={3} className="px-4 py-3 monki-tag">Total crédito fiscal</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{fmtMoney(creditoFiscal,"CRC")}</td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
+        </Tarjeta>
 
-        {/* Resultado D-104 */}
-        <div className={`rounded-xl p-6 border-2 ${saldo>0 ? "border-red-300 bg-red-50" : "border-yellow-300 bg-green-50"}`}>
-          <div className="flex items-center gap-3">
-            {saldo > 0
-              ? <AlertTriangle size={24} className="text-red-600 shrink-0"/>
-              : <CheckCircle size={24} className="text-yellow-600 shrink-0"/>}
-            <div>
-              <p className={`text-lg font-black ${saldo>0?"text-red-700":"text-yellow-700"}`}>
-                {saldo > 0
-                  ? `Impuesto a pagar: ${fmtMoney(saldo,"CRC")}`
-                  : saldo < 0
-                    ? `Saldo a favor: ${fmtMoney(Math.abs(saldo),"CRC")}`
-                    : "Sin impuesto a pagar este período"}
-              </p>
-              <p className={`text-sm mt-0.5 ${saldo>0?"text-red-600":"text-yellow-600"}`}>
-                IVA devengado ({fmtMoney(totalIvaDev,"CRC")}) − Crédito fiscal ({fmtMoney(creditoFiscal,"CRC")})
-              </p>
-            </div>
+        <div className={`animate-entrar rounded-[18px] p-5 border-2 flex items-center gap-4 ${saldo>0 ? "border-red-600 bg-red-600 text-white" : "border-monki-k bg-monki-k text-white shadow-[6px_6px_0_#FFD600]"}`}>
+          <span className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${saldo>0?"bg-white text-red-600":"bg-monki-y text-monki-k"}`}>
+            {saldo > 0 ? <AlertTriangle size={22}/> : <CheckCircle size={22}/>}
+          </span>
+          <div>
+            <p className={`text-[22px] font-black tracking-[-0.03em] ${saldo>0?"":"text-monki-y"}`}>
+              {saldo > 0
+                ? `Impuesto a pagar: ${fmtMoney(saldo,"CRC")}`
+                : saldo < 0
+                  ? `Saldo a favor: ${fmtMoney(Math.abs(saldo),"CRC")}`
+                  : "Sin impuesto a pagar este período"}
+            </p>
+            <p className="text-sm text-white/70 mt-0.5">
+              IVA devengado ({fmtMoney(totalIvaDev,"CRC")}) − crédito fiscal ({fmtMoney(creditoFiscal,"CRC")})
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </Modulo>
   );
 }
