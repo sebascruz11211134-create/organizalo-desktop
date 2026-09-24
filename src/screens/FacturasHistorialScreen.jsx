@@ -2,7 +2,8 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, Loader2 } from "lucide-react";
+import { FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, AlertTriangle } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Selector, Vacio, Estado, Indicadores, Indicador, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate } from "../utils/fmt";
@@ -12,84 +13,68 @@ import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
 import { useCurrency } from "../contexts/CurrencyContext";
 
 const ESTADOS = {
-  aceptada: { label: "Aceptada", cls: "bg-green-100 text-green-800", icon: CheckCircle },
-  guardada: { label: "Borrador",  cls: "bg-gray-100 text-slate-600",   icon: FileText },
-  pendiente: { label: "Pendiente", cls: "bg-yellow-100 text-yellow-700", icon: Clock },
-  rechazada: { label: "Rechazada", cls: "bg-red-100 text-red-700",    icon: XCircle },
-  anulada:   { label: "Anulada",   cls: "bg-slate-100 text-slate-500", icon: Ban },
+  aceptada: { label: "Aceptada", tono: "exito", icon: CheckCircle },
+  guardada: { label: "Borrador",  tono: "neutro", icon: FileText },
+  pendiente: { label: "Pendiente", tono: "alerta", icon: Clock },
+  rechazada: { label: "Rechazada", tono: "peligro", icon: XCircle },
+  anulada:   { label: "Anulada",   tono: "neutro", icon: Ban },
   // Estados que devuelve el backend al emitir
-  enviado:        { label: "Enviada",        cls: "bg-green-100 text-green-800",  icon: CheckCircle },
-  aceptado:       { label: "Aceptada",       cls: "bg-green-100 text-green-800",  icon: CheckCircle },
-  simulado:       { label: "Simulada",       cls: "bg-blue-100 text-blue-700",    icon: CheckCircle },
-  rechazado:      { label: "Rechazada",      cls: "bg-red-100 text-red-700",      icon: XCircle },
-  error_firma:    { label: "Sin firmar",     cls: "bg-red-100 text-red-700",      icon: XCircle },
-  error_envio:    { label: "Envío rechazado", cls: "bg-red-100 text-red-700",     icon: XCircle },
-  envio_incierto: { label: "Sin confirmar",  cls: "bg-yellow-100 text-yellow-700", icon: Clock },
-  sin_conexion:   { label: "Sin conexión",   cls: "bg-yellow-100 text-yellow-700", icon: Clock },
+  enviado:        { label: "Enviada",        tono: "exito", icon: CheckCircle },
+  aceptado:       { label: "Aceptada",       tono: "exito", icon: CheckCircle },
+  simulado:       { label: "Simulada",       tono: "oscuro", icon: CheckCircle },
+  rechazado:      { label: "Rechazada",      tono: "peligro", icon: XCircle },
+  error_firma:    { label: "Sin firmar",     tono: "peligro", icon: XCircle },
+  error_envio:    { label: "Envío rechazado", tono: "peligro", icon: XCircle },
+  envio_incierto: { label: "Sin confirmar",  tono: "alerta", icon: Clock },
+  sin_conexion:   { label: "Sin conexión",   tono: "alerta", icon: Clock },
 };
 
 function DetalleFact({ f, moneda, recibos = [] }) {
   const recibosVinculados = recibos.filter(r => r.facturaId === f.id && r.estado !== "anulado");
+  const TH = "monki-tag text-[10px] text-monki-k/45 font-medium pb-1.5";
   return (
-    <div className="bg-gray-50 px-8 py-4">
-      {/* Líneas */}
+    <div className="animate-desplegar bg-monki-cream/70 px-6 py-4 space-y-3">
       {(f.lineas || []).length > 0 && (
-        <>
-          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Líneas de factura</p>
-          <table className="w-full text-xs mb-4">
-            <thead><tr className="text-slate-400">
-              <th className="text-left pb-1">Descripción</th>
-              <th className="text-center pb-1">Cant.</th>
-              <th className="text-right pb-1">P. Unit.</th>
-              <th className="text-right pb-1">IVA</th>
-              <th className="text-right pb-1">Total</th>
+        <div className="bg-white rounded-2xl p-3">
+          <p className="monki-tag text-monki-k/55 mb-2">Líneas de la factura</p>
+          <table className="ui-tabla w-full text-sm">
+            <thead><tr>
+              <th className={TH+" text-left"}>Descripción</th><th className={TH+" text-center"}>Cant.</th>
+              <th className={TH+" text-right"}>P. unit.</th><th className={TH+" text-right"}>IVA</th><th className={TH+" text-right"}>Total</th>
             </tr></thead>
             <tbody>
               {f.lineas.map((l, i) => (
-                <tr key={i}>
-                  <td className="py-0.5">{l.descripcion}</td>
-                  <td className="py-0.5 text-center">{l.cantidad} {l.unidad}</td>
-                  <td className="py-0.5 text-right">{fmtMoney(l.precioUnit, moneda)}</td>
-                  <td className="py-0.5 text-right text-slate-400">{l.pctIVA}%</td>
-                  <td className="py-0.5 text-right font-bold text-yellow-700">{fmtMoney(l.total, moneda)}</td>
+                <tr key={i} className="border-t border-black/5">
+                  <td className="py-1.5">{l.descripcion}</td>
+                  <td className="py-1.5 text-center">{l.cantidad} {l.unidad}</td>
+                  <td className="py-1.5 text-right tabular-nums">{fmtMoney(l.precioUnit, moneda)}</td>
+                  <td className="py-1.5 text-right text-monki-k/45">{l.pctIVA}%</td>
+                  <td className="py-1.5 text-right font-bold tabular-nums">{fmtMoney(l.total, moneda)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </>
+        </div>
       )}
-      {/* Totales */}
-      <div className="flex gap-6 text-xs text-slate-500">
-        <span>Subtotal: <strong>{fmtMoney(f.subtotal, f.moneda)}</strong></span>
-        {(f.totalDescuento || 0) > 0 && <span className="text-red-500">Desc: −{fmtMoney(f.totalDescuento, f.moneda)}</span>}
-        <span>IVA: <strong>{fmtMoney(f.totalIVA, f.moneda)}</strong></span>
+      <div className="flex flex-wrap gap-2 text-sm">
+        <span className="bg-white rounded-full px-3 py-1">Subtotal <b>{fmtMoney(f.subtotal, f.moneda)}</b></span>
+        {(f.totalDescuento || 0) > 0 && <span className="bg-white rounded-full px-3 py-1 text-red-600">Descuento −{fmtMoney(f.totalDescuento, f.moneda)}</span>}
+        <span className="bg-white rounded-full px-3 py-1">IVA <b>{fmtMoney(f.totalIVA, f.moneda)}</b></span>
+        <span className="bg-monki-k text-monki-y rounded-full px-3 py-1 font-black">Total {fmtMoney(f.total, f.moneda)}</span>
       </div>
-      {f.notas && <p className="mt-2 text-xs text-slate-400 italic">{f.notas}</p>}
-      {f.haciendaRes && (
-        <p className="mt-2 text-xs text-slate-400">Hacienda: {JSON.stringify(f.haciendaRes).slice(0, 120)}</p>
-      )}
-      {/* Recibos vinculados a esta factura */}
+      {f.notas && <p className="text-xs text-monki-k/50 italic">{f.notas}</p>}
+      {f.haciendaRes && <p className="font-mono text-[10px] text-monki-k/40 break-all">Hacienda: {JSON.stringify(f.haciendaRes).slice(0, 160)}</p>}
       {recibosVinculados.length > 0 && (
-        <div className="mt-4 border-t border-slate-200 pt-3">
-          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Recibos de pago vinculados</p>
-          <table className="w-full text-xs">
-            <thead><tr className="text-slate-400">
-              <th className="text-left pb-1">N° Recibo</th>
-              <th className="text-left pb-1">Fecha</th>
-              <th className="text-left pb-1">Método</th>
-              <th className="text-right pb-1">Monto</th>
-            </tr></thead>
-            <tbody>
-              {recibosVinculados.map(r => (
-                <tr key={r.id} className="border-t border-slate-100">
-                  <td className="py-1 font-mono font-bold text-yellow-700">#{r.numero}</td>
-                  <td className="py-1 text-slate-500">{r.fecha}</td>
-                  <td className="py-1 text-slate-500">{r.metodoPago}</td>
-                  <td className="py-1 text-right font-bold text-yellow-700">{fmtMoney(r.monto, r.moneda || moneda)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white rounded-2xl p-3">
+          <p className="monki-tag text-monki-k/55 mb-2">Recibos de pago vinculados</p>
+          {recibosVinculados.map(r => (
+            <div key={r.id} className="flex flex-wrap items-center gap-3 text-sm py-1 border-t border-black/5 first:border-0">
+              <span className="font-mono font-bold text-xs">#{r.numero}</span>
+              <span className="text-monki-k/50">{r.fecha}</span>
+              <span className="text-monki-k/50">{r.metodoPago}</span>
+              <b className="ml-auto">{fmtMoney(r.monto, r.moneda || moneda)}</b>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -111,8 +96,9 @@ export default function FacturasHistorialScreen() {
     setRecibos(r || []);
   }, []);
 
+  const { confirmar, dialogo } = useConfirmar();
   const anular = async (f) => {
-    if (!confirm(`¿Anular la factura ${f.numero}? Quedará marcada como anulada.`)) return;
+    if (!(await confirmar("Anular factura", `¿Anular la factura ${f.numero}? Quedará marcada como anulada.`, { peligro: true, boton: "Anular" }))) return;
     const todas = await db.getFacturas();
     await db.setFacturas(todas.map((x) => x.id === f.id ? { ...x, estado: "anulada" } : x));
     cargar();
@@ -145,7 +131,7 @@ export default function FacturasHistorialScreen() {
   };
 
   const eliminar = async (f) => {
-    if (!confirm(`¿Eliminar definitivamente la factura ${f.numero}? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar factura", `¿Eliminar definitivamente la factura ${f.numero}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todas = await db.getFacturas();
     await db.setFacturas(todas.filter((x) => x.id !== f.id));
     if (selected === f.id) setSelected(null);
@@ -165,122 +151,86 @@ export default function FacturasHistorialScreen() {
   const totUSD = visibles.filter(f=>f.moneda==="USD").reduce((s,f)=>s+(f.total||0),0);
   const sel = visibles.find((f) => f.id === selected);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar principal */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        {/* Anular — outline ámbar: acción reversible (la factura queda, solo se marca) */}
-        <button
-          disabled={!sel || sel.estado === "anulada"}
-          onClick={() => sel && anular(sel)}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Ban size={13} /> Anular
-        </button>
-        <button
-          disabled={!(facturaReintentable(sel) || efectosPendientes(sel)) || reintentando}
-          onClick={() => sel && reintentar(sel)}
-          title={sel?.error || (facturaReintentable(sel) ? "Retomar el envío a Hacienda con la misma clave" : "Completar inventario, CxC y asiento pendientes")}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          {reintentando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-          {sel && !facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
-        </button>
-        {/* Eliminar — sólido rojo: acción permanente e irreversible */}
-        <button
-          disabled={!sel}
-          onClick={() => sel && eliminar(sel)}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13} /> Eliminar
-        </button>
-        <div className="flex-1" />
-        <select value={filtroEst} onChange={(e) => setFiltroEst(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
-          <option value="todos">Todos los estados</option>
-          <option value="aceptada">Aceptadas</option>
-          <option value="pendiente">Pendientes</option>
-          <option value="guardada">Borradores</option>
-          <option value="rechazada">Rechazadas</option>
-          <option value="envio_incierto">Sin confirmar</option>
-          <option value="error_envio">Envío rechazado</option>
-          <option value="error_firma">Sin firmar</option>
-          <option value="sin_conexion">Sin conexión</option>
-        </select>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400" />
-        </div>
-      </div>
+  const conProblema = facturas.filter(f => facturaReintentable(f) || efectosPendientes(f)).length;
+  const FILTROS = [
+    { value: "todos", label: "Todos los estados" }, { value: "aceptada", label: "Aceptadas" }, { value: "pendiente", label: "Pendientes" },
+    { value: "guardada", label: "Borradores" }, { value: "rechazada", label: "Rechazadas" }, { value: "envio_incierto", label: "Sin confirmar" },
+    { value: "error_envio", label: "Envío rechazado" }, { value: "error_firma", label: "Sin firmar" }, { value: "sin_conexion", label: "Sin conexión" },
+  ];
+  const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 text-left whitespace-nowrap";
 
-      {/* Barra de registro seleccionado */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
-          <span className="text-blue-700 font-semibold">Seleccionada:</span>
-          <span className="font-bold text-slate-800">{sel.numero}</span>
-          <span className="text-slate-500">{sel.cliente?.nombre || "Consumidor Final"}</span>
-          <span className="font-bold text-yellow-700">{fmtMoney(sel.total, sel.moneda)}</span>
-          {sel.estado === "anulada" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulada</span>}
-          {sel.error && <span className="text-red-600 truncate max-w-md" title={sel.error}>{sel.error}</span>}
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-yellow-300 text-xs text-slate-500">
-          {totCRC > 0 && <span>CRC: <strong className="text-green-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
-          {totUSD > 0 && <span>USD: <strong className="text-green-800">{fmtMoney(totUSD,"USD")}</strong></span>}
-          <span className="ml-auto">{visibles.length} factura{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
+  return (
+    <Modulo
+      seccion="Facturación"
+      titulo="Historial de facturas"
+      descripcion="Todo lo emitido. Tocá una factura para ver su detalle, reintentar el envío o anularla."
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Facturas" valor={visibles.length} detalle={filtroEst === "todos" ? "En total" : "Con el filtro"} icono={FileText} delay={40}/>
+          <Indicador etiqueta="Total CRC" valor={fmtMoney(totCRC,"CRC")} destacado delay={90}/>
+          <Indicador etiqueta="Total USD" valor={fmtMoney(totUSD,"USD")} delay={140}/>
+          <Indicador etiqueta="Por resolver" valor={conProblema} detalle={conProblema ? "Envío o registro pendiente" : "Todo al día"} icono={AlertTriangle} alerta={conProblema>0} delay={190}/>
+        </Indicadores>
+      }
+    >
+      <BarraFiltros resumen={`${visibles.length} factura${visibles.length!==1?"s":""}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por número o cliente…"/>
+        <Selector valor={filtroEst} onCambio={setFiltroEst} opciones={FILTROS}/>
+      </BarraFiltros>
+
+      {sel && (
+        <div className="animate-desplegar mb-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.numero}</b><span className="text-white/60">{sel.cliente?.nombre || "Consumidor Final"}</span>
+          <b className="text-monki-y">{fmtMoney(sel.total, sel.moneda)}</b>
+          {sel.error && <span className="text-red-300 text-xs truncate max-w-md" title={sel.error}>{sel.error}</span>}
+          <div className="flex-1"/>
+          <Boton variante="amarillo" tamano="sm" icono={Send} cargando={reintentando}
+            disabled={!(facturaReintentable(sel) || efectosPendientes(sel)) || reintentando}
+            title={sel?.error || (facturaReintentable(sel) ? "Retomar el envío a Hacienda con la misma clave" : "Completar inventario, CxC y asiento pendientes")}
+            onClick={() => reintentar(sel)}>
+            {!facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
+          </Boton>
+          <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={() => anular(sel)}>Anular</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>N°</th>
-              <th>Tipo</th>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Cédula</th>
-              <th>Moneda</th>
-              <th>Total</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin facturas emitidas</td></tr>
-            ) : visibles.map((f) => {
-              const est       = ESTADOS[f.estado] || ESTADOS.pendiente;
-              const isSel     = selected === f.id;
-              const Icon      = est.icon;
-              const esAnulada = f.estado === "anulada";
-              return (
-                <React.Fragment key={f.id}>
-                  <tr
-                    className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
-                    onClick={() => setSelected(isSel ? null : f.id)}
-                  >
-                    <td className={`font-mono text-xs font-bold ${esAnulada ? "line-through text-slate-400" : "text-yellow-700"}`}>{f.numero}</td>
-                    <td className="text-slate-400 text-xs">{f.tipoDoc || "01"}</td>
-                    <td className="text-slate-500"><div>{fmtDate(f.fecha)}</div>{f.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {f.creadoPor}</div>}</td>
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}>{f.cliente?.nombre || "—"}</td>
-                    <td className="text-slate-400 text-xs font-mono">{f.cliente?.cedula || "—"}</td>
-                    <td className="text-slate-500">{f.moneda}</td>
-                    <td className={`font-bold ${esAnulada ? "line-through text-slate-400" : "text-yellow-700"}`}>{fmtMoney(f.total, f.moneda)}</td>
-                    <td>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>
-                        <Icon size={10} /> {est.label}
-                      </span>
-                    </td>
-                  </tr>
-                  {isSel && (
-                    <tr><td colSpan={8} className="p-0"><DetalleFact f={f} moneda={f.moneda} recibos={recibos} /></td></tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <table className="ui-tabla w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr>{["N.°","Tipo","Fecha","Cliente","Cédula","Moneda","Total","Estado"].map(t => <th key={t} className={TH + (t==="Total" ? " !text-right" : "")}>{t}</th>)}</tr>
+            </thead>
+            <tbody>
+              {visibles.length === 0 ? (
+                <tr><td colSpan={8}><Vacio icono={FileText} titulo="Sin facturas emitidas" texto={facturas.length ? "Probá con otra búsqueda o estado." : "Las facturas que emitas aparecen acá."}/></td></tr>
+              ) : visibles.map((f) => {
+                const est       = ESTADOS[f.estado] || ESTADOS.pendiente;
+                const isSel     = selected === f.id;
+                const esAnulada = f.estado === "anulada";
+                return (
+                  <React.Fragment key={f.id}>
+                    <tr onClick={() => setSelected(isSel ? null : f.id)}
+                      className={`ui-fila animate-desplegar cursor-pointer border-b border-black/5 transition-colors ${isSel ? "bg-[#FFF4B8]" : esAnulada ? "opacity-50 hover:bg-monki-cream/60" : "hover:bg-monki-cream/60"}`}>
+                      <td className={`px-4 py-2.5 font-mono text-xs font-bold ${esAnulada ? "line-through text-monki-k/35" : ""}`}>{f.numero}</td>
+                      <td className="px-4 py-2.5"><span className="font-mono text-[11px] bg-monki-cream px-1.5 py-0.5 rounded-md">{f.tipoDoc === "04" ? "Tiquete" : "Factura"}</span></td>
+                      <td className="px-4 py-2.5"><div>{fmtDate(f.fecha)}</div>{f.creadoPor && <div className="text-[10px] text-monki-k/45">Por {f.creadoPor}</div>}</td>
+                      <td className={`px-4 py-2.5 font-bold ${esAnulada ? "line-through text-monki-k/35" : "text-monki-k"}`}>{f.cliente?.nombre || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-monki-k/50">{f.cliente?.cedula || "—"}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-monki-k/55">{f.moneda}</td>
+                      <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${esAnulada ? "line-through text-monki-k/35" : ""}`}>{fmtMoney(f.total, f.moneda)}</td>
+                      <td className="px-4 py-2.5"><Estado tono={est.tono}>{est.label}</Estado></td>
+                    </tr>
+                    {isSel && <tr><td colSpan={8} className="p-0"><DetalleFact f={f} moneda={f.moneda} recibos={recibos} /></td></tr>}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
