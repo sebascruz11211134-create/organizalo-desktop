@@ -5,8 +5,13 @@
 /* ── Variables de marca ────────────────────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --brand:        #FACC15;
-  --brand-hover:  #EAB308;
+  --brand:        #FFD600;
+  --brand-hover:  #F0C800;
+  /* Monki (igual que la web): amarillo + negro, crema de apoyo */
+  --monki-y:      #FFD600;
+  --monki-k:      #111111;
+  --monki-cream:  #F4F1E6;
+  --monki-ease:   cubic-bezier(.2,.8,.2,1);
   --brand-light:  #FEF9C3;
   --brand-dark:   #A16207;
   --danger:       #ef4444;
@@ -16,11 +21,11 @@
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
-html { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html { font-family: "Archivo", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
 /* ── Selección ─────────────────────────────────────────────────────────────── */
-::selection { background: #FEF08A; color: #713F12; }
+::selection { background: #111111; color: #FFD600; }
 
 /* ── Drag region macOS ─────────────────────────────────────────────────────── */
 .drag-region { -webkit-app-region: drag; }
@@ -30,12 +35,12 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #FACC15; }
+::-webkit-scrollbar-thumb:hover { background: #FFD600; }
 
 /* ── Animaciones ───────────────────────────────────────────────────────────── */
 @keyframes fadeIn  { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
-.fade-in  { animation: fadeIn  0.12s ease; }
+.fade-in  { animation: fadeIn  0.35s cubic-bezier(.2,.8,.2,1); }
 .slide-in { animation: slideIn 0.12s ease; }
 
 /* ── Tabla base ─────────────────────────────────────────────────────────────  */
@@ -282,3 +287,119 @@ a:focus-visible {
 }
 .login-screen .login-btn-primary:hover  { background-color: #fde047 !important; }
 .login-screen .login-btn-primary:active { background-color: #eab308 !important; }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ESTILO MONKI — mismo lenguaje visual que la web (amarillo #FFD600 + negro
+   #111, Archivo, píldoras, sombra sólida desplazada, curva .2,.8,.2,1).
+   Se aplica a todas las pantallas sin tocarlas una por una.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+h1, h2, h3 { letter-spacing: -0.02em; }
+h1, h2 { font-weight: 800; }
+
+/* Fondo general crema (las tarjetas blancas resaltan encima) */
+.bg-monki-app { background: var(--monki-cream); }
+
+/* Botones de acción primaria (antes amarillo mostaza): negro con texto amarillo,
+   se levantan con la sombra amarilla desplazada como en la web. */
+button.bg-yellow-600, button.bg-yellow-700, a.bg-yellow-600, a.bg-yellow-700,
+button.bg-yellow-500, a.bg-yellow-500 {
+  background-color: var(--monki-k) !important;
+  color: var(--monki-y) !important;
+  border-radius: 999px !important;
+  font-weight: 700;
+  transition: transform .25s var(--monki-ease), box-shadow .25s var(--monki-ease), opacity .2s !important;
+}
+button.bg-yellow-600:not(:disabled):hover, button.bg-yellow-700:not(:disabled):hover,
+a.bg-yellow-600:hover, a.bg-yellow-700:hover, button.bg-yellow-500:not(:disabled):hover, a.bg-yellow-500:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--monki-y);
+}
+button.bg-yellow-600:not(:disabled):active, button.bg-yellow-700:not(:disabled):active,
+button.bg-yellow-500:not(:disabled):active { transform: translate(0, 0); box-shadow: none; }
+
+/* Barras de herramientas: negro Monki */
+div.bg-slate-700 {
+  background-color: var(--monki-k) !important;
+  border-color: rgba(255,255,255,.06) !important;
+}
+/* Dentro de lo negro el botón primario se invierte (como el CTA de la web) */
+div.bg-slate-700 button.bg-yellow-600, div.bg-slate-700 button.bg-yellow-700, div.bg-slate-700 button.bg-yellow-500 {
+  background-color: var(--monki-y) !important;
+  color: var(--monki-k) !important;
+}
+div.bg-slate-700 button.bg-yellow-600:not(:disabled):hover, div.bg-slate-700 button.bg-yellow-700:not(:disabled):hover,
+div.bg-slate-700 button.bg-yellow-500:not(:disabled):hover { box-shadow: 4px 4px 0 rgba(255,255,255,.9); }
+div.bg-slate-700 button { border-radius: 999px !important; transition: transform .2s var(--monki-ease), background-color .2s, box-shadow .2s; }
+div.bg-slate-700 button:not(:disabled):hover { transform: translateY(-1px); }
+div.bg-slate-700 .bg-slate-600 { background-color: var(--monki-k3, #2a2a2a) !important; }
+
+/* Tarjetas: más redondas y con elevación suave al pasar el mouse */
+.bg-white.rounded-xl, .bg-white.rounded-2xl {
+  border-radius: 18px;
+  transition: box-shadow .35s var(--monki-ease), transform .35s var(--monki-ease), border-color .35s;
+}
+.bg-white.rounded-xl.border:hover, .bg-white.rounded-2xl.border:hover {
+  box-shadow: 0 14px 34px -12px rgba(17,17,17,.18);
+  border-color: rgba(17,17,17,.18);
+}
+
+/* Campos: foco amarillo Monki */
+input:not([type=checkbox]):not([type=radio]):focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--monki-k) !important;
+  box-shadow: 0 0 0 3px rgba(255,214,0,.55) !important;
+}
+input[type=checkbox], input[type=radio] { accent-color: var(--monki-k); }
+
+/* Etiquetas estilo web: mono en mayúsculas */
+.monki-tag { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+.monki-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  background: var(--monki-k); color: var(--monki-y); padding: 6px 12px; border-radius: 999px;
+}
+.monki-pulse { width: 8px; height: 8px; border-radius: 50%; background: #35e06b; animation: pulso 1.6s infinite; }
+@keyframes pulso { 0% { box-shadow: 0 0 0 0 rgba(53,224,107,.6) } 70% { box-shadow: 0 0 0 8px rgba(53,224,107,0) } 100% { box-shadow: 0 0 0 0 rgba(53,224,107,0) } }
+.monki-grid-bg {
+  background-image: linear-gradient(rgba(0,0,0,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 75% 40%, #000 15%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 75% 40%, #000 15%, transparent 70%);
+}
+/* Subrayado amarillo animado (como .mark de la web) */
+.monki-mark { background: linear-gradient(transparent 58%, var(--monki-y) 58%); background-repeat: no-repeat; background-size: 0% 100%; animation: marcar 1s var(--monki-ease) .3s forwards; }
+@keyframes marcar { to { background-size: 100% 100%; } }
+
+/* Entrada de cada pantalla al navegar */
+.monki-pantalla { animation: entrar .45s var(--monki-ease) both; }
+@keyframes entrar { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Respeta a quien prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Login (fondo negro): el foco se marca en amarillo, no en negro */
+.login-screen input:not([type=checkbox]):not([type=radio]):focus {
+  border-color: var(--monki-y) !important;
+  box-shadow: 0 0 0 3px rgba(255,214,0,.35) !important;
+}
+
+/* Selección de filas y barra "Seleccionada": amarillo Monki (antes azul, fuera de marca) */
+tr.bg-blue-100, tr.bg-blue-50 { background-color: #FFF4B8 !important; }
+tr.border-blue-500 { border-left-color: var(--monki-k) !important; }
+div.bg-blue-50.border-blue-200, div.bg-blue-50.border-b {
+  background-color: #FFF8D6 !important;
+  border-color: rgba(17,17,17,.12) !important;
+}
+div.bg-blue-50.border-blue-200 .text-blue-700, div.bg-blue-50.border-b .text-blue-700 { color: var(--monki-k) !important; }
+/* Botones azules: en barras negras, píldora clara; fuera de ellas, negro Monki */
+div.bg-slate-700 button.bg-blue-600, div.bg-slate-700 button.bg-blue-500, div.bg-slate-700 button.bg-blue-700 {
+  background-color: #FAFAF5 !important; color: var(--monki-k) !important;
+}
+button.bg-blue-600, button.bg-blue-500, button.bg-blue-700 {
+  background-color: var(--monki-k) !important; color: var(--monki-y) !important; border-radius: 999px !important;
+}

@@ -414,7 +414,7 @@ export default function App() {
   // ── App principal ──────────────────────────────────────────────────────────
   return (
     <CurrencyProvider>
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 font-sans">
+    <div className="flex flex-col h-screen overflow-hidden bg-monki-app font-sans">
       <TrialBanner plan={plan} />
 
       <div className="flex flex-1 overflow-hidden">
@@ -444,6 +444,7 @@ export default function App() {
           <main className="flex-1 overflow-auto pb-16 md:pb-0">
             <ScreenErrorBoundary>
             <Suspense fallback={<ScreenFallback />}>
+              <div key={location.pathname} className="monki-pantalla h-full">
               <Routes>
                 <Route path="/"                   element={<DashboardScreen />} />
                 <Route path="/facturacion"         element={<FacturacionScreen />} />
@@ -506,6 +507,7 @@ export default function App() {
                   <Route path="/admin"             element={<AdminScreen />} />
                 )}
               </Routes>
+              </div>
             </Suspense>
             </ScreenErrorBoundary>
           </main>

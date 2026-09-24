@@ -298,7 +298,7 @@ function RegisterForm({ onSuccess, onBack }) {
       <button
         type="submit"
         disabled={loading}
-        className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+        className="group w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold bg-monki-y text-monki-k transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FAFAF5] disabled:opacity-60 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-none"
       >
         {loading ? <><Loader2 size={15} className="animate-spin" /> {t("login.register.creating")}</> : <><ArrowRight size={15} /> {t("login.register.submit")}</>}
       </button>
@@ -383,13 +383,18 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div
       className="login-screen flex flex-col h-screen overflow-hidden font-sans select-none relative"
-      style={{ background: "linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%)" }}
+      style={{ background: "#111111" }}
     >
-      {/* Círculos decorativos */}
-      <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full pointer-events-none"
-        style={{ background: "rgba(250,204,21,0.08)" }} />
-      <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: "rgba(250,204,21,0.06)" }} />
+      {/* Fondo: cuadrícula y resplandor amarillo (como el hero de la web) */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
+        style={{
+          backgroundImage: "linear-gradient(rgba(255,214,0,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,214,0,.07) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+          maskImage: "radial-gradient(ellipse at 50% 35%, #000 10%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(ellipse at 50% 35%, #000 10%, transparent 70%)",
+        }} />
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[320px] rounded-full pointer-events-none blur-3xl"
+        style={{ background: "rgba(255,214,0,0.12)" }} aria-hidden="true" />
 
       {/* Drag region — espacio para semáforos macOS */}
       <div className="drag-region h-9 shrink-0" />
@@ -398,18 +403,18 @@ export default function LoginScreen({ onLogin }) {
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 pb-6 overflow-y-auto no-drag">
         {/* Logo */}
         <div className="flex flex-col items-center mb-7">
-          <div className="mb-3">
-            <img src="/MK_Logo2.png" alt="Monki.AI" style={{ width: 64, height: 64, objectFit: "contain" }} />
+          <div className="mb-4 animate-flotar">
+            <img src="/MK_Logo2.png" alt="Monki" className="drop-shadow-[5px_5px_0_rgba(255,214,0,0.35)]" style={{ width: 72, height: 72, objectFit: "contain" }} />
           </div>
-          <div className="flex items-baseline gap-0.5">
-            <span className="text-[22px] font-bold text-white tracking-tight leading-none">Monki</span>
-            <span className="text-[14px] font-bold leading-none" style={{ color: "#FACC15" }}>.AI</span>
+          {/* Letras que suben una por una, como el loader de la web */}
+          <div className="flex overflow-hidden text-[46px] font-black leading-none tracking-[-0.05em] text-monki-y" aria-label="Monki">
+            {["M", "O", "N", "K", "I"].map((l, i) => (
+              <span key={i} className="inline-block animate-letra" style={{ animationDelay: `${i * 60}ms` }}>{l}</span>
+            ))}
+            <span className="inline-block animate-letra text-white" style={{ animationDelay: "400ms" }}>.</span>
           </div>
-          <p className="text-[11px] text-white/80 mt-1 tracking-wide">{t("login.tagline")}</p>
+          <p className="monki-eyebrow mt-4 !bg-monki-y !text-monki-k"><span className="monki-pulse" /> {t("login.tagline")}</p>
         </div>
-
-        {/* Separador */}
-        <div className="w-full mb-6" style={{ height: 1, background: "rgba(255,255,255,0.2)" }} />
 
         {/* Formulario */}
         <div className="w-full max-w-[280px]">
@@ -448,9 +453,9 @@ export default function LoginScreen({ onLogin }) {
                     onChange={e => { setCustomId(e.target.value); setError(""); }}
                     placeholder={t("login.userPlaceholder")}
                     autoComplete="username"
-                    className="w-full px-3 py-2.5 rounded-xl border border-white/20 bg-white/10
-                      text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2
-                      focus:ring-white/30 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-2xl border border-white/15 bg-white/[0.06]
+                      text-sm text-white placeholder-white/40 focus:outline-none
+                      transition-colors hover:border-monki-y/50"
                   />
                 )}
               </div>
@@ -475,7 +480,7 @@ export default function LoginScreen({ onLogin }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="login-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60"
+                className="group w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold bg-monki-y text-monki-k transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FAFAF5] disabled:opacity-60 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-none"
               >
                 {loading
                   ? <><Loader2 size={15} className="animate-spin" /> {t("login.signingIn")}</>
@@ -504,7 +509,7 @@ export default function LoginScreen({ onLogin }) {
 
       {/* Footer */}
       <div className="relative z-10 no-drag flex items-center justify-center gap-3 pb-3 shrink-0">
-        <p className="text-[10px] text-white/55">Monki.AI · Costa Rica · v1.0</p>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-white/50">Monki · Hecho en Costa Rica 🐵</p>
         <div className="flex items-center gap-1 text-[10px] font-semibold">
           <button
             onClick={() => i18n.changeLanguage("es")}

@@ -45,24 +45,24 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
 
   return (
     <>
-      <header className="drag-region flex items-center justify-between h-11 px-4 bg-white border-b border-slate-200 shrink-0">
+      <header className="drag-region relative z-20 flex items-center justify-between h-12 px-4 bg-monki-cream/80 backdrop-blur-md border-b border-black/10 shrink-0">
         <div className="flex items-center">
           <div className="hidden lg:block w-[70px]" />
         </div>
 
-        <h1 className="text-[13px] font-semibold text-slate-700 tracking-tight truncate max-w-[160px] sm:max-w-none">{title}</h1>
+        <h1 key={title} className="animate-desplegar text-[15px] font-extrabold text-monki-k tracking-[-0.02em] truncate max-w-[160px] sm:max-w-none">{title}<span className="text-monki-y" style={{ WebkitTextStroke: "0.5px #111" }}>.</span></h1>
 
         <div className="no-drag flex items-center gap-4">
           {/* Sync dot */}
           <button
             onClick={onSync}
             title={syncStatus === "syncing" ? "Sincronizando…" : syncStatus === "error" ? "Error de sync — clic para reintentar" : "Sincronizado"}
-            className="flex items-center gap-1.5 text-[10px] text-slate-400 hover:text-slate-600 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider text-slate-600 hover:bg-black/5 transition-colors"
           >
             <span className={`w-2 h-2 rounded-full inline-block
-              ${syncStatus === "syncing" ? "bg-yellow-400 animate-pulse" :
-                syncStatus === "error"   ? "bg-red-400" :
-                                           "bg-emerald-400"}`}
+              ${syncStatus === "syncing" ? "bg-monki-y animate-pulse" :
+                syncStatus === "error"   ? "bg-red-500" :
+                                           "bg-[#35e06b] animate-pulso"}`}
             />
             <span className="hidden sm:inline">
               {syncStatus === "syncing" ? "Sincronizando" : syncStatus === "error" ? "Sin sync" : "Sincronizado"}
@@ -74,10 +74,10 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-800 transition-colors"
+                className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[12px] font-semibold text-monki-k bg-white/70 hover:bg-monki-k hover:text-monki-y transition-colors duration-300"
               >
-                <div className="w-5 h-5 bg-brand-400 rounded-full flex items-center justify-center">
-                  <span className="text-slate-900 text-[9px] font-bold">{(user.nombre||"U").charAt(0).toUpperCase()}</span>
+                <div className="w-6 h-6 bg-monki-y rounded-full flex items-center justify-center ring-2 ring-monki-k">
+                  <span className="text-monki-k text-[10px] font-black">{(user.nombre||"U").charAt(0).toUpperCase()}</span>
                 </div>
                 <span className="max-w-[120px] truncate font-medium">{user.nombre || user.email}</span>
                 <ChevronDown size={10} />
@@ -86,7 +86,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl shadow-modal border border-slate-200 py-1.5 z-40">
+                  <div className="animate-desplegar absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-[6px_6px_0_#111] border-2 border-monki-k py-1.5 z-40">
                     <div className="px-3 py-2 border-b border-slate-100 mb-1">
                       <p className="text-[11px] font-semibold text-slate-800 truncate">{user.nombre}</p>
                       <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
@@ -164,7 +164,7 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
               <button
                 onClick={guardarPerfil}
                 disabled={saving || nuevoNombre.trim().length < 2}
-                className="flex items-center gap-1 px-3 py-1.5 text-[12px] bg-brand-400 text-slate-900 font-semibold rounded-lg hover:bg-brand-500 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1 px-4 py-1.5 text-[12px] bg-monki-k text-monki-y font-bold rounded-full hover:shadow-[3px_3px_0_#FFD600] hover:-translate-x-0.5 hover:-translate-y-0.5 disabled:opacity-50 transition-all duration-300"
               >
                 <Check size={12} /> {saving ? "Guardando…" : "Guardar"}
               </button>
