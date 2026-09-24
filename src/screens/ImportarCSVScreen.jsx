@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Upload, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, Trash2, X } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Estado } from "../components/ui";
 import db from "../utils/db";
 import { genId, hoy } from "../utils/fmt";
 
@@ -75,89 +76,75 @@ export default function ImportarCSVScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-3">
-        <h2 className="font-bold text-slate-700 text-sm flex-1">Importar estado de cuenta bancario (CSV)</h2>
-        {filas.length>0 && (
-          <>
-            <span className="text-xs text-slate-500">{filas.length} movimientos</span>
-            <button onClick={importar} disabled={guardando}
-              className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-yellow-700 disabled:opacity-60">
-              {guardando?"Importando…":"Importar todo"}
-            </button>
-          </>
-        )}
-      </div>
-
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Importar CSV del banco"
+      descripcion="Cada movimiento se registra como recibo (ingreso) o compra (gasto)."
+      acciones={filas.length>0 && <>
+        <Boton variante="fantasma" onClick={()=>setFilas([])}>Descartar</Boton>
+        <Boton icono={Upload} onClick={importar} cargando={guardando} disabled={guardando}>{guardando?"Importando…":`Importar ${filas.length} movimientos`}</Boton>
+      </>}
+    >
       {resultado && (
-        <div className={`mx-6 mt-4 flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold
-          ${resultado.ok?"bg-yellow-50 border border-yellow-300 text-yellow-700":"bg-red-50 border border-red-200 text-red-700"}`}>
+        <div className={`animate-desplegar mb-3 flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-bold ${resultado.ok?"bg-[#dcfce7] text-[#166534]":"bg-red-100 text-red-700"}`}>
           {resultado.ok ? <CheckCircle size={16}/> : <AlertCircle size={16}/>}
-          {resultado.ok
-            ? `✓ Importados: ${resultado.ingresos} recibos (ingresos) y ${resultado.gastos} compras (gastos)`
-            : `Error: ${resultado.error}`}
-          <button onClick={()=>setResultado(null)} className="ml-auto text-xs underline">Cerrar</button>
+          {resultado.ok ? `Importados: ${resultado.ingresos} recibos (ingresos) y ${resultado.gastos} compras (gastos)` : `Error: ${resultado.error}`}
+          <span className="ml-auto"><BotonIcono icono={X} titulo="Cerrar" onClick={()=>setResultado(null)}/></span>
         </div>
       )}
 
       {filas.length===0 ? (
-        <div className={`flex-1 flex flex-col items-center justify-center gap-4 m-6 border-2 border-dashed rounded-2xl transition-colors
-          ${arrastrando?"border-yellow-400 bg-yellow-50":"border-slate-200 bg-slate-50"}`}
+        <div className={`flex-1 min-h-[300px] flex flex-col items-center justify-center gap-4 rounded-[18px] border-2 border-dashed px-6 text-center transition-all duration-300 ease-monki
+          ${arrastrando?"border-monki-k bg-monki-y scale-[1.01]":"border-black/20 bg-white"}`}
           onDragOver={e=>{e.preventDefault();setArrastrando(true);}}
           onDragLeave={()=>setArrastrando(false)}
           onDrop={e=>{e.preventDefault();setArrastrando(false);cargarArchivo(e);}}>
-          <Upload size={36} className="text-slate-300"/>
-          <div className="text-center max-w-sm">
-            <p className="font-semibold text-slate-500 mb-1">Arrastrá tu CSV del banco aquí</p>
-            <p className="text-sm text-slate-400">Exportá el estado de cuenta desde tu banco en formato CSV y arrástralo aquí. Se importarán como recibos (ingresos) o compras (gastos) automáticamente.</p>
-            <p className="text-xs text-slate-300 mt-3">Columnas esperadas: Fecha · Descripción · Monto<br/>Separador: coma, punto y coma o tabulación</p>
-            <label className="mt-4 inline-flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700 cursor-pointer">
-              <Upload size={14}/> Seleccionar archivo
-              <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarArchivo}/>
-            </label>
+          <span className="w-14 h-14 rounded-full bg-monki-y flex items-center justify-center shadow-[4px_4px_0_#111] animate-flotar"><Upload size={24}/></span>
+          <div className="max-w-sm">
+            <p className="font-extrabold text-monki-k mb-1">Arrastrá el CSV del banco aquí</p>
+            <p className="text-sm text-monki-k/55">Exportá el estado de cuenta desde tu banco en CSV. Se importa como recibos o compras automáticamente.</p>
+            <p className="font-mono text-[11px] text-monki-k/40 mt-3">Columnas: Fecha · Descripción · Monto — separado por coma, punto y coma o tabulación</p>
           </div>
+          <label className="ui-boton inline-flex items-center gap-2 bg-monki-k text-monki-y px-5 py-2.5 rounded-full text-sm font-bold cursor-pointer transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
+            <Upload size={14}/> Elegir archivo
+            <input type="file" accept=".csv,.txt" className="hidden" onChange={cargarArchivo}/>
+          </label>
         </div>
       ) : (
-        <div className="flex-1 overflow-auto p-6">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr className="text-[11px] font-bold text-slate-500 uppercase">
-                  <th className="text-left px-4 py-2.5">Fecha</th>
-                  <th className="text-left px-4 py-2.5">Descripción</th>
-                  <th className="text-right px-4 py-2.5">Monto</th>
-                  <th className="text-center px-4 py-2.5">Tipo (clic para cambiar)</th>
-                  <th className="w-10"/>
+        <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <table className="ui-tabla w-full text-sm">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="monki-tag text-monki-k/50">
+                  <th className="text-left px-4 py-3 font-medium border-b-2 border-black/10">Fecha</th>
+                  <th className="text-left px-4 py-3 font-medium border-b-2 border-black/10">Descripción</th>
+                  <th className="text-right px-4 py-3 font-medium border-b-2 border-black/10">Monto</th>
+                  <th className="text-center px-4 py-3 font-medium border-b-2 border-black/10">Tipo (tocá para cambiar)</th>
+                  <th className="w-10 border-b-2 border-black/10"/>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {filas.map((f,i)=>(
-                  <tr key={i} className="hover:bg-slate-50">
-                    <td className="px-4 py-2 text-xs text-slate-500">{f.fecha}</td>
-                    <td className="px-4 py-2 text-xs">{f.descripcion}</td>
-                    <td className={`px-4 py-2 text-right font-bold text-sm ${f.monto>=0?"text-yellow-700":"text-red-600"}`}>
+                  <tr key={i} className="border-b border-black/5 hover:bg-monki-cream/60 transition-colors">
+                    <td className="px-4 py-2 font-mono text-xs text-monki-k/55">{f.fecha}</td>
+                    <td className="px-4 py-2">{f.descripcion}</td>
+                    <td className={`px-4 py-2 text-right font-black tabular-nums ${f.monto>=0?"":"text-red-600"}`}>
                       {f.monto>=0?"+":""}{f.monto.toLocaleString("es-CR",{style:"currency",currency:"CRC"})}
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <button onClick={()=>toggleTipo(i)}
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer transition-colors
-                          ${f.tipo==="ingreso"?"bg-yellow-100 text-yellow-700 hover:bg-yellow-200":"bg-red-100 text-red-600 hover:bg-red-200"}`}>
-                        {f.tipo==="ingreso"?"↑ Ingreso":"↓ Gasto"}
+                      <button type="button" onClick={()=>toggleTipo(i)} className="ui-boton transition-transform hover:scale-105">
+                        <Estado tono={f.tipo==="ingreso"?"exito":"peligro"}>{f.tipo==="ingreso"?"↑ Ingreso":"↓ Gasto"}</Estado>
                       </button>
                     </td>
-                    <td className="px-2 py-2">
-                      <button onClick={()=>eliminarFila(i)} className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400">
-                        <Trash2 size={12}/>
-                      </button>
-                    </td>
+                    <td className="px-2 py-1"><BotonIcono icono={Trash2} titulo="Quitar" tono="peligro" onClick={()=>eliminarFila(i)}/></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-slate-400 mt-3 text-center">Revisá que el tipo sea correcto (ingreso/gasto) y hacé clic en "Importar todo"</p>
+          <p className="shrink-0 text-xs text-monki-k/45 px-4 py-2.5 border-t-2 border-black/10 bg-monki-cream/40">Revisá que cada tipo sea correcto y tocá “Importar”.</p>
         </div>
       )}
-    </div>
+    </Modulo>
   );
 }
