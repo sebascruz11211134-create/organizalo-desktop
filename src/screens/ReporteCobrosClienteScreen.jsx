@@ -4,7 +4,8 @@
  * Conecta: facturas ↔ debts (CXC) para calcular saldos reales.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, FileSpreadsheet, ChevronDown, ChevronRight } from "lucide-react";
+import { FileSpreadsheet, ChevronDown, ChevronRight, Users, Wallet, AlertTriangle } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Tarjeta, Vacio, Estado, Indicadores, Indicador, Entrada } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy } from "../utils/fmt";
@@ -52,9 +53,9 @@ function buildResumen(facturas, debts) {
 }
 
 const ESTADO_BADGE = {
-  pagada:    "bg-green-100 text-yellow-700",
-  parcial:   "bg-yellow-100 text-yellow-700",
-  pendiente: "bg-red-100 text-red-700",
+  pagada:    "exito",
+  parcial:   "alerta",
+  pendiente: "peligro",
 };
 const ESTADO_LABEL = { pagada: "Pagada", parcial: "Parcial", pendiente: "Pendiente" };
 
@@ -126,154 +127,83 @@ export default function ReporteCobrosClienteScreen() {
     exportExcel(rows, "cobros-por-cliente");
   };
 
+  const nVencidas = clientes.reduce((s, c) => s + resumen[c].facturas.filter(f => f.vencida).length, 0);
+  const TH = "monki-tag text-monki-k/50 font-medium px-4 py-2.5";
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 md:px-6 py-3 bg-white border-b border-gray-200 flex-wrap">
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 flex-1 min-w-0">
-          <Search size={14} className="text-slate-400 shrink-0"/>
-          <input value={busq} onChange={e => setBusq(e.target.value)} placeholder="Buscar cliente…"
-            className="bg-transparent text-sm flex-1 outline-none min-w-0"/>
-        </div>
+    <Modulo
+      seccion="Reportes"
+      titulo="Cobros por cliente"
+      descripcion="Cuánto te debe cada cliente, ordenado de mayor a menor deuda."
+      acciones={<Boton variante="secundario" icono={FileSpreadsheet} onClick={exportar}>Excel</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Clientes" valor={clientes.length} icono={Users} delay={40}/>
+          <Indicador etiqueta="Por cobrar" valor={fmtMoney(totalGlobalSaldo, moneda)} icono={Wallet} destacado delay={90} onClick={()=>setFiltro("pendientes")}/>
+          <Indicador etiqueta="Facturas vencidas" valor={nVencidas} icono={AlertTriangle} alerta={nVencidas>0} delay={140} onClick={()=>setFiltro("vencidas")}/>
+          <Indicador etiqueta="Al día" valor={Object.keys(resumen).filter(c=>resumen[c].totalSaldo<=0).length} detalle="Clientes sin saldo" delay={190} onClick={()=>setFiltro("pagadas")}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [
+        { key: "todos", label: "Todos" }, { key: "pendientes", label: "Pendientes" }, { key: "vencidas", label: "Vencidas" }, { key: "pagadas", label: "Pagadas" },
+      ] }}
+    >
+      <BarraFiltros>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar cliente…"/>
+        <label className="flex items-center gap-2 monki-tag text-monki-k/55">Desde <Entrada type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="!w-auto !py-1.5"/></label>
+        <label className="flex items-center gap-2 monki-tag text-monki-k/55">Hasta <Entrada type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="!w-auto !py-1.5"/></label>
+      </BarraFiltros>
 
-        {/* Filtro rápido */}
-        <div className="flex gap-1">
-          {[
-            { id: "todos",      label: "Todos" },
-            { id: "pendientes", label: "Pendientes" },
-            { id: "vencidas",   label: "Vencidas" },
-            { id: "pagadas",    label: "Pagadas" },
-          ].map(({ id, label }) => (
-            <button key={id} onClick={() => setFiltro(id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filtro === id
-                  ? "bg-yellow-600 text-white"
-                  : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <label className="text-xs text-slate-500 flex items-center gap-1 shrink-0">
-          Desde <input type="date" value={desde} onChange={e => setDesde(e.target.value)} className="border border-slate-200 rounded px-2 py-1 text-sm"/>
-        </label>
-        <label className="text-xs text-slate-500 flex items-center gap-1 shrink-0">
-          Hasta <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className="border border-slate-200 rounded px-2 py-1 text-sm"/>
-        </label>
-        <button onClick={exportar}
-          className="flex items-center gap-2 border border-gray-200 text-slate-600 px-3 py-2 rounded-lg text-sm hover:bg-slate-50 shrink-0">
-          <FileSpreadsheet size={14}/> Excel
-        </button>
-      </div>
-
-      {/* Resumen global */}
-      <div className="flex gap-6 px-4 md:px-6 py-2 bg-red-50 border-b border-red-100">
-        <div>
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Clientes</p>
-          <p className="text-sm font-bold text-slate-700">{clientes.length}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Total por cobrar</p>
-          <p className="text-sm font-bold text-red-700">{fmtMoney(totalGlobalSaldo, moneda)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-slate-400 uppercase tracking-wide">Facturas vencidas</p>
-          <p className="text-sm font-bold text-orange-600">
-            {clientes.reduce((s, c) => s + resumen[c].facturas.filter(f => f.vencida).length, 0)}
-          </p>
-        </div>
-      </div>
-
-      {/* Lista por cliente */}
-      <div className="flex-1 overflow-auto px-4 md:px-6 py-4 space-y-3">
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-2">
         {clientes.length === 0 && (
-          <p className="text-center text-slate-400 py-16">Sin resultados</p>
+          <Tarjeta className="h-full flex items-center justify-center"><Vacio icono={Users} titulo="Sin resultados" texto="Probá con otro filtro o rango de fechas."/></Tarjeta>
         )}
-
-        {clientes.map(cliente => {
+        {clientes.map((cliente, ci) => {
           const res    = resumen[cliente];
           const isOpen = expanded[cliente];
           const tieneVencidas = res.facturas.some(f => f.vencida);
-
           return (
-            <div key={cliente} className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
-              {/* Cabecera cliente */}
-              <button onClick={() => toggle(cliente)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left">
-                {isOpen
-                  ? <ChevronDown  size={15} className="text-slate-400 shrink-0"/>
-                  : <ChevronRight size={15} className="text-slate-400 shrink-0"/>}
-
-                <span className="font-bold text-slate-800 flex-1 min-w-0 truncate">{cliente}</span>
-
-                {tieneVencidas && (
-                  <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full shrink-0">
-                    Vencida
-                  </span>
-                )}
-
-                <span className="text-xs text-slate-400 shrink-0">{res.facturas.length} fact.</span>
-
-                <span className="text-xs font-semibold text-slate-600 ml-3 shrink-0">
-                  Fact: {fmtMoney(res.totalFacturado, moneda)}
+            <div key={cliente} style={{ animationDelay: `${Math.min(ci,10)*35}ms` }}
+              className={`animate-entrar border-2 rounded-[18px] bg-white overflow-hidden transition-all duration-300 ease-monki ${isOpen ? "border-monki-k shadow-[5px_5px_0_#111]" : "border-black/10 hover:border-black/25"}`}>
+              <button type="button" onClick={() => toggle(cliente)} className="ui-boton w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left">
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isOpen ? "bg-monki-k text-monki-y" : "bg-monki-y text-monki-k"}`}>
+                  {isOpen ? <ChevronDown size={15}/> : <ChevronRight size={15}/>}
                 </span>
-                <span className="text-xs font-semibold text-yellow-700 ml-3 shrink-0">
-                  Cobrado: {fmtMoney(res.totalPagado, moneda)}
-                </span>
-                <span className={`text-xs font-bold ml-3 shrink-0 ${res.totalSaldo > 0 ? "text-red-600" : "text-yellow-700"}`}>
-                  Saldo: {fmtMoney(res.totalSaldo, moneda)}
-                </span>
+                <span className="font-extrabold text-monki-k flex-1 min-w-[140px] truncate">{cliente}</span>
+                {tieneVencidas && <Estado tono="peligro">Vencida</Estado>}
+                <span className="font-mono text-[11px] text-monki-k/45">{res.facturas.length} fact.</span>
+                <span className="text-xs text-monki-k/55">Facturado <b className="text-monki-k">{fmtMoney(res.totalFacturado, moneda)}</b></span>
+                <span className="text-xs text-monki-k/55">Cobrado <b className="text-monki-k">{fmtMoney(res.totalPagado, moneda)}</b></span>
+                <span className={`text-xs font-black px-2.5 py-1 rounded-full ${res.totalSaldo > 0 ? "bg-red-100 text-red-700" : "bg-[#dcfce7] text-[#166534]"}`}>Saldo {fmtMoney(res.totalSaldo, moneda)}</span>
               </button>
-
-              {/* Tabla de facturas */}
               {isOpen && (
-                <div className="border-t border-slate-100 overflow-x-auto">
-                  <table className="w-full text-xs">
+                <div className="animate-desplegar border-t-2 border-black/5 overflow-x-auto">
+                  <table className="ui-tabla w-full text-sm">
                     <thead>
-                      <tr className="bg-slate-50 text-slate-400 text-[10px] uppercase tracking-wide">
-                        <th className="px-4 py-2 text-left font-medium">Factura</th>
-                        <th className="px-3 py-2 text-left font-medium">Fecha</th>
-                        <th className="px-3 py-2 text-left font-medium">Vencimiento</th>
-                        <th className="px-3 py-2 text-right font-medium">Total</th>
-                        <th className="px-3 py-2 text-right font-medium">Pagado</th>
-                        <th className="px-3 py-2 text-right font-medium">Saldo</th>
-                        <th className="px-4 py-2 text-center font-medium">Estado</th>
+                      <tr>
+                        <th className={TH+" text-left"}>Factura</th><th className={TH+" text-left"}>Fecha</th><th className={TH+" text-left"}>Vencimiento</th>
+                        <th className={TH+" text-right"}>Total</th><th className={TH+" text-right"}>Pagado</th><th className={TH+" text-right"}>Saldo</th><th className={TH+" text-center"}>Estado</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody>
                       {res.facturas.map(f => (
-                        <tr key={f.id} className={f.vencida ? "bg-orange-50" : ""}>
-                          <td className="px-4 py-2 font-mono font-bold text-slate-700">{f.numero}</td>
-                          <td className="px-3 py-2 text-slate-400">{fmtDate(f.fecha)}</td>
-                          <td className={`px-3 py-2 ${f.vencida ? "text-orange-600 font-semibold" : "text-slate-400"}`}>
-                            {f.vence ? fmtDate(f.vence) : "—"}
-                          </td>
-                          <td className="px-3 py-2 text-right font-semibold text-slate-700">
-                            {fmtMoney(f.total, f.moneda || moneda)}
-                          </td>
-                          <td className="px-3 py-2 text-right text-yellow-700">
-                            {fmtMoney(f.pagado, f.moneda || moneda)}
-                          </td>
-                          <td className={`px-3 py-2 text-right font-bold ${f.saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>
-                            {fmtMoney(f.saldo, f.moneda || moneda)}
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ESTADO_BADGE[f.estado]}`}>
-                              {ESTADO_LABEL[f.estado]}
-                            </span>
-                          </td>
+                        <tr key={f.id} className={`border-t border-black/5 ${f.vencida ? "bg-red-50" : "hover:bg-monki-cream/60"}`}>
+                          <td className="px-4 py-2 font-mono text-xs font-bold">{f.numero}</td>
+                          <td className="px-4 py-2 text-monki-k/55">{fmtDate(f.fecha)}</td>
+                          <td className={`px-4 py-2 ${f.vencida ? "text-red-600 font-bold" : "text-monki-k/55"}`}>{f.vence ? fmtDate(f.vence) : "—"}</td>
+                          <td className="px-4 py-2 text-right tabular-nums font-semibold">{fmtMoney(f.total, f.moneda || moneda)}</td>
+                          <td className="px-4 py-2 text-right tabular-nums text-monki-k/60">{fmtMoney(f.pagado, f.moneda || moneda)}</td>
+                          <td className={`px-4 py-2 text-right tabular-nums font-black ${f.saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(f.saldo, f.moneda || moneda)}</td>
+                          <td className="px-4 py-2 text-center"><Estado tono={ESTADO_BADGE[f.estado]}>{ESTADO_LABEL[f.estado]}</Estado></td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-slate-50 font-bold text-slate-700 border-t border-slate-200">
-                        <td colSpan={3} className="px-4 py-2 text-xs text-slate-500">Subtotal</td>
-                        <td className="px-3 py-2 text-right text-xs">{fmtMoney(res.totalFacturado, moneda)}</td>
-                        <td className="px-3 py-2 text-right text-xs text-yellow-700">{fmtMoney(res.totalPagado, moneda)}</td>
-                        <td className={`px-3 py-2 text-right text-xs ${res.totalSaldo > 0 ? "text-red-600" : "text-yellow-700"}`}>
-                          {fmtMoney(res.totalSaldo, moneda)}
-                        </td>
+                      <tr className="bg-monki-k text-white font-black">
+                        <td colSpan={3} className="px-4 py-2.5 monki-tag text-monki-y">Subtotal</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{fmtMoney(res.totalFacturado, moneda)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{fmtMoney(res.totalPagado, moneda)}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums text-monki-y">{fmtMoney(res.totalSaldo, moneda)}</td>
                         <td/>
                       </tr>
                     </tfoot>
@@ -284,6 +214,6 @@ export default function ReporteCobrosClienteScreen() {
           );
         })}
       </div>
-    </div>
+    </Modulo>
   );
 }
