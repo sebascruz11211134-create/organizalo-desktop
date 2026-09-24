@@ -405,7 +405,7 @@ button.bg-blue-600, button.bg-blue-500, button.bg-blue-700 {
 }
 
 /* Kit de interfaz: el buscador marca el foco en su borde de píldora, no en el input */
-input.ui-sin-foco:not([type=checkbox]):not([type=radio]):focus { box-shadow: none !important; border-color: transparent !important; }
+input.ui-sin-foco:not([type=checkbox]):not([type=radio]):focus, textarea.ui-sin-foco:focus { box-shadow: none !important; border-color: transparent !important; }
 
 /* ════════════════════════════════════════════════════════════════════════════
    PANTALLAS AÚN SIN MIGRAR AL KIT: sus piezas viejas (barra negra, tabla
