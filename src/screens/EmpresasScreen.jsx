@@ -4,7 +4,8 @@
  * Al cambiar de empresa, los datos están aislados por empresaId.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Edit2, X, Building2, Check, Trash2 } from "lucide-react";
+import { Plus, Edit2, Building2, Check, Trash2 } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Tarjeta, Vacio, Estado, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { genId } from "../utils/fmt";
 
@@ -47,39 +48,20 @@ function EmpresaModal({ empresa, onClose, onSave }) {
     ["Dirección","direccion","text","col-span-2"],
   ];
 
+  const OPCIONES = { tipoCedula: TIPOS_CEDULA, regimen: REGIMENES, moneda: ["CRC","USD"] };
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-lg font-bold text-slate-900">{esNueva?"Nueva empresa":"Editar empresa"}</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400"/></button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {campos.map(([lbl,key,type,cls])=>(
-            <label key={key} className={`block ${cls}`}>
-              <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
-              {type==="select" ? (
-                <select value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                  {key==="tipoCedula" && TIPOS_CEDULA.map(t=><option key={t} value={t}>{t}</option>)}
-                  {key==="regimen"    && REGIMENES.map(t=><option key={t} value={t}>{t}</option>)}
-                  {key==="moneda"     && ["CRC","USD"].map(t=><option key={t} value={t}>{t}</option>)}
-                </select>
-              ) : (
-                <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-              )}
-            </label>
-          ))}
-        </div>
-
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
-        </div>
+    <Modal titulo={esNueva?"Nueva empresa":"Editar empresa"} subtitulo="Datos fiscales de la empresa" onCerrar={onClose}
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar empresa</Boton></>}>
+      <div className="grid grid-cols-2 gap-3">
+        {campos.map(([lbl,key,type,cls])=>(
+          <Campo key={key} etiqueta={lbl} className={cls}>
+            {type==="select"
+              ? <Seleccion value={form[key]||""} onChange={e=>u(key,e.target.value)} opciones={OPCIONES[key]}/>
+              : <Entrada type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)} className={key==="cedula"?"font-mono":""}/>}
+          </Campo>
+        ))}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -113,90 +95,56 @@ export default function EmpresasScreen() {
     });
   };
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar esta empresa? Sus datos locales se mantendrán pero no podrá ser seleccionada.")) return;
+    if (!(await confirmar("Eliminar empresa", "¿Eliminar esta empresa? Sus datos locales se mantienen, pero ya no se podrá seleccionar.", { peligro: true, boton: "Eliminar" }))) return;
     const todas = await db.getEmpresas();
     await db.setEmpresas(todas.filter(x=>x.id!==id));
     cargar();
   };
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Empresas</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Manejá múltiples empresas o RUCs desde una misma instalación.
-              {empresaId && <span className="ml-2 text-blue-600 font-medium">Empresa activa seleccionada.</span>}
-            </p>
-          </div>
-          <button onClick={()=>setModal({})}
-            className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-            <Plus size={14}/> Nueva empresa
-          </button>
-        </div>
-      </div>
-
-      <div className="px-8 py-6">
+    <Modulo
+      seccion="Administración"
+      titulo="Empresas"
+      descripcion="Manejá varias empresas o cédulas desde la misma cuenta. La activa es la que factura."
+      acciones={<Boton icono={Plus} onClick={()=>setModal({})}>Nueva empresa</Boton>}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
         {empresas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
-            <Building2 size={40} className="text-slate-300"/>
-            <p className="text-lg font-semibold">Sin empresas registradas</p>
-            <p className="text-sm">Agregá tu primera empresa para empezar.</p>
-            <button onClick={()=>setModal({})} className="btn-primary mt-2">+ Agregar empresa</button>
-          </div>
+          <Tarjeta className="h-full flex items-center justify-center">
+            <Vacio icono={Building2} titulo="Sin empresas registradas" texto="Agregá tu primera empresa para empezar."
+              accion={<Boton icono={Plus} onClick={()=>setModal({})}>Agregar empresa</Boton>}/>
+          </Tarjeta>
         ) : (
-          <div className="grid grid-cols-1 gap-4 max-w-3xl">
-            {empresas.map(e=>{
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {empresas.map((e,i)=>{
               const esActiva = empresaId === e.id;
               return (
-                <div key={e.id}
-                  className={`bg-white border-2 rounded-xl p-6 flex items-center gap-5 transition-all
-                    ${esActiva?"border-slate-800 shadow-sm":"border-slate-200 hover:border-slate-300"}`}>
-                  {/* Logo / inicial */}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0
-                    ${esActiva?"bg-slate-900 text-white":"bg-slate-100 text-slate-500"}`}>
-                    <span className="text-lg font-black">{e.nombre?.charAt(0)||"E"}</span>
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
+                <div key={e.id} style={{ animationDelay: `${Math.min(i,8)*50}ms` }}
+                  className={`animate-entrar rounded-[18px] border-2 p-5 flex flex-wrap items-center gap-4 transition-all duration-300 ease-monki
+                    ${esActiva?"bg-monki-k text-white border-monki-k shadow-[6px_6px_0_#FFD600]":"bg-white border-black/10 hover:border-monki-k hover:-translate-y-0.5"}`}>
+                  <span className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-xl font-black ${esActiva?"bg-monki-y text-monki-k":"bg-monki-cream text-monki-k"}`}>
+                    {e.nombre?.charAt(0)?.toUpperCase()||"E"}
+                  </span>
+                  <div className="flex-1 min-w-[180px]">
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-slate-900 truncate">{e.nombre}</p>
-                      {esActiva && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-yellow-700 bg-green-50 px-2 py-0.5 rounded-full">
-                          <Check size={10}/> Activa
-                        </span>
-                      )}
+                      <p className="font-extrabold text-[16px] truncate">{e.nombre}</p>
+                      {esActiva && <Estado tono="alerta">Activa</Estado>}
                     </div>
                     {e.nombreComercial && e.nombreComercial !== e.nombre && (
-                      <p className="text-sm text-slate-500">{e.nombreComercial}</p>
+                      <p className={`text-sm ${esActiva?"text-white/60":"text-monki-k/55"}`}>{e.nombreComercial}</p>
                     )}
-                    <div className="flex gap-4 mt-1 text-xs text-slate-400">
-                      {e.cedula && <span>Cédula: {e.cedula}</span>}
+                    <div className={`flex flex-wrap gap-x-4 gap-y-0.5 mt-1.5 font-mono text-[11px] ${esActiva?"text-white/55":"text-monki-k/45"}`}>
+                      {e.cedula && <span>Cédula {e.cedula}</span>}
                       {e.correo && <span>{e.correo}</span>}
                       {e.regimen && <span>{e.regimen}</span>}
                     </div>
                   </div>
-
-                  {/* Acciones */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {!esActiva && (
-                      <button onClick={()=>seleccionar(e)}
-                        className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 hover:border-slate-800 hover:text-slate-900 text-slate-600 transition-colors">
-                        Activar
-                      </button>
-                    )}
-                    <button onClick={()=>setModal(e)} className="p-2 rounded-lg hover:bg-gray-100 text-slate-400 hover:text-slate-700">
-                      <Edit2 size={14}/>
-                    </button>
-                    {!esActiva && (
-                      <button onClick={()=>eliminar(e.id)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600">
-                        <Trash2 size={14}/>
-                      </button>
-                    )}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {!esActiva && <Boton variante="secundario" tamano="sm" icono={Check} onClick={()=>seleccionar(e)}>Activar</Boton>}
+                    <span className={esActiva?"[&_button]:text-white/70 [&_button:hover]:text-monki-y":""}><BotonIcono icono={Edit2} titulo="Editar" onClick={()=>setModal(e)}/></span>
+                    {!esActiva && <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(e.id)}/>}
                   </div>
                 </div>
               );
@@ -208,6 +156,7 @@ export default function EmpresasScreen() {
       {modal!==null && (
         <EmpresaModal empresa={Object.keys(modal).length>0?modal:null} onClose={()=>setModal(null)} onSave={cargar}/>
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
