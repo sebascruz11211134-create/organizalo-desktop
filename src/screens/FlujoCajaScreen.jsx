@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import db from "../utils/db";
 import { genId, fechaLocal } from "../utils/fmt";
+import { Modulo, Boton, BotonIcono, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion } from "../components/ui";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) =>
@@ -72,40 +73,17 @@ function PagoFijoModal({ onClose, onSave }) {
     onClose();
   };
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Nuevo pago fijo</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
-        </div>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Nombre</span>
-          <input className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" value={form.nombre} onChange={e => u("nombre", e.target.value)} />
-        </label>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Monto (₡)</span>
-          <input className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" type="number" value={form.monto} onChange={e => u("monto", e.target.value)} />
-        </label>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Categoría</span>
-          <select className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" value={form.categoria} onChange={e => u("categoria", e.target.value)}>
-            {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </label>
-        <label className="block mb-4">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Frecuencia</span>
-          <select className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" value={form.frecuencia} onChange={e => u("frecuencia", e.target.value)}>
-            <option value="semanal">Semanal</option>
-            <option value="quincenal">Quincenal</option>
-            <option value="mensual">Mensual</option>
-          </select>
-        </label>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">Guardar</button>
+    <Modal titulo="Nuevo pago fijo" subtitulo="Un gasto que se repite: planilla, alquiler, préstamo…" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar</Boton></>}>
+      <div className="space-y-3">
+        <Campo etiqueta="Nombre"><Entrada value={form.nombre} onChange={e => u("nombre", e.target.value)}/></Campo>
+        <Campo etiqueta="Monto (₡)"><Entrada type="number" value={form.monto} onChange={e => u("monto", e.target.value)}/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Categoría"><Seleccion value={form.categoria} onChange={e => u("categoria", e.target.value)} opciones={CATEGORIAS}/></Campo>
+          <Campo etiqueta="Frecuencia"><Seleccion value={form.frecuencia} onChange={e => u("frecuencia", e.target.value)} opciones={[{value:"semanal",label:"Semanal"},{value:"quincenal",label:"Quincenal"},{value:"mensual",label:"Mensual"}]}/></Campo>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -119,46 +97,25 @@ function MovModal({ onClose, onSave }) {
     onClose();
   };
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-slate-900">Nuevo movimiento</h2>
-          <button onClick={onClose}><X size={18} className="text-slate-400" /></button>
-        </div>
-        <div className="flex gap-2 mb-4">
+    <Modal titulo="Nuevo movimiento" subtitulo="Entrada o salida de dinero" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton variante={form.tipo === "entrada" ? "primario" : "peligro"} onClick={guardar}>Registrar</Boton></>}>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
           {["entrada", "salida"].map(t => (
-            <button key={t} onClick={() => u("tipo", t)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold border capitalize ${form.tipo === t ? (t === "entrada" ? "bg-yellow-500 text-white border-yellow-300" : "bg-red-500 text-white border-red-500") : "border-slate-200 text-slate-600"}`}>
+            <button key={t} type="button" onClick={() => u("tipo", t)}
+              className={`ui-boton py-2 rounded-full text-sm font-bold transition-all duration-300 ease-monki ${form.tipo === t ? (t === "entrada" ? "bg-monki-k text-monki-y" : "bg-red-600 text-white") : "bg-white shadow-[inset_0_0_0_2px_rgba(17,17,17,.12)] text-monki-k/60 hover:text-monki-k"}`}>
               {t === "entrada" ? "▼ Entrada" : "▲ Salida"}
             </button>
           ))}
         </div>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Monto (₡)</span>
-          <input className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" type="number" value={form.monto} onChange={e => u("monto", e.target.value)} />
-        </label>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Descripción</span>
-          <input className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" value={form.descripcion} onChange={e => u("descripcion", e.target.value)} />
-        </label>
-        <label className="block mb-3">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Categoría</span>
-          <select className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" value={form.categoria} onChange={e => u("categoria", e.target.value)}>
-            {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </label>
-        <label className="block mb-4">
-          <span className="text-xs font-semibold text-slate-500 uppercase">Fecha</span>
-          <input className="mt-1 w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm" type="date" value={form.fecha} onChange={e => u("fecha", e.target.value)} />
-        </label>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 py-2 rounded-lg text-sm font-semibold">Cancelar</button>
-          <button onClick={guardar} className={`flex-1 ${form.tipo === "entrada" ? "bg-yellow-500 hover:bg-yellow-600" : "bg-red-500 hover:bg-red-600"} text-white py-2 rounded-lg text-sm font-semibold`}>
-            Registrar
-          </button>
+        <Campo etiqueta="Monto (₡)"><Entrada type="number" value={form.monto} onChange={e => u("monto", e.target.value)}/></Campo>
+        <Campo etiqueta="Descripción"><Entrada value={form.descripcion} onChange={e => u("descripcion", e.target.value)}/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Categoría"><Seleccion value={form.categoria} onChange={e => u("categoria", e.target.value)} opciones={CATEGORIAS}/></Campo>
+          <Campo etiqueta="Fecha"><Entrada type="date" value={form.fecha} onChange={e => u("fecha", e.target.value)}/></Campo>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -237,105 +194,93 @@ export default function FlujoCajaScreen() {
   const totalEntradas = movsDelMes.filter(m => m.tipo === "entrada").reduce((s, m) => s + m.monto, 0);
   const totalSalidas  = movsDelMes.filter(m => m.tipo === "salida").reduce((s, m) => s + m.monto, 0);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-        <TrendingUp size={18} className="text-yellow-600" />
-        <button onClick={() => setMes(prevMes(mes))} className="p-1 rounded hover:bg-gray-100"><ChevronLeft size={16} /></button>
-        <span className="text-sm font-semibold text-slate-800 min-w-[100px] text-center">{mesLabel(mes)}</span>
-        <button onClick={() => setMes(nextMes(mes))} className="p-1 rounded hover:bg-gray-100"><ChevronRight size={16} /></button>
-        <span className="flex-1" />
-        {tab === 1 && <button onClick={() => setModalPago(true)} className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-yellow-700"><Plus size={14} /> Pago fijo</button>}
-        {tab === 2 && <button onClick={() => setModalMov(true)} className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-yellow-700"><Plus size={14} /> Movimiento</button>}
-      </div>
+  const columnasPagos = [
+    { key: "nombre", titulo: "Nombre", render: p => <b className="text-monki-k">{p.nombre}</b> },
+    { key: "cat", titulo: "Categoría", render: p => <Estado>{p.categoria}</Estado> },
+    { key: "frec", titulo: "Frecuencia", render: p => <span className="capitalize text-monki-k/60">{p.frecuencia}</span> },
+    { key: "monto", titulo: "Monto", alinear: "right", render: p => <b className="text-red-600">{fmt(p.monto)}</b> },
+    { key: "acc", titulo: "", alinear: "right", render: p => <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={() => eliminarPago(p.id)}/> },
+  ];
+  const columnasMovs = [
+    { key: "fecha", titulo: "Fecha", render: mv => <span className="font-mono text-xs text-monki-k/55">{mv.fecha}</span> },
+    { key: "desc", titulo: "Descripción", render: mv => <b className="text-monki-k">{mv.descripcion}</b> },
+    { key: "cat", titulo: "Categoría", render: mv => <Estado>{mv.categoria}</Estado> },
+    { key: "tipo", titulo: "Tipo", render: mv => <Estado tono={mv.tipo === "entrada" ? "exito" : "peligro"}>{mv.tipo === "entrada" ? "Entrada" : "Salida"}</Estado> },
+    { key: "monto", titulo: "Monto", alinear: "right", render: mv => <b className={mv.tipo === "entrada" ? "" : "text-red-600"}>{mv.tipo === "entrada" ? "+" : "−"}{fmt(mv.monto)}</b> },
+    { key: "acc", titulo: "", alinear: "right", render: mv => <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={() => eliminarMov(mv.id)}/> },
+  ];
 
-      {/* Saldo disponible */}
-      <div className={`px-6 py-3 border-b ${alerta ? "bg-red-50 border-red-200" : "bg-yellow-50 border-yellow-100"}`}>
+  return (
+    <Modulo
+      seccion="Tesorería"
+      titulo="Flujo de caja"
+      descripcion="Cuánto dinero tenés, cuánto sale cada semana y si alcanza."
+      acciones={<>
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Mes anterior" onClick={() => setMes(prevMes(mes))}/>
+          <span className="text-sm font-bold min-w-[100px] text-center">{mesLabel(mes)}</span>
+          <BotonIcono icono={ChevronRight} titulo="Mes siguiente" onClick={() => setMes(nextMes(mes))}/>
+        </div>
+        {tab === 1 && <Boton icono={Plus} onClick={() => setModalPago(true)}>Pago fijo</Boton>}
+        {tab === 2 && <Boton icono={Plus} onClick={() => setModalMov(true)}>Movimiento</Boton>}
+      </>}
+      pestanas={{ activa: tab, onCambiar: setTab, items: TABS.map((t, i) => ({ key: i, label: t })) }}
+    >
+      <div className={`animate-entrar mb-3 rounded-[18px] border-2 p-4 ${alerta ? "bg-red-50 border-red-400" : "bg-monki-k border-monki-k text-white"}`}>
         {alerta && (
-          <div className="flex items-center gap-2 text-red-700 text-xs font-semibold mb-2">
-            <AlertTriangle size={14} />
-            Saldo disponible insuficiente para cubrir los gastos de esta semana
+          <div className="flex items-center gap-2 text-red-700 text-sm font-bold mb-3">
+            <AlertTriangle size={15} /> El saldo disponible no alcanza para los gastos de esta semana
           </div>
         )}
-        <div className="flex items-center gap-6 flex-wrap">
+        <div className="flex items-end gap-6 flex-wrap">
           {[
             { label: "Banco ₡", key: "banco", display: fmt(saldo.banco) },
             { label: "Banco $", key: "bancoUSD", display: fmtUSD(saldo.bancoUSD) },
             { label: "Efectivo", key: "efectivo", display: fmt(saldo.efectivo) },
           ].map(({ label, key, display }) => (
-            editSaldo ? (
-              <label key={key} className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
-                <input type="number" defaultValue={saldo[key]}
-                  onBlur={e => setSaldo(p => ({ ...p, [key]: Number(e.target.value) || 0 }))}
-                  className="border border-slate-300 rounded px-2 py-1 text-sm w-32" />
-              </label>
-            ) : (
-              <div key={key} className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
-                <span className="text-base font-bold text-slate-800">{display}</span>
-              </div>
-            )
+            <div key={key} className="flex flex-col">
+              <span className={`monki-tag text-[10px] ${alerta ? "text-monki-k/50" : "text-white/55"}`}>{label}</span>
+              {editSaldo
+                ? <input type="number" defaultValue={saldo[key]} onBlur={e => setSaldo(p => ({ ...p, [key]: Number(e.target.value) || 0 }))}
+                    className="mt-1 bg-white text-monki-k border-2 border-black/10 rounded-xl px-2.5 py-1 text-sm w-32"/>
+                : <span className="text-[17px] font-black">{display}</span>}
+            </div>
           ))}
-          <div className="flex flex-col border-l border-slate-200 pl-4">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Total disponible (est.)</span>
-            <span className={`text-base font-black ${alerta ? "text-red-600" : "text-yellow-700"}`}>{fmt(totalDisponible)}</span>
+          <div className={`flex flex-col pl-5 border-l ${alerta ? "border-black/10" : "border-white/15"}`}>
+            <span className={`monki-tag text-[10px] ${alerta ? "text-monki-k/50" : "text-white/55"}`}>Total disponible (est.)</span>
+            <span className={`text-[22px] font-black ${alerta ? "text-red-600" : "text-monki-y"}`}>{fmt(totalDisponible)}</span>
           </div>
-          <button onClick={() => editSaldo ? guardarSaldo(saldo) : setEditSaldo(true)}
-            className="ml-auto flex items-center gap-1 text-xs text-yellow-700 hover:underline font-semibold">
-            <Edit3 size={12} /> {editSaldo ? "Guardar saldo" : "Editar saldo"}
-          </button>
+          <Boton tamano="sm" variante={alerta ? "secundario" : "amarillo"} icono={Edit3} className="ml-auto" onClick={() => editSaldo ? guardarSaldo(saldo) : setEditSaldo(true)}>
+            {editSaldo ? "Guardar saldo" : "Editar saldo"}
+          </Boton>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 bg-white px-6">
-        {TABS.map((t, i) => (
-          <button key={t} onClick={() => setTab(i)}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${tab === i ? "border-yellow-600 text-yellow-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Tab: Semanas ── */}
       {tab === 0 && (
-        <div className="flex-1 overflow-auto p-6">
-          {/* Resumen del mes */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[
-              ["Entradas del mes", fmt(totalEntradas), "text-yellow-700"],
-              ["Salidas del mes", fmt(totalSalidas), "text-red-600"],
-              ["Flujo neto", fmt(totalEntradas - totalSalidas), totalEntradas >= totalSalidas ? "text-yellow-700" : "text-red-600"],
-            ].map(([l, v, cls]) => (
-              <div key={l} className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">{l}</p>
-                <p className={`text-xl font-black mt-1 ${cls}`}>{v}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Tarjetas de semanas */}
-          <div className="grid grid-cols-1 gap-3">
+        <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-3">
+          <Indicadores>
+            <Indicador etiqueta="Entradas del mes" valor={fmt(totalEntradas)} icono={TrendingUp} delay={40}/>
+            <Indicador etiqueta="Salidas del mes" valor={fmt(totalSalidas)} delay={90}/>
+            <Indicador etiqueta="Flujo neto" valor={fmt(totalEntradas - totalSalidas)} destacado={totalEntradas >= totalSalidas} alerta={totalEntradas < totalSalidas} delay={140}/>
+            <Indicador etiqueta="Pagos fijos" valor={pagosFijos.length} icono={DollarSign} delay={190} onClick={() => setTab(1)}/>
+          </Indicadores>
+          <div className="space-y-2">
             {semanas.map((sem, i) => {
               const gastos = gastosSemana(sem);
               const esActual = i === semActual;
               const deficit = gastos > totalDisponible;
               return (
-                <div key={sem.inicio}
-                  className={`rounded-xl border p-4 flex items-center gap-4 ${esActual ? "border-yellow-400 bg-yellow-50" : "border-slate-200 bg-white"}`}>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-500 uppercase">Semana {i + 1} {esActual && "· Actual"}</p>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{sem.inicio} → {sem.fin}</p>
+                <div key={sem.inicio} style={{ animationDelay: `${i*50}ms` }}
+                  className={`animate-entrar rounded-[18px] border-2 px-4 py-3.5 flex flex-wrap items-center gap-4 ${esActual ? "bg-monki-y border-monki-k shadow-[4px_4px_0_#111]" : "bg-white border-black/10"}`}>
+                  <div className="flex-1 min-w-[160px]">
+                    <p className="monki-tag text-monki-k/55">Semana {i + 1}{esActual && " · actual"}</p>
+                    <p className="text-sm font-extrabold text-monki-k mt-0.5 font-mono">{sem.inicio} → {sem.fin}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-slate-400 uppercase">Gastos estimados</p>
-                    <p className={`text-base font-bold ${deficit ? "text-red-600" : "text-slate-800"}`}>{fmt(gastos)}</p>
+                    <p className="monki-tag text-[10px] text-monki-k/45">Gastos estimados</p>
+                    <p className={`text-[17px] font-black ${deficit ? "text-red-600" : "text-monki-k"}`}>{fmt(gastos)}</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${deficit ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
-                    {deficit ? "Déficit" : "OK"}
-                  </div>
+                  {deficit ? <Estado tono="peligro">Déficit</Estado> : <Estado tono="exito">Alcanza</Estado>}
                 </div>
               );
             })}
@@ -343,92 +288,20 @@ export default function FlujoCajaScreen() {
         </div>
       )}
 
-      {/* ── Tab: Pagos fijos ── */}
       {tab === 1 && (
-        <div className="flex-1 overflow-auto">
-          {pagosFijos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-              <DollarSign size={40} />
-              <p className="font-semibold">Sin pagos fijos registrados</p>
-              <button onClick={() => setModalPago(true)} className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar pago fijo</button>
-            </div>
-          ) : (
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th>Frecuencia</th>
-                  <th>Monto</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagosFijos.map(p => (
-                  <tr key={p.id}>
-                    <td className="font-semibold text-slate-900">{p.nombre}</td>
-                    <td><span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">{p.categoria}</span></td>
-                    <td className="capitalize text-slate-500 text-sm">{p.frecuencia}</td>
-                    <td className="font-bold text-red-600">{fmt(p.monto)}</td>
-                    <td>
-                      <button onClick={() => eliminarPago(p.id)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <Tabla columnas={columnasPagos} filas={pagosFijos}
+          vacio={<Vacio icono={DollarSign} titulo="Sin pagos fijos" texto="Anotá planilla, alquiler, préstamos… para proyectar cada semana."
+            accion={<Boton icono={Plus} onClick={() => setModalPago(true)}>Agregar pago fijo</Boton>}/>}/>
       )}
 
-      {/* ── Tab: Movimientos ── */}
       {tab === 2 && (
-        <div className="flex-1 overflow-auto">
-          {movsDelMes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-              <TrendingUp size={40} />
-              <p className="font-semibold">Sin movimientos en {mesLabel(mes)}</p>
-              <button onClick={() => setModalMov(true)} className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium">+ Agregar movimiento</button>
-            </div>
-          ) : (
-            <table className="table-base">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Descripción</th>
-                  <th>Categoría</th>
-                  <th>Tipo</th>
-                  <th>Monto</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {movsDelMes.map(mv => (
-                  <tr key={mv.id}>
-                    <td className="text-slate-500 text-sm">{mv.fecha}</td>
-                    <td className="font-semibold text-slate-900">{mv.descripcion}</td>
-                    <td><span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs">{mv.categoria}</span></td>
-                    <td>
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${mv.tipo === "entrada" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
-                        {mv.tipo === "entrada" ? "▼ Entrada" : "▲ Salida"}
-                      </span>
-                    </td>
-                    <td className={`font-bold ${mv.tipo === "entrada" ? "text-yellow-700" : "text-red-600"}`}>
-                      {mv.tipo === "entrada" ? "+" : "-"}{fmt(mv.monto)}
-                    </td>
-                    <td>
-                      <button onClick={() => eliminarMov(mv.id)} className="text-red-400 hover:text-red-600"><Trash2 size={14} /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <Tabla columnas={columnasMovs} filas={movsDelMes}
+          vacio={<Vacio icono={TrendingUp} titulo={`Sin movimientos en ${mesLabel(mes)}`} texto="Registrá entradas y salidas de dinero."
+            accion={<Boton icono={Plus} onClick={() => setModalMov(true)}>Agregar movimiento</Boton>}/>}/>
       )}
 
       {modalPago && <PagoFijoModal onClose={() => setModalPago(false)} onSave={agregarPago} />}
       {modalMov  && <MovModal     onClose={() => setModalMov(false)}  onSave={agregarMov} />}
-    </div>
+    </Modulo>
   );
 }
