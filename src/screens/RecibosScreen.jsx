@@ -1,6 +1,7 @@
 import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Trash2, Ban } from "lucide-react";
+import { Plus, Trash2, Ban, ChevronLeft, ChevronRight, Receipt, Wallet, Coins } from "lucide-react";
+import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, Interruptor, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
@@ -141,83 +142,65 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+    <Modal titulo="Nuevo recibo" subtitulo={esAdelanto ? "Pago anticipado, sin factura" : "Cobro contra CXC o factura"} onCerrar={onClose}
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar} disabled={!canSave()}>Guardar recibo</Boton></>}>
+        <div className="space-y-4">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 bg-slate-700 rounded-t-2xl">
-          <h3 className="text-white font-bold text-sm">Nuevo recibo</h3>
-          <button onClick={onClose} className="text-slate-300 hover:text-white text-lg leading-none">✕</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-
-          {/* Toggle Adelanto */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-yellow-50 border border-yellow-200">
-            <button type="button"
-              onClick={() => { setEsAdelanto(!esAdelanto); setFacturaId(""); }}
-              className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${esAdelanto ? "bg-yellow-500" : "bg-slate-300"}`}>
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${esAdelanto ? "translate-x-5" : ""}`}/>
-            </button>
+          <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-monki-y/40 border-2 border-monki-y">
             <div>
-              <p className="text-xs font-bold text-slate-700">{esAdelanto ? "Recibo de adelanto" : "Recibo de pago"}</p>
-              <p className="text-[10px] text-slate-500">{esAdelanto ? "Pago anticipado — sin factura requerida" : "Paga contra CXC o factura existente"}</p>
+              <p className="text-sm font-extrabold text-monki-k">{esAdelanto ? "Recibo de adelanto" : "Recibo de pago"}</p>
+              <p className="text-[11px] text-monki-k/60">{esAdelanto ? "Pago anticipado — sin factura requerida" : "Paga contra CXC o factura existente"}</p>
             </div>
+            <Interruptor activo={esAdelanto} onCambio={() => { setEsAdelanto(!esAdelanto); setFacturaId(""); }} etiqueta="Adelanto" />
           </div>
 
-          {/* Cliente */}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente</label>
-            <div className="relative">
-              <input value={busqCli}
+          <div className="relative">
+            <Campo etiqueta="Cliente">
+              <Entrada value={busqCli}
                 onChange={(e) => { setBusqCli(e.target.value); setCliente(e.target.value); setShowCli(true); setFacturaId(""); setAplicado({}); }}
                 onFocus={() => setShowCli(true)}
                 onBlur={() => setTimeout(() => setShowCli(false), 150)}
-                placeholder="Nombre o código CLI-XXXX…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-              {showCli && filtCli.length > 0 && (
-                <div className="absolute top-full left-0 w-full bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-40 overflow-auto">
-                  {filtCli.map((c) => (
-                    <button key={c.id} type="button"
-                      onMouseDown={() => seleccionarCliente(c.nombre)}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-50 border-b last:border-0">
-                      {c.codigoCliente && <span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded mr-1.5">{c.codigoCliente}</span>}
-                      <span className="font-semibold">{c.nombre}</span>
-                      <span className="text-slate-400 ml-2">{c.cedula}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                placeholder="Nombre o código CLI-XXXX…" />
+            </Campo>
+            {showCli && filtCli.length > 0 && (
+              <div className="animate-desplegar absolute top-full left-0 w-full mt-1 bg-white border-2 border-monki-k rounded-xl shadow-[4px_4px_0_#111] z-20 max-h-44 overflow-auto">
+                {filtCli.map((c) => (
+                  <button key={c.id} type="button" onMouseDown={() => seleccionarCliente(c.nombre)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-monki-y border-b border-black/5 last:border-0">
+                    {c.codigoCliente && <span className="font-mono text-[10px] bg-monki-cream px-1.5 rounded mr-1.5">{c.codigoCliente}</span>}
+                    <span className="font-semibold">{c.nombre}</span>
+                    <span className="text-monki-k/40 ml-2 font-mono text-xs">{c.cedula}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CXC pendientes — si hay y no es adelanto */}
           {!esAdelanto && hayCXC && (
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                Deudas CXC pendientes — ingresar monto a cobrar
-              </label>
-              <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <p className="monki-tag text-monki-k/60 mb-1.5">Deudas pendientes — monto a cobrar</p>
+              <div className="border-2 border-black/10 rounded-2xl overflow-hidden">
                 {cxcPendientes.map((d) => {
                   const saldo = d.total - (d.pagado || 0);
                   return (
-                    <div key={d.id} className="flex items-center gap-2 px-3 py-2 border-b last:border-0 bg-white hover:bg-slate-50">
+                    <div key={d.id} className="flex items-center gap-2 px-3 py-2 border-b border-black/5 last:border-0 bg-white hover:bg-monki-cream/60">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-700 truncate">{d.facturaRef || d.descripcion || "CXC"}</p>
-                        <p className="text-[10px] text-slate-400">Saldo: <strong className="text-red-600">{fmtMoney(saldo, d.moneda || mon)}</strong></p>
+                        <p className="text-sm font-bold text-monki-k truncate">{d.facturaRef || d.descripcion || "CXC"}</p>
+                        <p className="text-[11px] text-monki-k/50">Saldo <strong className="text-red-600">{fmtMoney(saldo, d.moneda || mon)}</strong></p>
                       </div>
                       <input
                         type="number" min="0" max={saldo} step="0.01"
                         placeholder="0"
                         value={aplicado[d.id] || ""}
                         onChange={(e) => setAplicado(p => ({ ...p, [d.id]: e.target.value }))}
-                        className="w-28 border border-slate-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                        className="w-28 border-2 border-black/10 rounded-xl px-2.5 py-1.5 text-sm text-right"
                       />
                     </div>
                   );
                 })}
-                <div className="flex justify-end px-3 py-1.5 bg-green-50 text-xs font-bold text-green-800">
-                  Total a cobrar: {fmtMoney(totalCXC, mon)}
+                <div className="flex justify-between items-center px-3 py-2 bg-monki-k text-white text-sm">
+                  <span className="monki-tag text-monki-y">Total a cobrar</span><b>{fmtMoney(totalCXC, mon)}</b>
                 </div>
               </div>
             </div>
@@ -226,29 +209,24 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
           {/* Facturas vivas del cliente — auto-desplegadas */}
           {!esAdelanto && !hayCXC && (
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Factura <span className="text-red-500">*</span>
-                {cliente && facturasCliente.length === 0 && (
-                  <span className="ml-2 font-normal text-slate-400 normal-case">— sin facturas activas para este cliente</span>
-                )}
-              </label>
+              <p className="monki-tag text-monki-k/60 mb-1.5">Factura *</p>
               {!cliente ? (
-                <p className="text-xs text-slate-400 italic">Seleccioná el cliente para ver sus facturas</p>
+                <p className="text-sm text-monki-k/45 bg-monki-cream rounded-xl px-3 py-2.5">Elegí el cliente para ver sus facturas.</p>
               ) : facturasCliente.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">No hay facturas activas para aplicar</p>
+                <p className="text-sm text-monki-k/45 bg-monki-cream rounded-xl px-3 py-2.5">Este cliente no tiene facturas activas.</p>
               ) : (
-                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                <div className="border-2 border-black/10 rounded-2xl overflow-hidden max-h-52 overflow-y-auto">
                   {facturasCliente.map((f) => {
                     const isSel = facturaId === f.id;
                     return (
                       <button key={f.id} type="button"
                         onClick={() => setFacturaId(isSel ? "" : f.id)}
-                        className={`w-full text-left flex items-center gap-2 px-3 py-2 border-b last:border-0 transition-colors
-                          ${isSel ? "bg-green-50 border-l-4 border-yellow-300" : "bg-white hover:bg-slate-50"}`}>
-                        <span className={`font-mono font-bold text-sm ${isSel ? "text-yellow-700" : "text-slate-600"}`}>#{f.numero}</span>
-                        <span className="text-xs text-slate-500 flex-1 truncate">{fmtDate(f.fecha)}</span>
-                        <span className={`text-xs font-bold ${isSel ? "text-yellow-700" : "text-slate-700"}`}>{fmtMoney(f.total, f.moneda)}</span>
-                        {isSel && <span className="text-yellow-600 text-xs font-bold">✓</span>}
+                        className={`w-full text-left flex items-center gap-2 px-3 py-2.5 border-b border-black/5 last:border-0 transition-colors
+                          ${isSel ? "bg-monki-y" : "bg-white hover:bg-monki-cream/60"}`}>
+                        <span className="font-mono font-bold text-sm text-monki-k">#{f.numero}</span>
+                        <span className="text-xs text-monki-k/50 flex-1 truncate">{fmtDate(f.fecha)}</span>
+                        <span className="text-sm font-bold text-monki-k">{fmtMoney(f.total, f.moneda)}</span>
+                        {isSel && <span className="w-5 h-5 rounded-full bg-monki-k text-monki-y text-[11px] font-black flex items-center justify-center">✓</span>}
                       </button>
                     );
                   })}
@@ -257,53 +235,19 @@ function NuevoReciboModal({ onClose, onSave, settings, contactos = [], facturas 
             </div>
           )}
 
-          {/* Monto — solo si no es modo CXC */}
           {(esAdelanto || !hayCXC) && (
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
-                <input type="number" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
-                <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
-                  <option value="CRC">₡ CRC</option><option value="USD">$ USD</option>
-                </select>
-              </div>
+            <div className="grid grid-cols-[1fr_7rem] gap-3">
+              <Campo etiqueta="Monto *"><Entrada type="number" value={monto} onChange={(e) => setMonto(e.target.value)} placeholder="0" /></Campo>
+              <Campo etiqueta="Moneda"><Seleccion value={moneda} onChange={(e) => setMoneda(e.target.value)} opciones={[{ value: "CRC", label: "₡ CRC" }, { value: "USD", label: "$ USD" }]} /></Campo>
             </div>
           )}
-
-          {/* Método, Fecha, Concepto */}
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Método de pago</label>
-            <select value={metodo} onChange={(e) => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
-              {["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque","Otro"].map((m) => <option key={m}>{m}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo etiqueta="Método de pago"><Seleccion value={metodo} onChange={(e) => setMetodo(e.target.value)} opciones={["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque","Otro"]} /></Campo>
+            <Campo etiqueta="Fecha"><Entrada type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></Campo>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Concepto / Notas</label>
-            <input value={concepto} onChange={(e) => setConcepto(e.target.value)} placeholder="Descripción del pago"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
-          </div>
+          <Campo etiqueta="Concepto / notas"><Entrada value={concepto} onChange={(e) => setConcepto(e.target.value)} placeholder="Descripción del pago" /></Campo>
         </div>
-
-        <div className="flex gap-3 px-5 py-4 border-t border-slate-100">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} disabled={!canSave()}
-            className="flex-1 py-2.5 bg-yellow-700 rounded-lg text-sm font-semibold text-white hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed">
-            Guardar recibo
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -328,9 +272,10 @@ export default function RecibosScreen() {
   useEffect(() => { cargar(); }, [cargar]);
   useSyncRefresh(cargar);
 
+  const { confirmar, dialogo } = useConfirmar();
   const anular = async () => {
     if (!sel) return;
-    if (!confirm(`¿Anular el recibo #${sel.numero}? Quedará marcado como anulado.`)) return;
+    if (!(await confirmar("Anular recibo", `¿Anular el recibo #${sel.numero}? Quedará marcado como anulado.`, { peligro: true, boton: "Anular" }))) return;
     const todos = await db.getRecibos();
     await db.setRecibos(todos.map(x => x.id === sel.id ? { ...x, estado: "anulado" } : x));
     cargar();
@@ -338,7 +283,7 @@ export default function RecibosScreen() {
 
   const eliminar = async () => {
     if (!sel) return;
-    if (!confirm(`¿Eliminar definitivamente el recibo #${sel.numero}? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar recibo", `¿Eliminar definitivamente el recibo #${sel.numero}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getRecibos();
     await db.setRecibos(todos.filter(x => x.id !== sel.id));
     setSelected(null); cargar();
@@ -361,95 +306,62 @@ export default function RecibosScreen() {
   const totCRC = visibles.filter(r => r.estado !== "anulado").reduce((s, r) => s + (r.monto || 0), 0);
   const sel = visibles.find(r => r.id === selected);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13}/> Nuevo recibo
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <button disabled={!sel || sel.estado === "anulado"} onClick={anular}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Ban size={13}/> Anular
-        </button>
-        <button disabled={!sel} onClick={eliminar}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13}/> Eliminar
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <button onClick={() => navMes(1)} className="text-slate-300 hover:text-white px-2 py-1.5 text-xs">‹</button>
-        <span className="text-slate-200 text-xs font-semibold w-24 text-center">{mesLabel(mes)}</span>
-        <button onClick={() => navMes(-1)} className="text-slate-300 hover:text-white px-2 py-1.5 text-xs">›</button>
-        <div className="flex-1"/>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300"/>
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-36 placeholder-slate-400"/>
-        </div>
-      </div>
+  const mon = settings.moneda || "CRC";
+  const activosMes = visibles.filter(r => r.estado !== "anulado");
+  const adelantos = activosMes.filter(r => r.esAdelanto).reduce((t, r) => t + (r.monto || 0), 0);
+  const columnas = [
+    { key: "numero", titulo: "N.° recibo", render: r => <span className={`font-mono font-bold ${r.estado === "anulado" ? "line-through text-monki-k/35" : ""}`}>#{r.numero}</span> },
+    { key: "fecha", titulo: "Fecha", render: r => <div><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-monki-k/45">Por {r.creadoPor}</div>}</div> },
+    { key: "cliente", titulo: "Cliente", render: r => <b className={r.estado === "anulado" ? "line-through text-monki-k/35" : "text-monki-k"}>{r.clienteNombre || r.cliente || "Consumidor Final"}</b> },
+    { key: "tipo", titulo: "Tipo", render: r => r.esAdelanto ? <Estado tono="alerta">Adelanto</Estado>
+        : r.cxcId ? <Estado tono="oscuro">CXC</Estado>
+        : r.facturaNumero ? <span className="font-mono text-xs font-bold bg-monki-cream px-2 py-0.5 rounded-md">Fact #{r.facturaNumero}</span>
+        : <span className="text-monki-k/40">Pago</span> },
+    { key: "metodo", titulo: "Método", render: r => <span className="text-monki-k/60">{r.metodoPago || r.metodo}</span> },
+    { key: "monto", titulo: "Monto", alinear: "right", render: r => <b className={r.estado === "anulado" ? "line-through text-monki-k/35" : ""}>{fmtMoney(r.monto, r.moneda || mon)}</b> },
+    { key: "concepto", titulo: "Concepto", render: r => <span className="text-monki-k/55 text-xs">{r.concepto || r.notas || "—"}</span> },
+    { key: "estado", titulo: "Estado", render: r => r.estado === "anulado" ? <Estado>Anulado</Estado> : <Estado tono="exito">Activo</Estado> },
+  ];
 
-      {/* Info bar */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-blue-50 border-b border-blue-200 text-xs">
-          <span className="text-blue-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">#{sel.numero}</span>
-          <span className="text-slate-500">{sel.clienteNombre || "Consumidor Final"}</span>
-          <span className="text-slate-400">{sel.metodoPago}</span>
-          <span className="font-bold text-yellow-700">{fmtMoney(sel.monto, sel.moneda || settings.moneda || "CRC")}</span>
-          {sel.estado === "anulado" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulado</span>}
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-green-50 border-b border-yellow-300 text-xs text-slate-500">
-          <span className="text-green-800 font-semibold">{visibles.length} recibo{visibles.length !== 1 ? "s" : ""}</span>
-          <span className="font-black text-green-900">{fmtMoney(totCRC, settings.moneda || "CRC")}</span>
-          <span className="ml-auto">clic en fila para seleccionar</span>
+  return (
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Recibos de caja"
+      descripcion="Cada pago que entra: abonos a facturas, cobros de CXC y adelantos."
+      acciones={<Boton icono={Plus} onClick={() => setShowModal(true)}>Nuevo recibo</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Recibos del mes" valor={activosMes.length} detalle={mesLabel(mes)} icono={Receipt} delay={40} />
+          <Indicador etiqueta="Cobrado" valor={fmtMoney(totCRC, mon)} detalle="Sin anulados" icono={Wallet} destacado delay={90} />
+          <Indicador etiqueta="Adelantos" valor={fmtMoney(adelantos, mon)} detalle="Pagos anticipados" icono={Coins} delay={140} />
+          <Indicador etiqueta="Anulados" valor={visibles.length - activosMes.length} detalle="En el mes" icono={Ban} delay={190} />
+        </Indicadores>
+      }
+    >
+      <BarraFiltros
+        derecha={
+          <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+            <BotonIcono icono={ChevronLeft} titulo="Mes anterior" onClick={() => navMes(1)} />
+            <span className="text-sm font-bold w-28 text-center capitalize">{mesLabel(mes)}</span>
+            <BotonIcono icono={ChevronRight} titulo="Mes siguiente" onClick={() => navMes(-1)} />
+          </div>
+        }>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por cliente o número…" />
+      </BarraFiltros>
+      <Tabla columnas={columnas} filas={visibles} seleccionada={selected}
+        onFila={r => setSelected(selected === r.id ? null : r.id)}
+        vacio={<Vacio icono={Receipt} titulo={`Sin recibos en ${mesLabel(mes)}`} texto="Registrá el primer pago del mes."
+          accion={<Boton icono={Plus} onClick={() => setShowModal(true)}>Nuevo recibo</Boton>} />} />
+      {sel && (
+        <div className="animate-desplegar mt-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionado</span>
+          <b>#{sel.numero}</b><span className="text-white/60">{sel.clienteNombre || "Consumidor Final"}</span>
+          <b className="text-monki-y">{fmtMoney(sel.monto, sel.moneda || mon)}</b>
+          <div className="flex-1" />
+          <Boton variante="amarillo" tamano="sm" icono={Ban} onClick={anular} disabled={sel.estado === "anulado"}>Anular</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={eliminar}>Eliminar</Boton>
         </div>
       )}
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead><tr><th>N° Recibo</th><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Método</th><th>Monto</th><th>Concepto</th><th>Estado</th></tr></thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-16 text-slate-400">Sin recibos en {mesLabel(mes)}</td></tr>
-            ) : visibles.map((r) => {
-              const isSel     = selected === r.id;
-              const esAnulado = r.estado === "anulado";
-              return (
-                <tr key={r.id}
-                  className={`cursor-pointer transition-colors ${isSel ? "bg-blue-100 border-l-4 border-blue-500" : esAnulado ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
-                  onClick={() => setSelected(isSel ? null : r.id)}>
-                  <td className={`font-mono font-bold ${esAnulado ? "line-through text-slate-400" : "text-yellow-700"}`}>#{r.numero}</td>
-                  <td><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {r.creadoPor}</div>}</td>
-                  <td className={`font-medium ${esAnulado ? "line-through text-slate-400" : ""}`}>{r.clienteNombre || r.cliente || "Consumidor Final"}</td>
-                  <td>
-                    {r.esAdelanto
-                      ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Adelanto</span>
-                      : r.cxcId
-                        ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700">CXC</span>
-                        : r.facturaNumero
-                          ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 font-mono">Fact #{r.facturaNumero}</span>
-                          : <span className="text-slate-400 text-xs">Pago</span>}
-                  </td>
-                  <td className="text-slate-500">{r.metodoPago || r.metodo}</td>
-                  <td className={`font-bold ${esAnulado ? "line-through text-slate-400" : "text-yellow-700"}`}>{fmtMoney(r.monto, r.moneda || settings.moneda || "CRC")}</td>
-                  <td className="text-slate-500 text-xs">{r.concepto || r.notas || "—"}</td>
-                  <td>
-                    {esAnulado
-                      ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">Anulado</span>
-                      : <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Activo</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
       {showModal && (
         <NuevoReciboModal
           settings={settings} contactos={contactos} facturas={facturas}
@@ -457,6 +369,7 @@ export default function RecibosScreen() {
           onClose={() => setShowModal(false)} onSave={cargar}
         />
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
