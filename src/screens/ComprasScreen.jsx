@@ -8,6 +8,7 @@ import { Plus, Trash2, X, Check, ShoppingCart, Edit2, CreditCard, Receipt } from
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
+import { useAccionInicial } from "../hooks/useAccionInicial";
 import { fmtMoney, hoy, genId, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
 import { crearCXP, aumentarInventario } from "../utils/clienteUtils";
 
@@ -325,6 +326,7 @@ export default function ComprasScreen() {
   const totIVA  = compras.filter(x=>x.estado!=="vencida").reduce((s,c)=>s+(c.montoIVA||0),0);
 
   const nueva = () => { setEditando(null); setVista("form"); };
+  useAccionInicial({ accion: v => v === "nuevo" && nueva() });
   const editar = c => { setEditando(c); setVista("form"); };
   const columnas = [
     { key: "prov", titulo: "Proveedor", render: c => <div><b className="text-monki-k">{c.proveedor || "—"}</b>{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },

@@ -127,15 +127,16 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   .py-4 { padding-top:  0.75rem!important; padding-bottom:0.75rem!important; }
 
   /* 2b. Grids colapsan a 1 columna */
-  .grid-cols-2:not(.kpi-grid) { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
-  .grid-cols-3 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
-  .grid-cols-4 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+  /* .ui-rejilla = cuadrícula pensada para celular (Más, acciones rápidas): no colapsa */
+  .grid-cols-2:not(.kpi-grid):not(.ui-rejilla) { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-3:not(.ui-rejilla) { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-4:not(.ui-rejilla) { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 
   /* KPI grid — mantener 2 columnas en móvil */
   .kpi-grid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
 
   /* col-span-2/3 en grid de 1 col → span 1 */
-  .col-span-2 { grid-column: span 1 / span 1 !important; }
+  .col-span-2:not(.ui-rejilla > *) { grid-column: span 1 / span 1 !important; }
   .col-span-3 { grid-column: span 1 / span 1 !important; }
 
   /* 2c. Labels dentro de flex-rows → apilarse (stack de formularios) */
@@ -221,7 +222,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 /* ── 3. Pantallas ≤ 480px (teléfonos pequeños) ──────────────────────────── */
 @media (max-width: 480px) {
   /* KPI cards en 1 col */
-  .grid-cols-4 { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
+  .grid-cols-4:not(.ui-rejilla) { grid-template-columns: repeat(1, minmax(0,1fr)) !important; }
 
   /* Ocultar columnas secundarias en tablas */
   .col-md-hide { display: none !important; }

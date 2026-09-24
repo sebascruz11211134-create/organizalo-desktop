@@ -4,6 +4,7 @@ import { Plus, Trash2, Ban, ChevronLeft, ChevronRight, Receipt, Wallet, Coins } 
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, Interruptor, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
+import { useAccionInicial } from "../hooks/useAccionInicial";
 import { fmtMoney, fmtDate, hoy, genId, mesLabel } from "../utils/fmt";
 import { cancelarEventoCalendario } from "../utils/clienteUtils";
 
@@ -262,6 +263,7 @@ export default function RecibosScreen() {
   const [busq,      setBusq]      = useState("");
   const [mes,       setMes]       = useState(() => hoy().slice(0, 7));
   const [showModal, setShowModal] = useState(false);
+  useAccionInicial({ accion: v => v === "nuevo" && setShowModal(true) });
   const [selected,  setSelected]  = useState(null);
 
   const cargar = useCallback(async () => {

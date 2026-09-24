@@ -10,6 +10,7 @@
     "lint": "eslint --ext .js,.jsx,.mjs src test"
   },
   "dependencies": {
+    "@zxing/browser": "^0.2.1",
     "axios": "^1.6.8",
     "i18next": "^26.3.6",
     "i18next-browser-languagedetector": "^8.2.1",

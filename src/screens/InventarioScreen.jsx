@@ -3,10 +3,12 @@
  * Pestañas: Productos | Movimientos | Kardex
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Edit2, Package, Trash2, FileSpreadsheet, SlidersHorizontal, AlertTriangle, Coins, ArrowLeftRight } from "lucide-react";
+import { Plus, Edit2, Package, Trash2, FileSpreadsheet, SlidersHorizontal, AlertTriangle, Coins, ArrowLeftRight, ScanBarcode } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, Interruptor, Tarjeta, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
+import { useAccionInicial } from "../hooks/useAccionInicial";
+import EscanerCodigo from "../components/EscanerCodigo";
 import { fmtMoney, fmtDate, hoy, genId, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
@@ -71,9 +73,9 @@ function buildKardex(producto, facturas, compras, ordenes, manuales) {
 }
 
 // ── Modal producto ────────────────────────────────────────────────────────────
-function ProductoModal({ prod, onClose, onSave }) {
+function ProductoModal({ prod, inicial, onClose, onSave }) {
   const esNuevo = !prod?.id;
-  const [form, setForm] = useState(prod || { nombre: "", codigoInterno: "", codigoCabys: "", descripcion: "", precio: "", costo: "", stock: "", stockMin: "0", unidad: "Unid", categoria: "Producto", activo: true });
+  const [form, setForm] = useState(prod || { nombre: "", codigoInterno: "", codigoCabys: "", descripcion: "", precio: "", costo: "", stock: "", stockMin: "0", unidad: "Unid", categoria: "Producto", activo: true, ...inicial });
   const u = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const guardar = async () => {
@@ -202,6 +204,11 @@ export default function InventarioScreen() {
   const [busq,  setBusq]  = useState("");
   const [cat,   setCat]   = useState("Todos");
   const [modal, setModal] = useState(null);
+  const [escaner, setEscaner] = useState(false);
+  useAccionInicial({
+    accion: v => v === "nuevo" && setModal({}),
+    buscar: v => { setTab("productos"); setCat("Todos"); setBusq(v); },
+  });
 
   // Movimientos
   const [showModalMov, setShowModalMov] = useState(false);
@@ -241,7 +248,7 @@ export default function InventarioScreen() {
   const busqL    = busq.trim().toLowerCase();
   const visibles = productos.filter(p => {
     if (cat !== "Todos" && p.categoria !== cat) return false;
-    if (busqL && !p.nombre?.toLowerCase().includes(busqL) && !p.codigoInterno?.toLowerCase().includes(busqL)) return false;
+    if (busqL && !p.nombre?.toLowerCase().includes(busqL) && !p.codigoInterno?.toLowerCase().includes(busqL) && !String(p.codigoBarras || "").toLowerCase().includes(busqL)) return false;
     return true;
   });
   const categorias = ["Todos", ...new Set(productos.map(p=>p.categoria).filter(Boolean))];
@@ -338,12 +345,15 @@ export default function InventarioScreen() {
       {tab === "productos" && (<>
         <BarraFiltros resumen={`${visibles.length} de ${productos.length}`}>
           <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por nombre o código…"/>
+          <BotonIcono icono={ScanBarcode} titulo="Escanear código de barras" onClick={() => setEscaner(true)}/>
           <Selector valor={cat} onCambio={setCat} opciones={categorias}/>
         </BarraFiltros>
         <Tabla columnas={columnasProductos} filas={visibles} onFila={p=>setModal(p)}
           vacio={<Vacio icono={Package} titulo={productos.length===0 ? "Todavía no hay productos" : "Sin resultados"}
             texto={productos.length===0 ? "Creá tu primer producto para empezar a controlar el inventario." : "Probá con otra búsqueda o categoría."}
-            accion={productos.length===0 && <Boton icono={Plus} onClick={()=>setModal({})}>Nuevo producto</Boton>}/>}/>
+            accion={productos.length===0
+              ? <Boton icono={Plus} onClick={()=>setModal({})}>Nuevo producto</Boton>
+              : busq.trim() && <Boton icono={Plus} onClick={()=>setModal({ _inicial: { codigoInterno: busq.trim() } })}>Crear producto con este código</Boton>}/>}/>
       </>)}
 
       {tab === "movimientos" && (
@@ -391,8 +401,10 @@ export default function InventarioScreen() {
         </div>
       )}
 
+      {escaner && <EscanerCodigo titulo="Buscar producto" onCerrar={() => setEscaner(false)}
+        onDetectado={codigo => { setEscaner(false); setTab("productos"); setCat("Todos"); setBusq(codigo); }} />}
       {modal !== null && (
-        <ProductoModal prod={Object.keys(modal).length>0?modal:null} onClose={()=>setModal(null)} onSave={cargar}/>
+        <ProductoModal prod={Object.keys(modal).length>0 && !modal._inicial ? modal : null} inicial={modal._inicial} onClose={()=>setModal(null)} onSave={cargar}/>
       )}
       {showModalMov && (
         <ModalMovimiento productos={productos} onClose={()=>setShowModalMov(false)} onGuardar={()=>{setShowModalMov(false);cargar();}}/>

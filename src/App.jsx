@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { AlarmClock, X, LayoutDashboard, Receipt, Package, DollarSign, Settings, MoreHorizontal } from "lucide-react";
+import { AlarmClock, X } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
+import BarraInferior from "./components/NavegacionMovil";
+import { navegacionVisible } from "./navegacion";
 import LoginScreen from "./screens/LoginScreen";
 import { useIdioma } from "./utils/idioma";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
@@ -60,6 +62,7 @@ const CalendarioScreen           = lazy(() => import("./screens/CalendarioScreen
 const CRMClientesScreen          = lazy(() => import("./screens/CRMClientesScreen"));
 const ChatScreen            = lazy(() => import("./screens/ChatScreen"));
 const ConfiguracionScreen   = lazy(() => import("./screens/ConfiguracionScreen"));
+const MasScreen             = lazy(() => import("./screens/MasScreen"));
 const AdminScreen           = lazy(() => import("./screens/AdminScreen"));
 // ChatWidget eliminado — el chat está en el menú lateral
 const LibrosLegalesScreen            = lazy(() => import("./screens/LibrosLegalesScreen"));
@@ -157,6 +160,7 @@ const TITULOS = {
   "/recordatorios":     "Recordatorios de cobro",
   "/asistente":         "Asistente IA",
   "/configuracion":     "Configuración",
+  "/mas":               "Herramientas",
   "/calendario":        "Calendario",
   "/crm-clientes":      "CRM — Seguimiento de clientes",
   "/libros-legales":    "Libros legales",
@@ -184,48 +188,6 @@ function TrialBanner({ plan }) {
         <X size={13} />
       </button>
     </div>
-  );
-}
-
-// ── Bottom Tab Bar (solo móvil, < 768px) ─────────────────────────────────────
-function BottomTabBar() {
-  const { tr } = useIdioma();
-  const navigate  = useNavigate();
-  const location  = useLocation();
-
-  const tabs = [
-    { path: "/",             icon: LayoutDashboard, label: "Inicio"     },
-    { path: "/facturacion",  icon: Receipt,         label: "Facturar"   },
-    { path: "/inventario",   icon: Package,         label: "Inventario" },
-    { path: "/cxc",          icon: DollarSign,      label: "Cobrar"     },
-    { path: "/configuracion",icon: Settings,        label: "Más"        },
-  ];
-
-  return (
-    <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-monki-k flex px-1 pt-1"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 4px)" }}
-    >
-      {tabs.map(tab => {
-        const active =
-          tab.path === "/"
-            ? location.pathname === "/"
-            : location.pathname.startsWith(tab.path);
-        return (
-          <button
-            key={tab.path}
-            onClick={() => navigate(tab.path)}
-            className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 text-[10px] font-bold transition-colors duration-200
-              ${active ? "text-monki-y" : "text-white/55"}`}
-          >
-            <span className={`w-11 h-7 rounded-full flex items-center justify-center transition-all duration-300 ease-monki ${active ? "bg-monki-y text-monki-k" : ""}`}>
-              <tab.icon size={19} />
-            </span>
-            <span>{tr(tab.label)}</span>
-          </button>
-        );
-      })}
-    </nav>
   );
 }
 
@@ -502,6 +464,7 @@ export default function App() {
                 <Route path="/whatsapp"            element={<WhatsAppScreen />} />
                 <Route path="/chat"                element={<ChatScreen />} />
                 <Route path="/configuracion"       element={<ConfiguracionScreen />} />
+                <Route path="/mas"                 element={<MasScreen modulosHabilitados={modulosHabilitados} esSuperAdmin={user?.email === SUPERADMIN_EMAIL} />} />
                 <Route path="/calendario"          element={<CalendarioScreen />} />
                 <Route path="/crm-clientes"        element={<CRMClientesScreen />} />
                 <Route path="/libros-legales"      element={<LibrosLegalesScreen />} />
@@ -519,8 +482,8 @@ export default function App() {
         </div>
       </div>
 
-      {/* Bottom tab bar — solo móvil */}
-      <BottomTabBar />
+      {/* Barra inferior + acciones rápidas — solo celular */}
+      <BarraInferior modulos={navegacionVisible(modulosHabilitados)} />
 
       {/* Onboarding wizard — solo la primera vez */}
       {showOnboarding && (

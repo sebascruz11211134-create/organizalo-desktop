@@ -1,10 +1,11 @@
 import { getAutorSync } from "../utils/auth";
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Plus, Minus, Trash2, ShoppingBasket, Printer, RotateCcw, Check } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingBasket, Printer, RotateCcw, Check, ScanBarcode } from "lucide-react";
 import { Modulo, Boton, BotonIcono, Tarjeta, Vacio } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, genId, hoy } from "../utils/fmt";
 import { reducirInventario } from "../utils/clienteUtils";
+import EscanerCodigo from "../components/EscanerCodigo";
 
 const MEDIOS = ["Efectivo","SINPE Móvil","Tarjeta","Transferencia"];
 
@@ -17,6 +18,7 @@ export default function POSScreen() {
   const [mensaje,    setMensaje]    = useState(null);
   const [settings,   setSettings]   = useState({});
   const inputRef = useRef(null);
+  const [escaner, setEscaner] = useState(false);
 
   const cargar = useCallback(async () => {
     const [p, s] = await Promise.all([db.getProductos(), db.getSettings()]);
@@ -129,6 +131,13 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
 
   const unidades = carrito.reduce((t,x)=>t+x.cant,0);
 
+  // Escaneo: si el código coincide con un producto se agrega al carrito; si no, queda en la búsqueda
+  const alEscanear = (codigo) => {
+    setEscaner(false);
+    const prod = productos.find(p => p.codigoBarras === codigo || p.codigoInterno === codigo);
+    if (prod) agregar(prod); else setBusq(codigo);
+  };
+
   return (
     <Modulo seccion="Ventas" titulo="Punto de venta" descripcion="Tocá un producto para agregarlo. Cobrás y se emite el tiquete.">
       <div className="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3">
@@ -138,12 +147,17 @@ ${info.medio==="Efectivo"?`<p>Recibido: ${fmtMoney(parseFloat(efectivo)||0,"CRC"
             <input ref={inputRef} value={busq} onChange={e=>setBusq(e.target.value)}
               placeholder="Buscar producto o código de barras…"
               className="ui-sin-foco flex-1 bg-transparent outline-none border-0 text-sm text-monki-k placeholder:text-monki-k/35" />
+            <button type="button" onClick={() => setEscaner(true)} title="Escanear código de barras"
+              className="shrink-0 w-8 h-8 -my-1 rounded-full bg-monki-k text-monki-y flex items-center justify-center hover:shadow-[3px_3px_0_#FFD600] transition-all">
+              <ScanBarcode size={15}/>
+            </button>
           </label>
+          {escaner && <EscanerCodigo titulo="Escanear producto" onCerrar={() => setEscaner(false)} onDetectado={alEscanear}/>}
           <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
             {filtrados.length===0 ? (
               <Tarjeta className="h-full flex items-center justify-center"><Vacio icono={Search} titulo="No hay productos" texto="Probá con otra búsqueda o agregá productos en Inventario."/></Tarjeta>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="ui-rejilla grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filtrados.map((p,i) => {
                   const enCarrito = carrito.find(x=>x.id===p.id);
                   return (

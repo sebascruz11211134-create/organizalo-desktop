@@ -3,6 +3,7 @@ import { Plus, Search, Users, Briefcase, Trash2, Loader2, Edit2, Contact } from 
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
+import { useAccionInicial } from "../hooks/useAccionInicial";
 import { genId } from "../utils/fmt";
 import { generarCodigoCliente } from "../utils/clienteUtils";
 
@@ -135,6 +136,7 @@ function ContactoModal({ contacto, onClose, onSave }) {
 export default function ContactosScreen() {
   const [contactos, setContactos] = useState([]);
   const [busq,      setBusq]      = useState("");
+  useAccionInicial({ accion: v => v === "nuevo" && setModal({}) });
   const [filtro,    setFiltro]    = useState("todos");
   const [modal,     setModal]     = useState(null);
   const [selected,  setSelected]  = useState(null); // id seleccionado
