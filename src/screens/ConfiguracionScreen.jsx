@@ -5,8 +5,10 @@ import { pushSync, pullSync } from "../utils/sync";
 import { getToken, getUser } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
+import { Modulo, useConfirmar } from "../components/ui";
 
 export default function ConfiguracionScreen() {
+  const { confirmar, dialogo } = useConfirmar();
   const [s,       setS]       = useState({ nombreNegocio: "", cedula: "", moneda: "CRC", correo: "", sinpe: "", direccion: "" });
   const [saved,   setSaved]   = useState(false);
   const [syncing, setSyncing] = useState("");
@@ -100,7 +102,7 @@ export default function ConfiguracionScreen() {
   }
 
   async function eliminarUsuario(id, nombre) {
-    if (!confirm(`¿Eliminar al usuario "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar usuario", `¿Eliminar al usuario "${nombre}"? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     try {
       const token = await getToken();
       await fetch(`${BACKEND}/api/auth/delete-user/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -263,7 +265,7 @@ export default function ConfiguracionScreen() {
   }
 
   async function eliminarCert() {
-    if (!confirm("¿Eliminar el certificado? Esta acción no se puede deshacer.")) return;
+    if (!(await confirmar("Eliminar certificado", "¿Eliminar el certificado? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     try {
       const token = await getToken();
       await fetch(`${BACKEND}/api/cert`, {
@@ -331,9 +333,9 @@ export default function ConfiguracionScreen() {
   const setFiscal = (k, v) => setS((p) => ({ ...p, fiscal: { ...(p.fiscal || {}), [k]: v } }));
   const fiscalField = (label, key, placeholder = "", extra = {}) => (
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{label}</label>
+      <label className="block monki-tag text-monki-k/55 mb-1.5">{label}</label>
       <input value={fiscal[key] || ""} onChange={(e) => setFiscal(key, e.target.value)} placeholder={placeholder} {...extra}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+        className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
     </div>
   );
   const requisitosFacturacion = [
@@ -349,10 +351,10 @@ export default function ConfiguracionScreen() {
 
   const field = (label, key, type = "text", placeholder = "") => (
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{label}</label>
+      <label className="block monki-tag text-monki-k/55 mb-1.5">{label}</label>
       <input type={type} value={s[key] || ""} onChange={(e) => setS((p) => ({ ...p, [key]: e.target.value }))}
         placeholder={placeholder}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+        className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
     </div>
   );
 
@@ -419,10 +421,16 @@ export default function ConfiguracionScreen() {
   }
 
   return (
-    <div className="p-6 max-w-2xl fade-in">
+    <Modulo
+      seccion="Sistema"
+      titulo="Configuración"
+      descripcion="Datos del negocio, facturación electrónica, WhatsApp, sincronización, notificaciones y usuarios."
+    >
+    <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
+    <div className="max-w-3xl space-y-4">
       {/* Negocio */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h2 className="text-base font-bold text-slate-900 mb-5">Datos del negocio</h2>
+      <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
+        <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k mb-5">Datos del negocio</h2>
         <div className="grid grid-cols-2 gap-4">
           {field("Nombre del negocio", "nombreNegocio", "text", "Mi empresa S.A.")}
           {field("Cédula jurídica / física", "cedula", "text", "3-101-000000")}
@@ -433,8 +441,8 @@ export default function ConfiguracionScreen() {
           </div>
         </div>
 
-        <h3 className="text-sm font-bold text-slate-800 mt-6 mb-1">Datos fiscales para facturar</h3>
-        <p className="text-xs text-slate-500 mb-3">
+        <h3 className="text-sm font-black text-monki-k mt-6 mb-1">Datos fiscales para facturar</h3>
+        <p className="text-xs text-monki-k/60 mb-3">
           Hacienda los exige en cada comprobante. Están en tu inscripción de TRIBU-CR.
         </p>
         <div className="grid grid-cols-2 gap-4">
@@ -442,9 +450,9 @@ export default function ConfiguracionScreen() {
           {field("Teléfono", "telefono", "tel", "2222-2222")}
           {fiscalField("Código de actividad económica", "codigoActividad", "Ej. 522001", { inputMode: "numeric", maxLength: 6 })}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Provincia</label>
+            <label className="block monki-tag text-monki-k/55 mb-1.5">Provincia</label>
             <select value={fiscal.provincia || ""} onChange={(e) => setFiscal("provincia", e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
+              className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors">
               <option value="">—</option>
               {["San José", "Alajuela", "Cartago", "Heredia", "Guanacaste", "Puntarenas", "Limón"].map((n, i) => (
                 <option key={n} value={String(i + 1)}>{i + 1} - {n}</option>
@@ -458,26 +466,26 @@ export default function ConfiguracionScreen() {
           <div className="col-span-2">{fiscalField("Otras señas", "otrasSenas", "100 m norte del parque")}</div>
         </div>
 
-        <div className={`mt-4 rounded-lg border px-4 py-3 text-xs ${listoParaFacturar ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"}`}>
-          <p className={`font-semibold mb-1 ${listoParaFacturar ? "text-green-800" : "text-yellow-800"}`}>
+        <div className={`mt-4 rounded-2xl border-2 px-4 py-3 text-xs ${listoParaFacturar ? "bg-[#FFF4B8] border-monki-y" : "bg-monki-cream border-black/10"}`}>
+          <p className={`font-semibold mb-1 ${listoParaFacturar ? "text-monki-k" : "text-monki-k"}`}>
             {listoParaFacturar ? "✓ Listo para facturar" : "Para facturar a nombre de tu empresa falta:"}
           </p>
           {!listoParaFacturar && (
             <ul className="space-y-0.5">
               {requisitosFacturacion.map(([n, ok]) => (
-                <li key={n} className={ok ? "text-green-700" : "text-yellow-800"}>{ok ? "✓" : "○"} {n}</li>
+                <li key={n} className={ok ? "text-emerald-700" : "text-monki-k"}>{ok ? "✓" : "○"} {n}</li>
               ))}
             </ul>
           )}
         </div>
 
         <div className="mt-4">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda principal</label>
+          <label className="block monki-tag text-monki-k/55 mb-1.5">Moneda principal</label>
           <div className="flex gap-3">
             {["CRC", "USD"].map((m) => (
               <button key={m} onClick={() => setS((p) => ({ ...p, moneda: m }))}
-                className={`px-5 py-2 rounded-lg text-sm font-bold border-2 transition-colors
-                  ${s.moneda === m ? "border-yellow-300 bg-green-50 text-green-800" : "border-gray-200 text-slate-500 hover:border-gray-300"}`}>
+                className={`px-5 py-2 rounded-full text-sm font-bold border-2 transition-colors
+                  ${s.moneda === m ? "border-monki-k bg-monki-k text-monki-y" : "border-black/10 text-monki-k/60 hover:border-black/25"}`}>
                 {m === "CRC" ? "₡ Colones" : "$ Dólares"}
               </button>
             ))}
@@ -485,55 +493,55 @@ export default function ConfiguracionScreen() {
         </div>
 
         <button onClick={guardar}
-          className={`mt-6 flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors
-            ${saved ? "bg-green-100 text-green-800" : "bg-yellow-700 text-white hover:bg-green-800"}`}>
+          className={`mt-6 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold ui-boton transition-all duration-300 ease-monki
+            ${saved ? "bg-monki-y text-monki-k" : "bg-monki-k text-monki-y hover:shadow-[4px_4px_0_#FFD600]"}`}>
           <Save size={15} />
           {saved ? "¡Guardado!" : "Guardar configuración"}
         </button>
       </div>
 
       {/* Certificado BCCR ─────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Shield size={16} className="text-yellow-700" />
-          <h2 className="text-base font-bold text-slate-900">Facturación Electrónica</h2>
+          <Shield size={16} className="text-monki-k" />
+          <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k">Facturación Electrónica</h2>
         </div>
-        <p className="text-xs text-slate-500 mb-5">
+        <p className="text-xs text-monki-k/60 mb-5">
           Configurá el certificado BCCR (.p12) y las credenciales ATV de Hacienda para enviar y recibir
           facturas electrónicas. El certificado se guarda encriptado con AES-256-GCM y nunca se registra en texto plano.
         </p>
 
         {/* Estado actual */}
         {certStatus?.configured ? (
-          <div className="mb-4 flex items-start justify-between bg-green-50 border border-yellow-300 rounded-lg px-4 py-3">
+          <div className="mb-4 flex items-start justify-between bg-[#FFF4B8] border-2 border-monki-y rounded-lg px-4 py-3">
             <div className="flex items-center gap-2">
-              <CheckCircle size={16} className="text-yellow-600 shrink-0 mt-0.5" />
+              <CheckCircle size={16} className="text-monki-k shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-green-800">Certificado activo</p>
-                <p className="text-xs text-yellow-700">
+                <p className="text-sm font-semibold text-monki-k">Certificado activo</p>
+                <p className="text-xs text-monki-k">
                   {certStatus.nombre || "—"} · Cédula {certStatus.cedula || "—"}
                 </p>
-                <p className="text-xs text-yellow-600">
+                <p className="text-xs text-monki-k">
                   Subido el {certStatus.subidoEn ? new Date(certStatus.subidoEn).toLocaleDateString("es-CR") : "—"}
                 </p>
               </div>
             </div>
             <button onClick={eliminarCert}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50">
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 shadow-[inset_0_0_0_2px_#dc2626] rounded-full hover:bg-red-600 hover:text-white transition-colors">
               <Trash2 size={12} /> Eliminar
             </button>
           </div>
         ) : (
-          <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <AlertCircle size={15} className="text-yellow-600 shrink-0" />
-            <p className="text-xs text-yellow-700">No hay certificado configurado. Sin él no se puede enviar el Mensaje Receptor a Hacienda.</p>
+          <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-[#FFF4B8] border-2 border-monki-y rounded-lg">
+            <AlertCircle size={15} className="text-monki-k shrink-0" />
+            <p className="text-xs text-monki-k">No hay certificado configurado. Sin él no se puede enviar el Mensaje Receptor a Hacienda.</p>
           </div>
         )}
 
         {/* Mensaje de resultado */}
         {certMsg && (
           <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-            ${certMsg.type === "ok" ? "bg-green-50 border border-yellow-300 text-yellow-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+            ${certMsg.type === "ok" ? "bg-[#FFF4B8] border-2 border-monki-y text-monki-k" : "bg-red-50 border-2 border-red-200 text-red-700"}`}>
             {certMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
             {certMsg.text}
           </div>
@@ -543,14 +551,14 @@ export default function ConfiguracionScreen() {
         <div className="grid grid-cols-2 gap-3">
           {/* Archivo .p12 */}
           <div className="col-span-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Archivo .p12</label>
+            <label className="block monki-tag text-monki-k/55 mb-1.5">Archivo .p12</label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-lg px-4 py-4 text-center cursor-pointer hover:border-yellow-300 hover:bg-yellow-50 transition-colors">
+              className="border-2 border-dashed border-black/15 rounded-lg px-4 py-4 text-center cursor-pointer hover:border-monki-k hover:bg-monki-cream/60 transition-colors">
               {certFile ? (
-                <p className="text-sm text-yellow-700 font-medium">{certFile.name}</p>
+                <p className="text-sm text-monki-k font-medium">{certFile.name}</p>
               ) : (
-                <p className="text-sm text-slate-400">Click para seleccionar un archivo <span className="font-mono">.p12</span></p>
+                <p className="text-sm text-monki-k/45">Click para seleccionar un archivo <span className="font-mono">.p12</span></p>
               )}
             </div>
             <input ref={fileInputRef} type="file" accept=".p12,application/x-pkcs12" className="hidden"
@@ -559,66 +567,66 @@ export default function ConfiguracionScreen() {
 
           {/* Contraseña */}
           <div className="col-span-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña del certificado</label>
+            <label className="block monki-tag text-monki-k/55 mb-1.5">Contraseña del certificado</label>
             <input type="password" value={certPass} onChange={(e) => setCertPass(e.target.value)}
               placeholder="Contraseña del .p12"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+              className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
           </div>
 
           {/* Cédula del receptor */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cédula del receptor</label>
+            <label className="block monki-tag text-monki-k/55 mb-1.5">Cédula del receptor</label>
             <input type="text" value={certCedula} onChange={(e) => setCertCedula(e.target.value)}
               placeholder="3101000000"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+              className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
           </div>
 
           {/* Nombre del receptor */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre del receptor</label>
+            <label className="block monki-tag text-monki-k/55 mb-1.5">Nombre del receptor</label>
             <input type="text" value={certNombre} onChange={(e) => setCertNombre(e.target.value)}
               placeholder="Mi Empresa S.A."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+              className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
           </div>
         </div>
 
         <button onClick={subirCert} disabled={certLoading}
-          className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+          className="mt-4 flex items-center gap-2 px-5 py-2.5 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-semibold disabled:opacity-50">
           <Upload size={14} />
           {certLoading ? "Guardando…" : certStatus?.configured ? "Reemplazar certificado" : "Guardar certificado"}
         </button>
 
         {/* ── Credenciales ATV (Hacienda) ───────────────────────────────── */}
-        <div className="mt-6 pt-5 border-t border-gray-100">
-          <p className="text-xs font-bold text-slate-500 uppercase mb-1">Credenciales ATV · Hacienda</p>
-          <p className="text-xs text-slate-400 mb-4">
+        <div className="mt-6 pt-5 border-t border-black/10">
+          <p className="monki-tag text-monki-k/55 mb-2">Credenciales ATV · Hacienda</p>
+          <p className="text-xs text-monki-k/45 mb-4">
             Usuario y contraseña del sistema ATV (<span className="font-mono">atv.hacienda.go.cr</span>) para enviar facturas electrónicas.
             La contraseña se guarda encriptada — nunca en texto plano.
           </p>
 
           {/* Estado ATV */}
           {certStatus?.atvConfigurado ? (
-            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-yellow-300 rounded-lg">
-              <CheckCircle size={14} className="text-yellow-600 shrink-0" />
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-[#FFF4B8] border-2 border-monki-y rounded-lg">
+              <CheckCircle size={14} className="text-monki-k shrink-0" />
               <div>
-                <p className="text-xs font-semibold text-green-800">ATV configurado</p>
-                <p className="text-xs text-yellow-600">
+                <p className="text-xs font-semibold text-monki-k">ATV configurado</p>
+                <p className="text-xs text-monki-k">
                   Usuario: <span className="font-mono">{certStatus.atvUsuario}</span>
                   {certStatus.atvActualizadoEn && ` · Actualizado el ${new Date(certStatus.atvActualizadoEn).toLocaleDateString("es-CR")}`}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <AlertCircle size={14} className="text-yellow-600 shrink-0" />
-              <p className="text-xs text-yellow-700">Sin credenciales ATV — necesarias para emitir facturas electrónicas.</p>
+            <div className="mb-3 flex items-center gap-2 px-3 py-2.5 bg-[#FFF4B8] border-2 border-monki-y rounded-lg">
+              <AlertCircle size={14} className="text-monki-k shrink-0" />
+              <p className="text-xs text-monki-k">Sin credenciales ATV — necesarias para emitir facturas electrónicas.</p>
             </div>
           )}
 
           {/* Mensaje resultado ATV */}
           {atvMsg && (
             <div className={`mb-3 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm
-              ${atvMsg.type === "ok" ? "bg-green-50 border border-yellow-300 text-yellow-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+              ${atvMsg.type === "ok" ? "bg-[#FFF4B8] border-2 border-monki-y text-monki-k" : "bg-red-50 border-2 border-red-200 text-red-700"}`}>
               {atvMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
               {atvMsg.text}
             </div>
@@ -626,22 +634,22 @@ export default function ConfiguracionScreen() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Usuario ATV</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Usuario ATV</label>
               <input type="text" value={atvUsuario} onChange={e => setAtvUsuario(e.target.value)}
                 placeholder="usuario@empresa.com"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña ATV</label>
+              <label className="block monki-tag text-monki-k/55 mb-1.5">Contraseña ATV</label>
               <input type="password" value={atvPass} onChange={e => setAtvPass(e.target.value)}
                 placeholder="Contraseña del sistema ATV"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
             </div>
           </div>
 
           <button onClick={subirATV} disabled={atvLoading || !certStatus?.configured}
             title={!certStatus?.configured ? "Primero subí el certificado .p12" : ""}
-            className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800 disabled:opacity-50">
+            className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-semibold disabled:opacity-50">
             <Shield size={14} />
             {atvLoading ? "Guardando…" : certStatus?.atvConfigurado ? "Actualizar credenciales ATV" : "Guardar credenciales ATV"}
           </button>
@@ -649,20 +657,20 @@ export default function ConfiguracionScreen() {
       </div>
 
       {/* WhatsApp ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <MessageCircle size={16} className="text-yellow-600" />
-            <h2 className="text-base font-bold text-slate-900">WhatsApp Business</h2>
+            <MessageCircle size={16} className="text-monki-k" />
+            <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k">WhatsApp Business</h2>
           </div>
           {/* Estado badge */}
           <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-            ${waEstado === "open" ? "bg-green-100 text-yellow-700" : "bg-slate-100 text-slate-500"}`}>
+            ${waEstado === "open" ? "bg-monki-y text-monki-k" : "bg-black/5 text-monki-k/60"}`}>
             {waEstado === "open" ? <Wifi size={11} /> : <WifiOff size={11} />}
             {waEstado === "open" ? "Conectado" : waEstado || "Sin estado"}
           </span>
         </div>
-        <p className="text-xs text-slate-500 mb-5">
+        <p className="text-xs text-monki-k/60 mb-5">
           Conectá un número de WhatsApp para enviar recordatorios de seguimiento automáticos a tus clientes.
           Los mensajes se envían a las 8am del día programado en el Calendario.
         </p>
@@ -670,15 +678,15 @@ export default function ConfiguracionScreen() {
         {/* Botones de acción */}
         <div className="flex flex-wrap gap-2 mb-4">
           <button onClick={cargarWaEstado}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50">
+            className="flex items-center gap-1.5 px-3 py-2 bg-white text-monki-k font-bold shadow-[inset_0_0_0_2px_#111] rounded-full hover:bg-monki-k hover:text-monki-y transition-colors text-sm">
             <RefreshCw size={13} /> Actualizar estado
           </button>
           <button onClick={cargarQR} disabled={waLoading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50">
+            className="flex items-center gap-1.5 px-3 py-2 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-medium disabled:opacity-50">
             <QrCode size={13} /> {waLoading ? "Cargando…" : "Mostrar QR"}
           </button>
           <button onClick={reconectarWA} disabled={waLoading}
-            className="flex items-center gap-1.5 px-3 py-2 border border-yellow-300 text-yellow-700 rounded-lg text-sm hover:bg-yellow-50 disabled:opacity-50">
+            className="flex items-center gap-1.5 px-3 py-2 bg-monki-y text-monki-k font-bold rounded-full ui-boton hover:shadow-[3px_3px_0_#111] transition-all disabled:opacity-50">
             <RefreshCw size={13} /> Reconectar
           </button>
         </div>
@@ -686,9 +694,9 @@ export default function ConfiguracionScreen() {
         {/* Mensaje de estado */}
         {waMsg && (
           <div className={`mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-            ${waMsg.type === "ok"   ? "bg-green-50 border border-yellow-300 text-yellow-700"
-            : waMsg.type === "info" ? "bg-blue-50 border border-blue-200 text-blue-700"
-            :                         "bg-red-50 border border-red-200 text-red-700"}`}>
+            ${waMsg.type === "ok"   ? "bg-[#FFF4B8] border-2 border-monki-y text-monki-k"
+            : waMsg.type === "info" ? "bg-monki-cream border-2 border-black/10 text-monki-k"
+            :                         "bg-red-50 border-2 border-red-200 text-red-700"}`}>
             {waMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
             {waMsg.text}
           </div>
@@ -696,80 +704,80 @@ export default function ConfiguracionScreen() {
 
         {/* QR Code */}
         {waQR && (
-          <div className="mb-5 flex flex-col items-center gap-3 p-5 border-2 border-dashed border-yellow-300 rounded-xl bg-green-50">
-            <p className="text-sm font-semibold text-green-800">Abrí WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo</p>
+          <div className="mb-5 flex flex-col items-center gap-3 p-5 border-2 border-dashed border-black/15 rounded-[18px] bg-monki-cream">
+            <p className="text-sm font-semibold text-monki-k">Abrí WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo</p>
             <img
               src={waQR.src}
               alt="QR WhatsApp"
               className="w-52 h-52 rounded-lg border-4 border-white shadow-md"
             />
-            <p className="text-xs text-yellow-600">El QR expira en ~60 segundos. Si vence, presioná "Mostrar QR" de nuevo.</p>
-            <button onClick={cargarQR} className="text-xs text-yellow-700 underline">Regenerar QR</button>
+            <p className="text-xs text-monki-k">El QR expira en ~60 segundos. Si vence, presioná "Mostrar QR" de nuevo.</p>
+            <button onClick={cargarQR} className="text-xs text-monki-k underline">Regenerar QR</button>
           </div>
         )}
 
         {/* Test de envío */}
-        <div className="border-t border-gray-100 pt-4 mt-2">
-          <p className="text-xs font-bold text-slate-500 uppercase mb-2">Probar envío</p>
+        <div className="border-t border-black/10 pt-4 mt-2">
+          <p className="monki-tag text-monki-k/55 mb-2">Probar envío</p>
           <div className="flex gap-2">
             <input
               value={waTelTest}
               onChange={e => setWaTelTest(e.target.value)}
               placeholder="64693392"
-              className="w-32 border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              className="w-32 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"
             />
             <input
               value={waMsgTest}
               onChange={e => setWaMsgTest(e.target.value)}
               placeholder="Mensaje de prueba..."
-              className="flex-1 border border-gray-300 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              className="flex-1 bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors"
             />
             <button onClick={enviarMsgTest} disabled={waSending || !waTelTest || !waMsgTest}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 disabled:opacity-50">
+              className="px-4 py-2 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-medium disabled:opacity-50">
               {waSending ? "…" : "Enviar"}
             </button>
           </div>
-          <p className="text-xs text-slate-400 mt-1">El número se formatea automáticamente con prefijo 506 (Costa Rica).</p>
+          <p className="text-xs text-monki-k/45 mt-1">El número se formatea automáticamente con prefijo 506 (Costa Rica).</p>
         </div>
       </div>
 
       {/* Sync */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-base font-bold text-slate-900 mb-2">Sincronización</h2>
-        <p className="text-sm text-slate-500 mb-5">
+      <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
+        <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k mb-2">Sincronización</h2>
+        <p className="text-sm text-monki-k/60 mb-5">
           Los datos se sincronizan automáticamente cada 3 minutos entre el app móvil y el desktop.
           También podés forzar una sincronización manual.
         </p>
 
         {syncing && (
-          <div className="mb-4 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 flex items-center gap-2">
+          <div className="mb-4 px-4 py-2.5 bg-monki-k rounded-xl text-sm text-monki-y flex items-center gap-2">
             <RefreshCw size={13} className="animate-spin" /> {syncing}
           </div>
         )}
 
         <div className="flex gap-3">
           <button onClick={handlePush}
-            className="flex items-center gap-2 px-4 py-2.5 bg-yellow-700 text-white rounded-lg text-sm font-semibold hover:bg-green-800">
+            className="flex items-center gap-2 px-4 py-2.5 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-semibold">
             <RefreshCw size={14} /> Subir mis datos
           </button>
           <button onClick={handlePull}
-            className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 text-slate-700 rounded-lg text-sm font-semibold hover:bg-gray-50">
+            className="flex items-center gap-2 px-4 py-2.5 bg-white text-monki-k font-bold shadow-[inset_0_0_0_2px_#111] rounded-full hover:bg-monki-k hover:text-monki-y transition-colors text-sm font-semibold">
             <RefreshCw size={14} /> Descargar del servidor
           </button>
         </div>
 
-        <p className="text-xs text-slate-400 mt-4">
+        <p className="text-xs text-monki-k/45 mt-4">
           Backend: {BACKEND || "Servidor de desarrollo"}
         </p>
       </div>
 
       {/* ── Notificaciones Push (ntfy) ─────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Bell size={16} className="text-violet-600" />
-          <h2 className="text-base font-bold text-slate-900">Notificaciones Push</h2>
+          <Bell size={16} className="text-monki-k" />
+          <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k">Notificaciones Push</h2>
         </div>
-        <p className="text-xs text-slate-500 mb-4">
+        <p className="text-xs text-monki-k/60 mb-4">
           Cada usuario tiene su propio canal privado en ntfy. Solo vos recibís tus notificaciones —
           nadie más en la empresa las ve. Configurá cuáles querés recibir.
         </p>
@@ -777,17 +785,17 @@ export default function ConfiguracionScreen() {
         {ntfyConfig && (
           <div className="space-y-4">
             {/* Topic personal */}
-            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4">
-              <p className="text-xs font-bold text-violet-800 mb-2">Tu canal personal:</p>
-              <ol className="text-xs text-violet-700 space-y-1 mb-3">
+            <div className="bg-monki-cream border border-black/10 rounded-lg p-4">
+              <p className="text-xs font-bold text-monki-k mb-2">Tu canal personal:</p>
+              <ol className="text-xs text-monki-k space-y-1 mb-3">
                 <li>1. Instalá <strong>ntfy</strong> en tu teléfono (iOS o Android, gratis)</li>
                 <li>2. Abrí la app → tocá "+" → pegá este topic:</li>
               </ol>
               <div className="flex gap-2">
                 <input readOnly value={ntfyConfig.topic}
-                  className="flex-1 px-2 py-1.5 border border-violet-200 rounded-lg text-xs font-mono text-violet-900 bg-white" />
+                  className="flex-1 px-2 py-1.5 border border-black/10 rounded-lg text-xs font-mono text-monki-k bg-white" />
                 <button onClick={() => navigator.clipboard?.writeText(ntfyConfig.topic)}
-                  className="px-3 py-1.5 border border-violet-200 rounded-lg text-xs text-violet-700 hover:bg-violet-100">
+                  className="px-3 py-1.5 border border-black/10 rounded-lg text-xs text-monki-k hover:bg-black/5">
                   Copiar
                 </button>
               </div>
@@ -796,7 +804,7 @@ export default function ConfiguracionScreen() {
             {/* Preferencias por tipo */}
             {ntfyPrefs && (
               <div>
-                <p className="text-xs font-bold text-slate-500 uppercase mb-2">Qué querés recibir</p>
+                <p className="monki-tag text-monki-k/55 mb-2">Qué querés recibir</p>
                 <div className="space-y-1">
                   {(ntfyPrefs.tipos || []).map(tipo => (
                     <button
@@ -805,13 +813,13 @@ export default function ConfiguracionScreen() {
                       disabled={ntfySaving}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left
                         ${ntfyPrefs.prefs[tipo.id]
-                          ? "bg-violet-50 border-violet-200 text-violet-800"
-                          : "bg-gray-50 border-gray-200 text-slate-400"}`}
+                          ? "bg-monki-cream border-black/10 text-monki-k"
+                          : "bg-white border-black/10 text-monki-k/45"}`}
                     >
                       <span className="text-base leading-none">{tipo.icon}</span>
                       <span className="flex-1 font-medium">{tipo.label}</span>
                       <span className={`w-8 h-4 rounded-full relative transition-colors shrink-0
-                        ${ntfyPrefs.prefs[tipo.id] ? "bg-violet-500" : "bg-gray-300"}`}>
+                        ${ntfyPrefs.prefs[tipo.id] ? "bg-monki-cream0" : "bg-black/15"}`}>
                         <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all
                           ${ntfyPrefs.prefs[tipo.id] ? "left-4" : "left-0.5"}`} />
                       </span>
@@ -824,7 +832,7 @@ export default function ConfiguracionScreen() {
             {/* Mensaje */}
             {ntfyMsg && (
               <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm
-                ${ntfyMsg.type === "ok" ? "bg-green-50 border border-yellow-300 text-yellow-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                ${ntfyMsg.type === "ok" ? "bg-[#FFF4B8] border-2 border-monki-y text-monki-k" : "bg-red-50 border-2 border-red-200 text-red-700"}`}>
                 {ntfyMsg.type === "ok" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
                 {ntfyMsg.text}
               </div>
@@ -832,7 +840,7 @@ export default function ConfiguracionScreen() {
 
             {/* Botón de prueba */}
             <button onClick={enviarNotifPrueba} disabled={ntfyLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-medium disabled:opacity-50">
               <Bell size={13} /> {ntfyLoading ? "Enviando…" : "Enviar notificación de prueba"}
             </button>
           </div>
@@ -840,7 +848,7 @@ export default function ConfiguracionScreen() {
 
         {!ntfyConfig && (
           <button onClick={cargarNtfyUserConfig}
-            className="text-sm text-violet-600 hover:underline">
+            className="text-sm text-monki-k hover:underline">
             Cargar configuración de notificaciones
           </button>
         )}
@@ -848,44 +856,44 @@ export default function ConfiguracionScreen() {
 
       {/* ── Sección: Usuarios de la empresa (solo admin) ─────────────────── */}
       {esAdmin && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Users size={18} className="text-slate-600" />
-              <h3 className="font-semibold text-slate-800">Usuarios de tu empresa</h3>
+              <Users size={18} className="text-monki-k/75" />
+              <h3 className="text-[18px] font-black tracking-[-0.02em] text-monki-k">Usuarios de tu empresa</h3>
             </div>
             <button
               onClick={() => { setShowNuevoUsr(true); setUsrMsg(null); setNuevoPass(genPassword()); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-600 text-white text-xs font-semibold rounded-lg hover:bg-yellow-700 transition-colors">
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] transition-colors">
               <Plus size={13} /> Nuevo usuario
             </button>
           </div>
 
           {/* Credencial recién creada */}
           {credencial && (
-            <div className="mb-4 border border-yellow-200 bg-yellow-50 rounded-xl p-4">
+            <div className="mb-4 border-2 border-monki-k bg-monki-y rounded-[18px] p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle size={15} className="text-yellow-600" />
-                <span className="text-sm font-semibold text-yellow-800">Usuario creado — guardá estas credenciales</span>
+                <CheckCircle size={15} className="text-monki-k" />
+                <span className="text-sm font-semibold text-monki-k">Usuario creado — guardá estas credenciales</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                <div className="bg-white rounded-lg border border-yellow-200 px-3 py-2">
-                  <p className="text-xs text-slate-500 mb-0.5">Nombre</p>
-                  <p className="font-medium text-slate-800">{credencial.nombre}</p>
+                <div className="bg-white rounded-xl border-2 border-monki-k/15 px-3 py-2">
+                  <p className="text-xs text-monki-k/60 mb-0.5">Nombre</p>
+                  <p className="font-medium text-monki-k">{credencial.nombre}</p>
                 </div>
-                <div className="bg-white rounded-lg border border-yellow-200 px-3 py-2">
-                  <p className="text-xs text-slate-500 mb-0.5">Usuario</p>
-                  <p className="font-mono font-medium text-slate-800">{credencial.username}</p>
+                <div className="bg-white rounded-xl border-2 border-monki-k/15 px-3 py-2">
+                  <p className="text-xs text-monki-k/60 mb-0.5">Usuario</p>
+                  <p className="font-mono font-medium text-monki-k">{credencial.username}</p>
                 </div>
-                <div className="col-span-2 bg-white rounded-lg border border-yellow-200 px-3 py-2">
-                  <p className="text-xs text-slate-500 mb-0.5">Contraseña</p>
-                  <p className="font-mono font-bold text-slate-800 tracking-wider">{credencial.password}</p>
+                <div className="col-span-2 bg-white rounded-xl border-2 border-monki-k/15 px-3 py-2">
+                  <p className="text-xs text-monki-k/60 mb-0.5">Contraseña</p>
+                  <p className="font-mono font-bold text-monki-k tracking-wider">{credencial.password}</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => navigator.clipboard?.writeText(`Usuario: ${credencial.username}\nContraseña: ${credencial.password}`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-yellow-400 text-yellow-700 text-xs font-medium rounded-lg hover:bg-yellow-100 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-monki-y text-monki-k font-bold rounded-full ui-boton hover:shadow-[3px_3px_0_#111] transition-all transition-colors">
                   <Copy size={12} /> Copiar credenciales
                 </button>
                 <button
@@ -902,25 +910,25 @@ Ingresá en: ${window.location.origin}
                     </pre>`);
                     w.print();
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 text-slate-600 text-xs font-medium rounded-lg hover:bg-slate-100 transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-monki-k font-bold shadow-[inset_0_0_0_2px_#111] rounded-full hover:bg-monki-k hover:text-monki-y transition-colors transition-colors">
                   🖨 Imprimir
                 </button>
                 <button onClick={() => setCredencial(null)}
-                  className="ml-auto text-xs text-slate-400 hover:text-slate-600">Cerrar</button>
+                  className="ml-auto text-xs text-monki-k/45 hover:text-monki-k/75">Cerrar</button>
               </div>
             </div>
           )}
 
           {/* Tabla de equipo */}
           {equipoLoad ? (
-            <p className="text-sm text-slate-400 text-center py-4">Cargando equipo…</p>
+            <p className="text-sm text-monki-k/45 text-center py-4">Cargando equipo…</p>
           ) : equipo.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-4">No hay otros usuarios en tu empresa todavía.</p>
+            <p className="text-sm text-monki-k/45 text-center py-4">No hay otros usuarios en tu empresa todavía.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-semibold text-slate-500 uppercase border-b border-gray-100">
+                  <tr className="text-left text-xs font-semibold text-monki-k/60 uppercase border-b border-black/10">
                     <th className="pb-2 pr-4">Nombre</th>
                     <th className="pb-2 pr-4">Usuario</th>
                     <th className="pb-2 pr-4">Rol</th>
@@ -928,22 +936,22 @@ Ingresá en: ${window.location.origin}
                     <th className="pb-2"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-black/5">
                   {equipo.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-50">
-                      <td className="py-2 pr-4 font-medium text-slate-800">{u.nombre}</td>
-                      <td className="py-2 pr-4 font-mono text-slate-600 text-xs">{u.username || "—"}</td>
+                    <tr key={u.id} className="hover:bg-monki-cream/60">
+                      <td className="py-2 pr-4 font-medium text-monki-k">{u.nombre}</td>
+                      <td className="py-2 pr-4 font-mono text-monki-k/75 text-xs">{u.username || "—"}</td>
                       <td className="py-2 pr-4">
                         {u.id === meUser?.id ? (
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            u.rol === "admin" ? "bg-purple-100 text-purple-700" :
-                            u.rol === "contador" ? "bg-blue-100 text-blue-700" :
-                            u.rol === "vendedor" ? "bg-yellow-100 text-yellow-700" :
-                            "bg-gray-100 text-slate-600"
+                            u.rol === "admin" ? "bg-monki-k text-monki-y" :
+                            u.rol === "contador" ? "bg-monki-cream text-monki-k" :
+                            u.rol === "vendedor" ? "bg-monki-y text-monki-k" :
+                            "bg-black/5 text-monki-k/75"
                           }`}>{u.rol}</span>
                         ) : (
                           <select value={u.rol} onChange={e => cambiarRol(u.id, e.target.value)}
-                            className="text-xs border border-gray-200 rounded-lg px-2 py-0.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                            className="text-xs border-2 border-black/10 hover:border-monki-k rounded-full px-2.5 py-1 bg-white font-semibold text-monki-k cursor-pointer">
                             <option value="colaborador">colaborador</option>
                             <option value="vendedor">vendedor</option>
                             <option value="contador">contador</option>
@@ -953,7 +961,7 @@ Ingresá en: ${window.location.origin}
                       </td>
                       <td className="py-2 pr-4">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          u.activo ? "bg-green-100 text-yellow-700" : "bg-red-100 text-red-600"
+                          u.activo ? "bg-monki-y text-monki-k" : "bg-red-100 text-red-600"
                         }`}>{u.activo ? "Activo" : "Inactivo"}</span>
                       </td>
                       <td className="py-2 text-right">
@@ -969,21 +977,21 @@ Ingresá en: ${window.location.origin}
             </div>
           )}
 
-          <button onClick={cargarEquipo} className="mt-3 flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600">
+          <button onClick={cargarEquipo} className="mt-3 flex items-center gap-1.5 text-xs text-monki-k/45 hover:text-monki-k/75">
             <RefreshCcw size={11} /> Actualizar lista
           </button>
 
           {/* Modal: Nuevo usuario */}
           {showNuevoUsr && (
-            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 bg-slate-700 border-b border-slate-600">
-                  <h4 className="text-sm font-bold text-white">Crear nuevo usuario</h4>
-                  <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }} className="text-slate-400 hover:text-white text-xs">✕</button>
+            <div className="fixed inset-0 bg-monki-k/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="animate-entrar bg-white rounded-[22px] border-2 border-monki-k shadow-[6px_6px_0_#111] w-full max-w-md overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 bg-monki-k">
+                  <h4 className="text-sm font-black text-monki-y">Crear nuevo usuario</h4>
+                  <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }} className="text-monki-k/45 hover:text-white text-xs">✕</button>
                 </div>
                 <div className="p-5 space-y-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nombre completo</label>
+                    <label className="block monki-tag text-monki-k/55 mb-1.5">Nombre completo</label>
                     <input value={nuevoNombre} onChange={e => {
                         const n = e.target.value;
                         setNuevoNombre(n);
@@ -992,41 +1000,41 @@ Ingresá en: ${window.location.origin}
                         setNuevoUser(auto.replace(/[^a-z0-9.]/g,""));
                       }}
                       placeholder="Ej: María González"
-                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                      className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                      Usuario <span className="text-yellow-500 normal-case font-normal">· auto-generado</span>
+                    <label className="block monki-tag text-monki-k/55 mb-1.5">
+                      Usuario <span className="text-monki-k/40 normal-case font-normal">· auto-generado</span>
                     </label>
                     <input value={nuevoUser} onChange={e => setNuevoUser(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ""))}
                       placeholder="Ej: maria.gonzalez"
-                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                      className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors font-mono" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contraseña</label>
+                    <label className="block monki-tag text-monki-k/55 mb-1.5">Contraseña</label>
                     <div className="flex gap-2">
                       <div className="flex-1 relative">
                         <input
                           type={showPass ? "text" : "password"}
                           value={nuevoPass}
                           onChange={e => setNuevoPass(e.target.value)}
-                          className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm font-mono bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400 pr-8" />
+                          className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors font-mono pr-8" />
                         <button type="button" onClick={() => setShowPass(p => !p)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-monki-k/45 hover:text-monki-k/75">
                           {showPass ? <EyeOff size={13} /> : <Eye size={13} />}
                         </button>
                       </div>
                       <button type="button" onClick={() => setNuevoPass(genPassword())}
                         title="Generar contraseña"
-                        className="px-2.5 border border-slate-200 rounded text-slate-500 hover:bg-slate-50 text-xs">
+                        className="px-3 border-2 border-black/10 hover:border-monki-k rounded-xl text-monki-k/60 text-xs">
                         <RefreshCcw size={12} />
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Rol</label>
+                    <label className="block monki-tag text-monki-k/55 mb-1.5">Rol</label>
                     <select value={nuevoRol} onChange={e => setNuevoRol(e.target.value)}
-                      className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                      className="w-full bg-white border-2 border-black/10 hover:border-black/25 rounded-xl px-3.5 py-2.5 text-sm text-monki-k placeholder:text-monki-k/35 transition-colors">
                       <option value="colaborador">Colaborador</option>
                       <option value="vendedor">Vendedor</option>
                       <option value="contador">Contador</option>
@@ -1036,7 +1044,7 @@ Ingresá en: ${window.location.origin}
 
                   {usrMsg && (
                     <div className={`flex items-center gap-2 px-3 py-2 rounded text-sm
-                      ${usrMsg.type === "ok" ? "bg-yellow-50 border border-yellow-200 text-yellow-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+                      ${usrMsg.type === "ok" ? "bg-[#FFF4B8] border-2 border-monki-y text-monki-k" : "bg-red-50 border-2 border-red-200 text-red-700"}`}>
                       {usrMsg.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
                       {usrMsg.text}
                     </div>
@@ -1044,11 +1052,11 @@ Ingresá en: ${window.location.origin}
 
                   <div className="flex gap-2 pt-1">
                     <button onClick={() => { setShowNuevoUsr(false); setUsrMsg(null); }}
-                      className="flex-1 py-2 border border-slate-200 rounded text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                      className="flex-1 py-2 bg-white text-monki-k font-bold shadow-[inset_0_0_0_2px_#111] rounded-full hover:bg-monki-k hover:text-monki-y transition-colors text-sm">
                       Cancelar
                     </button>
                     <button onClick={crearUsuario} disabled={usrLoading}
-                      className="flex-1 py-2 bg-yellow-600 text-white rounded text-sm font-semibold hover:bg-yellow-700 disabled:opacity-50">
+                      className="flex-1 py-2 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm font-semibold disabled:opacity-50">
                       {usrLoading ? "Creando…" : "Crear usuario"}
                     </button>
                   </div>
@@ -1059,5 +1067,8 @@ Ingresá en: ${window.location.origin}
         </div>
       )}
     </div>
+    </div>
+    {dialogo}
+    </Modulo>
   );
 }
