@@ -5,19 +5,20 @@ import { getAutorSync } from "../utils/auth";
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Search, Trash2, Ban } from "lucide-react";
+import { Plus, Trash2, Ban, HandCoins, AlertTriangle, CreditCard } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, fechaLocal, fechaDesplazada } from "../utils/fmt";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
 const ESTADO = (d) => {
-  if (d.estado === "anulada") return { label: "Anulada", cls: "bg-slate-100 text-slate-500" };
+  if (d.estado === "anulada") return { label: "Anulada", tono: "neutro" };
   const s = Math.max(0, d.total - (d.pagado || 0));
-  if (s <= 0) return { label: "Pagada", cls: "bg-green-100 text-green-800" };
-  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", cls: "bg-red-100 text-red-700" };
-  if ((d.pagado || 0) > 0) return { label: "Parcial", cls: "bg-yellow-100 text-yellow-700" };
-  return { label: "Pendiente", cls: "bg-gray-100 text-slate-600" };
+  if (s <= 0) return { label: "Pagada", tono: "exito" };
+  if (d.fechaVencimiento && d.fechaVencimiento < hoy()) return { label: "Vencida", tono: "peligro" };
+  if ((d.pagado || 0) > 0) return { label: "Parcial", tono: "alerta" };
+  return { label: "Pendiente", tono: "neutro" };
 };
 
 function NuevaCXPModal({ onClose, onSave, settings }) {
@@ -54,58 +55,32 @@ function NuevaCXPModal({ onClose, onSave, settings }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-5">Nueva cuenta por pagar</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Proveedor *</label>
-            <ClienteAutocomplete
-              value={nombre}
-              onChange={(c, str) => {
-                setNombre(str);
-                if (c && c.dias_credito > 0) {
-                  const d = new Date();
-                  d.setDate(d.getDate() + c.dias_credito);
-                  setVence(fechaLocal(d));
-                }
-              }}
-              tipo="proveedor"
-              ringColor="focus:ring-red-500"
-            />
-          </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto *</label>
-              <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Moneda</label>
-              <select value={moneda} onChange={(e) => setMoneda(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
-                <option value="CRC">₡ CRC</option>
-                <option value="USD">$ USD</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha vencimiento</label>
-            <input type="date" value={vence} onChange={(e) => setVence(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Referencia / Notas</label>
-            <input value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura del proveedor…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm" />
-          </div>
+    <Modal titulo="Nueva cuenta por pagar" subtitulo="Lo que le debés a un proveedor" onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar</Boton></>}>
+      <div className="space-y-4">
+        <Campo etiqueta="Proveedor *">
+          <ClienteAutocomplete
+            value={nombre}
+            onChange={(c, str) => {
+              setNombre(str);
+              if (c && c.dias_credito > 0) {
+                const d = new Date();
+                d.setDate(d.getDate() + c.dias_credito);
+                setVence(fechaLocal(d));
+              }
+            }}
+            tipo="proveedor"
+            ringColor="focus:ring-monki-y"
+          />
+        </Campo>
+        <div className="grid grid-cols-[1fr_7rem] gap-3">
+          <Campo etiqueta="Monto *"><Entrada type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0"/></Campo>
+          <Campo etiqueta="Moneda"><Seleccion value={moneda} onChange={(e) => setMoneda(e.target.value)} opciones={[{value:"CRC",label:"₡ CRC"},{value:"USD",label:"$ USD"}]}/></Campo>
         </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-red-600 rounded-lg text-sm font-semibold text-white hover:bg-red-700">Guardar</button>
-        </div>
+        <Campo etiqueta="Fecha de vencimiento"><Entrada type="date" value={vence} onChange={(e) => setVence(e.target.value)}/></Campo>
+        <Campo etiqueta="Referencia / notas"><Entrada value={notas} onChange={(e) => setNotas(e.target.value)} placeholder="Número de factura del proveedor…"/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -139,40 +114,17 @@ function PagoCXPModal({ deuda, settings, token, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-slate-900 mb-1">Registrar pago a proveedor</h3>
-        <p className="text-sm text-slate-500 mb-5">{deuda.nombre} — Saldo: <strong>{fmtMoney(saldo, mon)}</strong></p>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto ({mon})</label>
-            <input type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0" max={saldo}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Método</label>
-            <select value={metodo} onChange={e => setMetodo(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
-              {["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque"].map(m => <option key={m}>{m}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
-            <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="Referencia, comprobante…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
-          </div>
+    <Modal titulo="Registrar pago a proveedor" subtitulo={`${deuda.nombre} — saldo ${fmtMoney(saldo, mon)}`} onCerrar={onClose} ancho="max-w-md"
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton icono={HandCoins} onClick={guardar}>Guardar pago</Boton></>}>
+      <div className="space-y-4">
+        <Campo etiqueta={`Monto (${mon})`}><Entrada type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0" max={saldo}/></Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo etiqueta="Método"><Seleccion value={metodo} onChange={e => setMetodo(e.target.value)} opciones={["Transferencia","SINPE Móvil","Efectivo","Tarjeta","Cheque"]}/></Campo>
+          <Campo etiqueta="Fecha"><Entrada type="date" value={fecha} onChange={e => setFecha(e.target.value)}/></Campo>
         </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar} className="flex-1 py-2.5 bg-red-600 rounded-lg text-sm font-semibold text-white hover:bg-red-700">Guardar pago</button>
-        </div>
+        <Campo etiqueta="Notas"><Entrada value={notas} onChange={e => setNotas(e.target.value)} placeholder="Referencia, comprobante…"/></Campo>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -192,16 +144,17 @@ export default function CXPScreen() {
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
+  const { confirmar, dialogo } = useConfirmar();
   const anular = async () => {
     if (!sel) return;
-    if (!confirm(`¿Anular la CXP de ${sel.nombre}? Quedará marcada como anulada.`)) return;
+    if (!(await confirmar("Anular cuenta por pagar", `¿Anular la CXP de ${sel.nombre}? Quedará marcada como anulada.`, { peligro: true, boton: "Anular" }))) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
     cargar();
   };
 
   const eliminar = async (d) => {
-    if (!confirm(`¿Eliminar la CXP de ${d.nombre}? Esta acción no se puede deshacer.`)) return;
+    if (!(await confirmar("Eliminar cuenta por pagar", `¿Eliminar la CXP de ${d.nombre}? Esta acción no se puede deshacer.`, { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getDebts();
     await db.setDebts(todos.filter((x) => x.id !== d.id));
     try {
@@ -233,143 +186,103 @@ export default function CXPScreen() {
   const totUSD = visibles.filter((d) => d.moneda === "USD").reduce((s, d) => s + Math.max(0, d.total - (d.pagado || 0)), 0);
   const sel = visibles.find((d) => d.id === selected);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar principal */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <button onClick={() => setModal("nueva")}
-          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Nueva
-        </button>
-        <div className="w-px h-5 bg-slate-500 mx-1" />
-        <button
-          disabled={!sel || Math.max(0, sel.total - (sel.pagado||0)) <= 0}
-          onClick={() => setModal({ deuda: sel })}
-          className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Plus size={13} /> Pagar
-        </button>
-        <button
-          disabled={!sel || sel.estado === "anulada"}
-          onClick={anular}
-          className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Ban size={13} /> Anular
-        </button>
-        <button
-          disabled={!sel}
-          onClick={() => sel && eliminar(sel)}
-          className="flex items-center gap-1.5 bg-red-800 hover:bg-red-900 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-          <Trash2 size={13} /> Eliminar
-        </button>
-        <div className="flex-1" />
-        <select value={filtro} onChange={(e) => setFiltro(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5 focus:outline-none">
-          <option value="todos">Todos</option>
-          <option value="pendientes">Pendientes</option>
-          <option value="vencidas">Vencidas</option>
-          <option value="pagadas">Pagadas</option>
-        </select>
-        <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
-          <Search size={12} className="text-slate-300" />
-          <input value={busq} onChange={(e) => setBusq(e.target.value)}
-            placeholder="Buscar…" className="bg-transparent text-white text-xs outline-none w-32 placeholder-slate-400" />
-        </div>
-      </div>
+  const vencidas = debts.filter(d => d.estado !== "anulada" && d.fechaVencimiento && d.fechaVencimiento < hoy() && Math.max(0, d.total - (d.pagado || 0)) > 0).length;
+  const TH = "monki-tag text-monki-k/55 font-semibold px-4 py-3 border-b-2 border-black/10 text-left whitespace-nowrap";
+  const saldoSel = sel ? Math.max(0, sel.total - (sel.pagado || 0)) : 0;
 
-      {/* Barra de registro seleccionado */}
-      {sel ? (
-        <div className="flex items-center gap-4 px-4 py-1.5 bg-red-50 border-b border-red-200 text-xs">
-          <span className="text-red-700 font-semibold">Seleccionado:</span>
-          <span className="font-bold text-slate-800">{sel.nombre}</span>
-          <span className="text-slate-500">Saldo: <strong className="text-red-600">{fmtMoney(Math.max(0,sel.total-(sel.pagado||0)), sel.moneda||"CRC")}</strong></span>
-          <span className="text-slate-500">Vence: {fmtDate(sel.fechaVencimiento)}</span>
-          <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
-        </div>
-      ) : (
-        <div className="flex gap-4 px-4 py-1.5 bg-red-50 border-b border-red-100 text-xs text-slate-500">
-          {totCRC > 0 && <span>Por pagar: <strong className="text-red-800">{fmtMoney(totCRC,"CRC")}</strong></span>}
-          {totUSD > 0 && <span><strong className="text-red-800">{fmtMoney(totUSD,"USD")}</strong></span>}
-          <span className="ml-auto">{visibles.length} cuenta{visibles.length!==1?"s":""} — haz clic en una fila para seleccionarla</span>
+  return (
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Cuentas por pagar"
+      descripcion="Lo que le debés a tus proveedores, con sus vencimientos y pagos."
+      acciones={<Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Por pagar CRC" valor={fmtMoney(totCRC,"CRC")} icono={CreditCard} destacado delay={40}/>
+          <Indicador etiqueta="Por pagar USD" valor={fmtMoney(totUSD,"USD")} delay={90}/>
+          <Indicador etiqueta="Vencidas" valor={vencidas} icono={AlertTriangle} alerta={vencidas>0} delay={140} onClick={() => setFiltro("vencidas")}/>
+          <Indicador etiqueta="Cuentas" valor={debts.length} detalle="Registradas" delay={190}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: filtro, onCambiar: setFiltro, items: [
+        { key: "todos", label: "Todas" }, { key: "pendientes", label: "Pendientes" }, { key: "vencidas", label: "Vencidas" }, { key: "pagadas", label: "Pagadas" },
+      ] }}
+    >
+      <BarraFiltros resumen={`${visibles.length} cuenta${visibles.length!==1?"s":""}`}>
+        <Buscador valor={busq} onCambio={setBusq} placeholder="Buscar por proveedor o referencia…"/>
+      </BarraFiltros>
+
+      {sel && (
+        <div className="animate-desplegar mb-3 flex flex-wrap items-center gap-3 bg-monki-k text-white rounded-2xl px-4 py-2.5 text-sm">
+          <span className="monki-tag text-monki-y">Seleccionada</span>
+          <b>{sel.nombre}</b>
+          <span className="text-white/60">Saldo <b className="text-monki-y">{fmtMoney(saldoSel, sel.moneda||"CRC")}</b></span>
+          <span className="text-white/60">Vence {fmtDate(sel.fechaVencimiento)}</span>
+          <div className="flex-1"/>
+          <Boton variante="amarillo" tamano="sm" icono={HandCoins} disabled={saldoSel <= 0} onClick={() => setModal({ deuda: sel })}>Pagar</Boton>
+          <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={anular}>Anular</Boton>
+          <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto">
-        <table className="table-base">
-          <thead>
-            <tr>
-              <th>Proveedor</th>
-              <th>Referencia</th>
-              <th>Total</th>
-              <th>Pagado</th>
-              <th>Saldo</th>
-              <th>Vencimiento</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibles.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-16 text-slate-400">Sin cuentas por pagar</td></tr>
-            ) : visibles.map((d) => {
-              const mon      = d.moneda || settings.moneda || "CRC";
-              const saldo    = Math.max(0, d.total - (d.pagado || 0));
-              const est      = ESTADO(d);
-              const isSel    = selected === d.id;
-              const esAnulada = d.estado === "anulada";
-              return (
-                <React.Fragment key={d.id}>
-                  <tr
-                    className={`cursor-pointer transition-colors ${isSel ? "bg-red-100 border-l-4 border-red-500" : esAnulada ? "opacity-50 hover:bg-slate-50" : "hover:bg-slate-50"}`}
-                    onClick={() => setSelected(isSel ? null : d.id)}
-                  >
-                    <td className={`font-semibold ${esAnulada ? "line-through text-slate-400" : "text-slate-900"}`}><div>{d.nombre}</div>{d.creadoPor && <div className="text-[10px] font-medium text-purple-600">Por: {d.creadoPor}</div>}</td>
-                    <td className="text-slate-500 text-xs">{d.notas || "—"}</td>
-                    <td>{fmtMoney(d.total, mon)}</td>
-                    <td className="text-yellow-700">{fmtMoney(d.pagado || 0, mon)}</td>
-                    <td className={`font-bold ${saldo > 0 ? "text-red-600" : "text-yellow-700"}`}>{fmtMoney(saldo, mon)}</td>
-                    <td className={d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                      <div>{fmtDate(d.fechaVencimiento)}</div>{d.creadoPor && <div className="text-[10px] text-purple-600 font-medium">Por: {d.creadoPor}</div>}
-                    </td>
-                    <td><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${est.cls}`}>{est.label}</span></td>
-                  </tr>
-                  {isSel && (
-                    <tr>
-                      <td colSpan={7} className="bg-red-50 px-8 py-3">
-                        <p className="text-xs font-bold text-slate-500 uppercase mb-2">Pagos registrados</p>
-                        {(d.pagos || []).length === 0 ? (
-                          <p className="text-xs text-slate-400">Sin pagos registrados.</p>
-                        ) : (
-                          <table className="w-full text-xs">
-                            <thead><tr className="text-slate-500">
-                              <th className="text-left pb-1">Fecha</th>
-                              <th className="text-left pb-1">Método</th>
-                              <th className="text-left pb-1">Monto</th>
-                              <th className="text-left pb-1">Notas</th>
-                            </tr></thead>
-                            <tbody>
-                              {(d.pagos || []).map((p, i) => (
-                                <tr key={p.id || i}>
-                                  <td className="py-0.5">{p.fecha}</td>
-                                  <td className="py-0.5">{p.metodo}</td>
-                                  <td className="py-0.5 font-bold">{fmtMoney(p.monto, mon)}</td>
-                                  <td className="py-0.5 text-slate-400">{p.notas || "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </td>
+      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 overflow-auto">
+          <table className="ui-tabla w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr>{["Proveedor","Referencia","Total","Pagado","Saldo","Vencimiento","Estado"].map(t => <th key={t} className={TH + (["Total","Pagado","Saldo"].includes(t) ? " !text-right" : "")}>{t}</th>)}</tr>
+            </thead>
+            <tbody>
+              {visibles.length === 0 ? (
+                <tr><td colSpan={7}><Vacio icono={CreditCard} titulo="Sin cuentas por pagar" texto={debts.length ? "Probá con otra búsqueda o filtro." : "Registrá lo que le debés a tus proveedores."}
+                  accion={!debts.length && <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}/></td></tr>
+              ) : visibles.map((d) => {
+                const mon = d.moneda || settings.moneda || "CRC";
+                const saldo = Math.max(0, d.total - (d.pagado || 0));
+                const est = ESTADO(d);
+                const isSel = selected === d.id;
+                const esAnulada = d.estado === "anulada";
+                return (
+                  <React.Fragment key={d.id}>
+                    <tr onClick={() => setSelected(isSel ? null : d.id)}
+                      className={`ui-fila animate-desplegar cursor-pointer border-b border-black/5 transition-colors ${isSel ? "bg-[#FFF4B8]" : esAnulada ? "opacity-50 hover:bg-monki-cream/60" : "hover:bg-monki-cream/60"}`}>
+                      <td className="px-4 py-2.5"><b className={esAnulada ? "line-through text-monki-k/35" : "text-monki-k"}>{d.nombre}</b>{d.creadoPor && <div className="text-[10px] text-monki-k/45">Por {d.creadoPor}</div>}</td>
+                      <td className="px-4 py-2.5 text-monki-k/50 text-xs">{d.notas || "—"}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{fmtMoney(d.total, mon)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-monki-k/60">{fmtMoney(d.pagado || 0, mon)}</td>
+                      <td className={`px-4 py-2.5 text-right tabular-nums font-black ${saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldo, mon)}</td>
+                      <td className={`px-4 py-2.5 ${d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0 ? "text-red-600 font-bold" : "text-monki-k/55"}`}>{fmtDate(d.fechaVencimiento)}</td>
+                      <td className="px-4 py-2.5"><Estado tono={est.tono}>{est.label}</Estado></td>
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    {isSel && (
+                      <tr className="animate-desplegar">
+                        <td colSpan={7} className="bg-monki-cream/70 px-6 py-3">
+                          <p className="monki-tag text-monki-k/55 mb-2">Pagos registrados</p>
+                          {(d.pagos || []).length === 0 ? <p className="text-sm text-monki-k/40">Sin pagos registrados.</p> : (
+                            <div className="space-y-1.5">
+                              {(d.pagos || []).map((p, i) => (
+                                <div key={p.id || i} className="flex flex-wrap items-center gap-3 bg-white rounded-xl px-3 py-2 text-sm">
+                                  <span className="text-monki-k/55">{p.fecha}</span>
+                                  <Estado>{p.metodo}</Estado>
+                                  <b className="ml-auto">{fmtMoney(p.monto, mon)}</b>
+                                  {p.notas && <span className="text-monki-k/40 text-xs w-full">{p.notas}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modales */}
       {modal === "nueva" && <NuevaCXPModal settings={settings} onClose={() => setModal(null)} onSave={cargar} />}
       {modal?.deuda && <PagoCXPModal deuda={modal.deuda} settings={settings} token={token} onClose={() => setModal(null)} onSave={cargar} />}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
