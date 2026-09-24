@@ -7,12 +7,14 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from "recharts";
-import { TrendingUp, Package, Users, FileSpreadsheet } from "lucide-react";
+import { TrendingUp, TrendingDown, Trophy, FileSpreadsheet } from "lucide-react";
+import { Modulo, Boton, Tarjeta, Indicadores, Indicador } from "../components/ui";
 import db from "../utils/db";
 import { fmtMoney, hoy, fechaLocal, mesLocal, mesDesplazado } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
-const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#84cc16"];
+// Paleta Monki: negro, amarillo y grises cálidos
+const COLORS = ["#111111", "#FFD600", "#6b6b6b", "#FFE866", "#3a3a3a", "#C9A800", "#A3A3A3", "#F4F1E6"];
 
 function getMesKey(offset = 0) {
   return mesDesplazado(mesLocal(), offset); // "2025-06"
@@ -32,10 +34,10 @@ const fmtK = (v) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-4 py-3 text-xs">
-      <p className="font-bold text-slate-700 mb-1">{label}</p>
+    <div className="bg-white border-2 border-monki-k rounded-2xl shadow-[4px_4px_0_#111] px-4 py-3 text-xs">
+      <p className="font-extrabold text-monki-k mb-1">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="font-semibold">
+        <p key={i} className="font-semibold text-monki-k/75">
           {p.name}: {fmtMoney(p.value, "CRC")}
         </p>
       ))}
@@ -121,137 +123,90 @@ export default function AnalyticsScreen() {
     );
   };
 
+  const EJE = { fontSize: 10, fill: "rgba(17,17,17,.45)", fontFamily: "JetBrains Mono, monospace" };
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <TrendingUp size={13} className="text-yellow-400"/>
-        <span className="text-white text-xs font-semibold">Análisis de negocio</span>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <label className="text-slate-300 text-xs">Período:</label>
-        <select value={periodo} onChange={e => setPeriodo(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1.5">
-          <option value="3">3 meses</option>
-          <option value="6">6 meses</option>
-          <option value="12">12 meses</option>
-        </select>
-        <div className="flex-1"/>
-        <button onClick={exportar}
-          className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded text-xs font-semibold">
-          <FileSpreadsheet size={13}/> Excel
-        </button>
-      </div>
+    <Modulo
+      seccion="Reportes"
+      titulo="Análisis de ventas"
+      descripcion="Cómo se mueve tu negocio: ventas contra gastos, productos y clientes que más aportan."
+      acciones={<Boton variante="secundario" icono={FileSpreadsheet} onClick={exportar}>Excel</Boton>}
+      indicadores={
+        <Indicadores>
+          <Indicador etiqueta="Ventas del período" valor={fmtMoney(resumen.totalVentas, "CRC")} icono={TrendingUp} destacado delay={40}/>
+          <Indicador etiqueta="Gastos del período" valor={fmtMoney(resumen.totalGastos, "CRC")} icono={TrendingDown} delay={90}/>
+          <Indicador etiqueta="Utilidad" valor={fmtMoney(resumen.totalVentas - resumen.totalGastos, "CRC")} alerta={resumen.totalVentas - resumen.totalGastos < 0} delay={140}/>
+          <Indicador etiqueta="Mejor mes" valor={resumen.mejorMes ? resumen.mejorMes.mes : "—"} detalle={resumen.mejorMes ? fmtMoney(resumen.mejorMes.Ventas, "CRC") : "Sin ventas"} icono={Trophy} delay={190}/>
+        </Indicadores>
+      }
+      pestanas={{ activa: periodo, onCambiar: setPeriodo, items: [{ key: "3", label: "3 meses" }, { key: "6", label: "6 meses" }, { key: "12", label: "12 meses" }] }}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1 space-y-3">
+        <Tarjeta titulo="Ventas contra gastos por mes" acciones={<span className="font-mono text-[11px] text-monki-k/45">Últimos {periodo} meses</span>} cuerpo="px-3 pb-4">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={ventasPorMes} barCategoryGap="28%">
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(17,17,17,.07)" vertical={false}/>
+              <XAxis dataKey="mes" tick={EJE} axisLine={false} tickLine={false}/>
+              <YAxis tickFormatter={fmtK} tick={EJE} width={52} axisLine={false} tickLine={false}/>
+              <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(255,214,0,.18)" }}/>
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }}/>
+              <Bar dataKey="Ventas" fill="#111111" radius={[6,6,0,0]}/>
+              <Bar dataKey="Gastos" fill="#FFD600" radius={[6,6,0,0]}/>
+            </BarChart>
+          </ResponsiveContainer>
+        </Tarjeta>
 
-      <div className="flex-1 overflow-auto p-4 bg-slate-50">
-        <div className="max-w-[1100px] mx-auto space-y-4">
-
-          {/* ── KPI strip ── */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Total ventas período", value: fmtMoney(resumen.totalVentas, "CRC"), color: "text-yellow-700" },
-              { label: "Total gastos período", value: fmtMoney(resumen.totalGastos, "CRC"), color: "text-red-600" },
-              { label: "Mejor mes", value: resumen.mejorMes ? `${resumen.mejorMes.mes} · ${fmtMoney(resumen.mejorMes.Ventas, "CRC")}` : "—", color: "text-blue-700" },
-            ].map((k, i) => (
-              <div key={i} className="bg-white border border-slate-200 rounded-xl p-4">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{k.label}</p>
-                <p className={`text-lg font-black mt-1 ${k.color}`}>{k.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Ventas vs Gastos por mes ── */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <h3 className="text-sm font-bold text-slate-800 mb-1">Ventas vs Gastos por mes</h3>
-            <p className="text-[10px] text-slate-400 mb-4">Últimos {periodo} meses</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={ventasPorMes} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
-                <XAxis dataKey="mes" tick={{ fontSize: 10, fill: "#94a3b8" }}/>
-                <YAxis tickFormatter={fmtK} tick={{ fontSize: 9, fill: "#94a3b8" }} width={52}/>
-                <Tooltip content={<CustomTooltip/>}/>
-                <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }}/>
-                <Bar dataKey="Ventas" fill="#10b981" radius={[3,3,0,0]}/>
-                <Bar dataKey="Gastos" fill="#ef4444" radius={[3,3,0,0]}/>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* ── Row: Pie productos + tendencia diaria ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            {/* Top productos */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Package size={13} className="text-yellow-500"/>
-                <h3 className="text-sm font-bold text-slate-800">Productos más vendidos</h3>
-              </div>
-              {topProductos.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-8">Sin datos de líneas en facturas</p>
-              ) : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie data={topProductos} dataKey="value" nameKey="name"
-                      cx="50%" cy="50%" outerRadius={75} innerRadius={40}
-                      paddingAngle={2}>
-                      {topProductos.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
-                    </Pie>
-                    <Tooltip formatter={(v) => fmtMoney(v, "CRC")}/>
-                    <Legend iconSize={8} wrapperStyle={{ fontSize: 9 }}/>
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            {/* Tendencia diaria */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5">
-              <h3 className="text-sm font-bold text-slate-800 mb-1">Tendencia diaria</h3>
-              <p className="text-[10px] text-slate-400 mb-4">Ventas últimos 30 días</p>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={tendenciaDiaria}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
-                  <XAxis dataKey="dia" tick={{ fontSize: 9, fill: "#94a3b8" }}/>
-                  <YAxis tickFormatter={fmtK} tick={{ fontSize: 9, fill: "#94a3b8" }} width={48}/>
-                  <Tooltip formatter={(v) => fmtMoney(v, "CRC")} labelFormatter={(l) => `Día ${l}`}/>
-                  <Line type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={2}
-                    dot={false} activeDot={{ r: 4, fill: "#10b981" }}/>
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* ── Top clientes ── */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Users size={13} className="text-yellow-500"/>
-              <h3 className="text-sm font-bold text-slate-800">Top clientes por facturación</h3>
-            </div>
-            {topClientes.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">Sin clientes identificados (facturas a Consumidor Final no se cuentan)</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <Tarjeta titulo="Productos más vendidos" cuerpo="px-3 pb-4">
+            {topProductos.length === 0 ? (
+              <p className="text-sm text-monki-k/40 text-center py-10">Sin datos de líneas en facturas</p>
             ) : (
-              <div className="space-y-3">
-                {topClientes.map((c, i) => {
-                  const max = topClientes[0].total;
-                  const pct = max > 0 ? (c.total / max) * 100 : 0;
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">#{i+1}</span>
-                      <span className="text-xs font-semibold text-slate-700 w-36 truncate shrink-0">{c.nombre}</span>
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: COLORS[i % COLORS.length] }}/>
-                      </div>
-                      <span className="text-xs font-bold text-slate-600 shrink-0 w-28 text-right">
-                        {fmtMoney(c.total, "CRC")}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={topProductos} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={46} paddingAngle={2} stroke="#fff" strokeWidth={2}>
+                    {topProductos.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
+                  </Pie>
+                  <Tooltip formatter={(v) => fmtMoney(v, "CRC")}/>
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }}/>
+                </PieChart>
+              </ResponsiveContainer>
             )}
-          </div>
-
+          </Tarjeta>
+          <Tarjeta titulo="Tendencia diaria" acciones={<span className="font-mono text-[11px] text-monki-k/45">Últimos 30 días</span>} cuerpo="px-3 pb-4">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={tendenciaDiaria}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(17,17,17,.07)" vertical={false}/>
+                <XAxis dataKey="dia" tick={EJE} axisLine={false} tickLine={false}/>
+                <YAxis tickFormatter={fmtK} tick={EJE} width={48} axisLine={false} tickLine={false}/>
+                <Tooltip formatter={(v) => fmtMoney(v, "CRC")} labelFormatter={(l) => `Día ${l}`}/>
+                <Line type="monotone" dataKey="valor" stroke="#111111" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#FFD600", stroke: "#111", strokeWidth: 2 }}/>
+              </LineChart>
+            </ResponsiveContainer>
+          </Tarjeta>
         </div>
+
+        <Tarjeta titulo="Clientes que más compran" cuerpo="px-4 pb-4">
+          {topClientes.length === 0 ? (
+            <p className="text-sm text-monki-k/40 text-center py-8">Sin clientes identificados (las facturas a Consumidor Final no cuentan)</p>
+          ) : (
+            <div className="space-y-2.5">
+              {topClientes.map((c, i) => {
+                const max = topClientes[0].total;
+                const pct = max > 0 ? (c.total / max) * 100 : 0;
+                return (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${i === 0 ? "bg-monki-y text-monki-k" : "bg-monki-cream text-monki-k/60"}`}>{i+1}</span>
+                    <span className="text-sm font-bold text-monki-k w-40 truncate shrink-0">{c.nombre}</span>
+                    <div className="flex-1 h-2.5 bg-black/5 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-monki-k transition-all duration-700 ease-monki" style={{ width: `${pct}%` }}/>
+                    </div>
+                    <b className="text-sm shrink-0 w-32 text-right tabular-nums">{fmtMoney(c.total, "CRC")}</b>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Tarjeta>
       </div>
-    </div>
+    </Modulo>
   );
 }
