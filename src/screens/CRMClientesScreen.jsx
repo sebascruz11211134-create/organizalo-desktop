@@ -14,14 +14,16 @@ import { fmtMoney, fechaLocal } from "../utils/fmt";
 import { getToken } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
+import { Modulo, Boton, BotonIcono, Buscador, Tarjeta, Vacio, Estado, Pestanas, Entrada } from "../components/ui";
 
+// Paleta Monki: del gris (frío) al negro (cliente), rojo para inactivo
 const ETAPAS = [
-  { id: "prospecto",  label: "Prospecto",  color: "#94a3b8", bg: "bg-slate-100" },
-  { id: "contactado", label: "Contactado", color: "#f59e0b", bg: "bg-yellow-50" },
-  { id: "propuesta",  label: "Propuesta",  color: "#6366f1", bg: "bg-indigo-50" },
-  { id: "negociacion",label: "Negociación",color: "#3b82f6", bg: "bg-blue-50" },
-  { id: "cliente",    label: "Cliente",    color: "#10b981", bg: "bg-yellow-50" },
-  { id: "inactivo",   label: "Inactivo",   color: "#ef4444", bg: "bg-red-50" },
+  { id: "prospecto",  label: "Prospecto",  color: "#A3A3A3" },
+  { id: "contactado", label: "Contactado", color: "#E0A800" },
+  { id: "propuesta",  label: "Propuesta",  color: "#FFD600" },
+  { id: "negociacion",label: "Negociación",color: "#6B6B6B" },
+  { id: "cliente",    label: "Cliente",    color: "#111111" },
+  { id: "inactivo",   label: "Inactivo",   color: "#DC2626" },
 ];
 
 const ETAPA_DEFAULT = "cliente";
@@ -33,16 +35,16 @@ function etapaInfo(id) {
 // ── Nota de seguimiento ───────────────────────────────────────────────────────
 function NotaItem({ nota }) {
   return (
-    <div className="flex gap-3 py-3 border-b border-slate-100 last:border-0">
-      <div className="w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 mt-0.5">
-        <MessageSquare size={12} className="text-yellow-600" />
+    <div className="animate-desplegar flex gap-3 py-3 border-b border-black/5 last:border-0">
+      <div className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0 mt-0.5">
+        <MessageSquare size={13} className="text-monki-k" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-700">{nota.texto}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-[11px] text-slate-400">{nota.fecha}</p>
+        <p className="text-sm text-monki-k/80">{nota.texto}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="font-mono text-[10px] text-monki-k/45">{nota.fecha}</p>
           {nota.seguimiento && (
-            <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+            <span className="text-[10px] bg-monki-k text-monki-y px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
               <Calendar size={9} /> Seguimiento: {nota.seguimiento}
             </span>
           )}
@@ -128,189 +130,99 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
   const totalFacturado = facturas.reduce((s, f) => s + (f.total || 0), 0);
   const cxcPend = cxc.reduce((s, c) => s + Math.max(0, (c.total || 0) - (c.pagado || 0)), 0);
 
+  const Lista = ({ vacio, children }) => children.length === 0 ? <p className="text-sm text-monki-k/40 text-center py-8">{vacio}</p> : <div className="space-y-1.5">{children}</div>;
+  const Fila = ({ icono: Icono, titulo, sub, derecha, alerta }) => (
+    <div className="animate-desplegar flex items-center gap-3 p-3 rounded-2xl border-2 border-black/5 hover:border-black/15 transition-colors">
+      <span className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${alerta ? "bg-red-100 text-red-600" : "bg-monki-cream"}`}><Icono size={14}/></span>
+      <div className="flex-1 min-w-0"><p className="text-sm font-bold text-monki-k truncate">{titulo}</p><p className="font-mono text-[10px] text-monki-k/45">{sub}</p></div>
+      {derecha}
+    </div>
+  );
   return (
     <div className="fixed inset-0 z-40 flex">
-      <div className="flex-1 bg-black/30" onClick={onClose} />
-      <div className="w-[520px] bg-white shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-start gap-4 px-6 py-5 border-b border-slate-100">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-            {(cliente.nombre || "?")[0].toUpperCase()}
-          </div>
+      <div className="flex-1 bg-monki-k/40 backdrop-blur-sm animate-[entrar_.2s_ease]" onClick={onClose} />
+      <div className="animate-entrar w-full max-w-[540px] bg-white border-l-2 border-monki-k shadow-[-8px_0_0_#111] flex flex-col overflow-hidden">
+        <div className="flex items-start gap-4 px-6 pt-5 pb-4">
+          <span className="w-14 h-14 rounded-full bg-monki-y flex items-center justify-center text-monki-k font-black text-xl shrink-0 shadow-[3px_3px_0_#111]">{(cliente.nombre || "?")[0].toUpperCase()}</span>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-800 text-base truncate">{cliente.nombre}</h2>
-            {cliente.empresa && <p className="text-sm text-slate-500 truncate">{cliente.empresa}</p>}
-            <div className="flex items-center gap-2 mt-1.5">
-              {/* Selector de etapa */}
-              <select
-                value={etapa}
-                onChange={e => cambiarEtapa(e.target.value)}
-                className="text-xs px-2 py-1 rounded-full border font-medium focus:outline-none cursor-pointer"
-                style={{ color: ei.color, borderColor: ei.color + "44", background: ei.color + "11" }}
-              >
-                {ETAPAS.map(e => (
-                  <option key={e.id} value={e.id}>{e.label}</option>
-                ))}
+            <h2 className="text-[20px] font-black tracking-[-0.03em] text-monki-k truncate">{cliente.nombre}</h2>
+            {cliente.empresa && <p className="text-sm text-monki-k/55 truncate">{cliente.empresa}</p>}
+            <div className="flex items-center gap-2 mt-2">
+              <select value={etapa} onChange={e => cambiarEtapa(e.target.value)}
+                className="text-xs pl-3 pr-7 py-1.5 rounded-full border-2 border-monki-k font-bold cursor-pointer bg-white">
+                {ETAPAS.map(e => <option key={e.id} value={e.id}>{e.label}</option>)}
               </select>
-              {cliente.codigoCliente && (
-                <span className="text-[11px] text-slate-400 font-mono">{cliente.codigoCliente}</span>
-              )}
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: ei.color }}/>
+              {cliente.codigoCliente && <span className="font-mono text-[11px] text-monki-k/45">{cliente.codigoCliente}</span>}
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 mt-1">
-            <X size={18} />
-          </button>
+          <BotonIcono icono={X} titulo="Cerrar" onClick={onClose}/>
         </div>
 
-        {/* Info de contacto */}
-        <div className="px-6 py-3 flex flex-wrap gap-x-4 gap-y-1 border-b border-slate-100">
-          {cliente.email    && <span className="flex items-center gap-1.5 text-xs text-slate-500"><Mail size={12} />{cliente.email}</span>}
-          {cliente.telefono && <span className="flex items-center gap-1.5 text-xs text-slate-500"><Phone size={12} />{cliente.telefono}</span>}
-          {cliente.cedula   && <span className="flex items-center gap-1.5 text-xs text-slate-500"><Tag size={12} />{cliente.cedula}</span>}
+        <div className="px-6 pb-3 flex flex-wrap gap-2">
+          {cliente.email    && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1"><Mail size={12} />{cliente.email}</span>}
+          {cliente.telefono && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1"><Phone size={12} />{cliente.telefono}</span>}
+          {cliente.cedula   && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1 font-mono"><Tag size={12} />{cliente.cedula}</span>}
         </div>
 
-        {/* KPIs rápidos */}
-        <div className="grid grid-cols-3 border-b border-slate-100">
+        <div className="grid grid-cols-3 gap-2 px-6 pb-4">
           {[
-            { label: "Facturado", value: fmtMoney(totalFacturado), icon: BarChart2, color: "text-yellow-600" },
-            { label: "CXC pend.", value: fmtMoney(cxcPend),        icon: DollarSign, color: cxcPend > 0 ? "text-yellow-600" : "text-slate-400" },
-            { label: "Facturas",  value: facturas.length,           icon: Receipt,   color: "text-slate-600" },
+            { label: "Facturado", value: fmtMoney(totalFacturado), oscuro: true },
+            { label: "CXC pendiente", value: fmtMoney(cxcPend), alerta: cxcPend > 0 },
+            { label: "Facturas", value: facturas.length },
           ].map(k => (
-            <div key={k.label} className="flex flex-col items-center py-3 border-r last:border-0 border-slate-100">
-              <k.icon size={14} className={k.color} />
-              <p className={`text-sm font-bold mt-0.5 ${k.color}`}>{k.value}</p>
-              <p className="text-[10px] text-slate-400">{k.label}</p>
+            <div key={k.label} className={`rounded-2xl p-3 border-2 ${k.oscuro ? "bg-monki-k border-monki-k" : k.alerta ? "border-red-300 bg-white" : "border-black/10 bg-white"}`}>
+              <p className={`monki-tag text-[10px] ${k.oscuro ? "text-monki-y/70" : "text-monki-k/50"}`}>{k.label}</p>
+              <p className={`text-[15px] font-black mt-0.5 ${k.oscuro ? "text-monki-y" : k.alerta ? "text-red-600" : "text-monki-k"}`}>{k.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-slate-100">
-          {[
-            { id: "resumen",  label: "Notas" },
-            { id: "facturas", label: `Facturas (${facturas.length})` },
-            { id: "cxc",      label: "CXC" },
-            { id: "pedidos",  label: "Pedidos" },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex-1 py-2.5 text-xs font-medium border-b-2 transition-colors
-                ${tab === t.id ? "border-yellow-500 text-yellow-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="px-6">
+          <Pestanas activa={tab} onCambiar={setTab} items={[
+            { key: "resumen", label: "Notas" }, { key: "facturas", label: "Facturas", cuenta: facturas.length },
+            { key: "cxc", label: "CXC" }, { key: "pedidos", label: "Pedidos" },
+          ]}/>
         </div>
 
-        {/* Contenido tab */}
         <div className="flex-1 overflow-auto px-6 py-4">
-
           {tab === "resumen" && (
-            <div className="space-y-4">
-              {/* Agregar nota */}
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    value={nuevaNota}
-                    onChange={e => setNuevaNota(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && !fechaSeguimiento && agregarNota()}
-                    placeholder="Agregar nota de seguimiento…"
-                    className="flex-1 border border-slate-200 rounded px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400/30"
-                  />
-                  <button
-                    onClick={agregarNota}
-                    disabled={!nuevaNota.trim()}
-                    className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-40 transition-colors"
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={13} className="text-slate-400 shrink-0" />
-                  <input
-                    type="date"
-                    value={fechaSeguimiento}
-                    onChange={e => setFechaSeguimiento(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
-                  />
-                  <span className="text-[11px] text-slate-400">
-                    {fechaSeguimiento ? "→ creará evento en calendario" : "Fecha de seguimiento (opcional)"}
-                  </span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Entrada value={nuevaNota} onChange={e => setNuevaNota(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && !fechaSeguimiento && agregarNota()} placeholder="Agregar nota de seguimiento…"/>
+                <Boton icono={Plus} onClick={agregarNota} disabled={!nuevaNota.trim()}>Nota</Boton>
               </div>
-
+              <div className="flex items-center gap-2">
+                <Calendar size={13} className="text-monki-k/40 shrink-0" />
+                <Entrada type="date" value={fechaSeguimiento} onChange={e => setFechaSeguimiento(e.target.value)} className="!w-auto !py-1.5"/>
+                <span className="text-[11px] text-monki-k/45">{fechaSeguimiento ? "Crea un evento en el calendario" : "Fecha de seguimiento (opcional)"}</span>
+              </div>
               {notas.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-6">Sin notas de seguimiento aún.</p>
-                : notas.map((n, i) => <NotaItem key={i} nota={n} />)
-              }
+                ? <p className="text-sm text-monki-k/40 text-center py-6">Sin notas de seguimiento todavía.</p>
+                : notas.map((n, i) => <NotaItem key={i} nota={n} />)}
             </div>
           )}
-
           {tab === "facturas" && (
-            <div className="space-y-2">
-              {facturas.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-8">Sin facturas registradas.</p>
-                : facturas.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
-                    <Receipt size={14} className="text-yellow-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{f.consecutivo || f.numero || `#${i+1}`}</p>
-                      <p className="text-xs text-slate-400">{f.fecha}</p>
-                    </div>
-                    <span className="text-sm font-semibold text-slate-700">{fmtMoney(f.total || 0)}</span>
-                  </div>
-                ))
-              }
-            </div>
+            <Lista vacio="Sin facturas registradas.">
+              {facturas.map((f, i) => <Fila key={i} icono={Receipt} titulo={f.consecutivo || f.numero || `#${i+1}`} sub={f.fecha} derecha={<b className="text-sm">{fmtMoney(f.total || 0)}</b>}/>)}
+            </Lista>
           )}
-
           {tab === "cxc" && (
-            <div className="space-y-2">
-              {cxc.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-8">Sin cuentas por cobrar.</p>
-                : cxc.map((c, i) => {
-                  const pend = Math.max(0, (c.total || 0) - (c.pagado || 0));
-                  const vencida = c.fechaVencimiento && c.fechaVencimiento < fechaLocal(new Date());
-                  return (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
-                      <DollarSign size={14} className={vencida ? "text-red-500" : "text-yellow-500"} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-700 truncate">{c.descripcion || "CXC"}</p>
-                        <p className="text-xs text-slate-400">Vence: {c.fechaVencimiento || "N/D"}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-semibold ${vencida ? "text-red-600" : "text-yellow-600"}`}>{fmtMoney(pend)}</p>
-                        {vencida && <span className="text-[10px] text-red-500">Vencida</span>}
-                      </div>
-                    </div>
-                  );
-                })
-              }
-            </div>
+            <Lista vacio="Sin cuentas por cobrar.">
+              {cxc.map((c, i) => {
+                const pend = Math.max(0, (c.total || 0) - (c.pagado || 0));
+                const vencida = c.fechaVencimiento && c.fechaVencimiento < fechaLocal(new Date());
+                return <Fila key={i} icono={DollarSign} alerta={vencida} titulo={c.descripcion || "CXC"} sub={`Vence ${c.fechaVencimiento || "N/D"}`}
+                  derecha={<div className="text-right"><b className={`text-sm ${vencida ? "text-red-600" : ""}`}>{fmtMoney(pend)}</b>{vencida && <div><Estado tono="peligro">Vencida</Estado></div>}</div>}/>;
+              })}
+            </Lista>
           )}
-
           {tab === "pedidos" && (
-            <div className="space-y-2">
-              {pedidos.length === 0
-                ? <p className="text-sm text-slate-400 text-center py-8">Sin pedidos registrados.</p>
-                : pedidos.map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100">
-                    <ShoppingCart size={14} className="text-slate-400 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 truncate">{p.numero || `Pedido ${i+1}`}</p>
-                      <p className="text-xs text-slate-400">{p.fecha}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-                      ${p.estado === "entregado" ? "bg-yellow-100 text-yellow-700"
-                        : p.estado === "cancelado" ? "bg-red-100 text-red-600"
-                        : "bg-yellow-100 text-yellow-700"}`}>
-                      {p.estado || "pendiente"}
-                    </span>
-                  </div>
-                ))
-              }
-            </div>
+            <Lista vacio="Sin pedidos registrados.">
+              {pedidos.map((p, i) => <Fila key={i} icono={ShoppingCart} titulo={p.numero || `Pedido ${i+1}`} sub={p.fecha}
+                derecha={<Estado tono={p.estado === "entregado" ? "exito" : p.estado === "cancelado" ? "peligro" : "alerta"}>{p.estado || "pendiente"}</Estado>}/>)}
+            </Lista>
           )}
         </div>
       </div>
@@ -342,40 +254,26 @@ function calcScore(cliente, facturas, debts) {
 
 function ScoreBadge({ score }) {
   if (score === null || score === undefined) return null;
-  const s = Math.round(score);
-  const color = s >= 80 ? "#10b981" : s >= 50 ? "#f59e0b" : "#ef4444";
-  const label = s >= 80 ? "A" : s >= 50 ? "B" : "C";
-  return (
-    <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0"
-      style={{ color, background: color + "22", border: `1px solid ${color}44` }}
-      title={`Score: ${s}/100`}>
-      {label} {s}
-    </span>
-  );
+  const sc = Math.round(score);
+  const label = sc >= 80 ? "A" : sc >= 50 ? "B" : "C";
+  const cls = sc >= 80 ? "bg-monki-k text-monki-y" : sc >= 50 ? "bg-monki-y text-monki-k" : "bg-red-100 text-red-700";
+  return <span className={`font-mono text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${cls}`} title={`Puntaje: ${sc}/100`}>{label} {sc}</span>;
 }
 
-// ── Tarjeta de cliente en la lista ────────────────────────────────────────────
 function ClienteCard({ cliente, onClick, score }) {
   const ei = etapaInfo(cliente.etapaCRM || ETAPA_DEFAULT);
   return (
-    <div
-      onClick={onClick}
-      className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-yellow-200 hover:bg-yellow-50/30 cursor-pointer transition-all"
-    >
-      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-yellow-400 to-teal-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-        {(cliente.nombre || "?")[0].toUpperCase()}
-      </div>
+    <button type="button" onClick={onClick}
+      className="ui-boton animate-desplegar w-full flex items-center gap-3 p-2.5 rounded-2xl border-2 border-transparent hover:border-monki-k hover:bg-white text-left transition-all duration-200">
+      <span className="w-9 h-9 rounded-full bg-monki-y flex items-center justify-center text-monki-k font-black text-sm shrink-0">{(cliente.nombre || "?")[0].toUpperCase()}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-800 truncate">{cliente.nombre}</p>
-        <p className="text-xs text-slate-400 truncate">{cliente.email || cliente.telefono || "Sin contacto"}</p>
+        <p className="text-sm font-bold text-monki-k truncate">{cliente.nombre}</p>
+        <p className="text-[11px] text-monki-k/45 truncate">{cliente.email || cliente.telefono || "Sin contacto"}</p>
       </div>
       <ScoreBadge score={score} />
-      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
-        style={{ color: ei.color, background: ei.color + "18" }}>
-        {ei.label}
-      </span>
-      <ChevronRight size={14} className="text-slate-300 shrink-0" />
-    </div>
+      <span className="w-2.5 h-2.5 rounded-full shrink-0" title={ei.label} style={{ background: ei.color }}/>
+      <ChevronRight size={14} className="text-monki-k/30 shrink-0" />
+    </button>
   );
 }
 
@@ -443,110 +341,52 @@ export default function CRMClientesScreen() {
   }, {});
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Panel izquierdo ─────────────────────────────────────────────────── */}
-      <div className="w-72 border-r border-slate-200 flex flex-col shrink-0">
-        {/* Header */}
-        <div className="px-4 py-4 border-b border-slate-100">
-          <h1 className="font-bold text-slate-800 text-sm">CRM — Clientes</h1>
-          <p className="text-xs text-slate-400 mt-0.5">{clientes.length} contactos</p>
-        </div>
-
-        {/* Búsqueda */}
-        <div className="px-3 py-2 border-b border-slate-100">
-          <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5">
-            <Search size={13} className="text-slate-400" />
-            <input
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-              placeholder="Buscar cliente…"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-            />
-          </div>
-        </div>
-
-        {/* Filtro etapas */}
-        <div className="px-3 py-2 border-b border-slate-100 space-y-0.5">
-          <button
-            onClick={() => setEtapaFiltro("todos")}
-            className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors
-              ${etapaFiltro === "todos" ? "bg-slate-200 text-slate-700 font-medium" : "text-slate-500 hover:bg-slate-50"}`}
-          >
-            <span>Todos</span>
-            <span className="text-slate-400">{clientes.length}</span>
-          </button>
-          {ETAPAS.map(e => (
-            <button
-              key={e.id}
-              onClick={() => setEtapaFiltro(e.id)}
-              className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs transition-colors
-                ${etapaFiltro === e.id ? "font-medium" : "text-slate-500 hover:bg-slate-50"}`}
-              style={etapaFiltro === e.id ? { background: e.color + "18", color: e.color } : {}}
-            >
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ background: e.color }} />
-                {e.label}
-              </span>
-              <span style={{ color: e.color + "99" }}>{conteo[e.id] || 0}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Lista */}
-        <div className="flex-1 overflow-auto px-3 py-2 space-y-1">
-          {loading && <p className="text-xs text-slate-400 text-center py-4">Cargando…</p>}
-          {!loading && clientesFiltrados.length === 0 && (
-            <p className="text-xs text-slate-400 text-center py-8">Sin resultados.</p>
-          )}
-          {clientesFiltrados.map(c => (
-            <ClienteCard
-              key={c.id}
-              cliente={c}
-              score={scores[c.id]}
-              onClick={() => setSeleccionado(c)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Panel derecho — vacío o resumen ────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-        {!seleccionado ? (
-          <>
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
-              <User size={28} className="text-yellow-500" />
-            </div>
-            <h2 className="text-base font-semibold text-slate-700">Seleccioná un cliente</h2>
-            <p className="text-sm text-slate-400 mt-1 max-w-xs">
-              Verás su historial completo de facturas, cuentas por cobrar, pedidos y notas de seguimiento.
-            </p>
-
-            {/* Resumen rápido por etapa */}
-            <div className="mt-8 grid grid-cols-3 gap-3 w-full max-w-md">
-              {ETAPAS.slice(0,6).map(e => (
-                <div
-                  key={e.id}
-                  onClick={() => setEtapaFiltro(e.id)}
-                  className="p-3 rounded-xl border cursor-pointer hover:shadow-sm transition-all text-center"
-                  style={{ borderColor: e.color + "33", background: e.color + "0a" }}
-                >
-                  <p className="text-xl font-bold" style={{ color: e.color }}>{conteo[e.id] || 0}</p>
-                  <p className="text-xs mt-0.5" style={{ color: e.color + "bb" }}>{e.label}</p>
-                </div>
+    <Modulo
+      seccion="Clientes"
+      titulo="CRM"
+      descripcion="Seguimiento de clientes por etapa, con su historial de facturas, cobros y notas."
+    >
+      <div className="lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-3">
+        <Tarjeta className="w-full lg:w-80 shrink-0 flex flex-col min-h-[320px] lg:min-h-0">
+          <div className="p-3 space-y-2 border-b-2 border-black/5">
+            <Buscador valor={busqueda} onCambio={setBusqueda} placeholder="Buscar cliente…" className="!min-w-0 !max-w-none"/>
+            <div className="flex flex-wrap gap-1">
+              <button type="button" onClick={() => setEtapaFiltro("todos")}
+                className={`ui-boton px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${etapaFiltro === "todos" ? "bg-monki-k text-monki-y" : "bg-black/5 text-monki-k/60 hover:text-monki-k"}`}>
+                Todos <span className="font-mono opacity-70">{clientes.length}</span>
+              </button>
+              {ETAPAS.map(e => (
+                <button key={e.id} type="button" onClick={() => setEtapaFiltro(e.id)}
+                  className={`ui-boton inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${etapaFiltro === e.id ? "bg-monki-k text-monki-y" : "bg-black/5 text-monki-k/60 hover:text-monki-k"}`}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: e.color }}/>{e.label} <span className="font-mono opacity-70">{conteo[e.id] || 0}</span>
+                </button>
               ))}
             </div>
-          </>
-        ) : null}
+          </div>
+          <div className="flex-1 overflow-auto p-2 space-y-0.5">
+            {loading && <p className="text-xs text-monki-k/40 text-center py-4">Cargando…</p>}
+            {!loading && clientesFiltrados.length === 0 && <p className="text-xs text-monki-k/40 text-center py-8">Sin resultados.</p>}
+            {clientesFiltrados.map(c => <ClienteCard key={c.id} cliente={c} score={scores[c.id]} onClick={() => setSeleccionado(c)}/>)}
+          </div>
+        </Tarjeta>
+
+        <Tarjeta className="flex-1 min-h-[320px] flex flex-col items-center justify-center p-6">
+          <Vacio icono={User} titulo="Elegí un cliente" texto="Vas a ver su historial de facturas, cuentas por cobrar, pedidos y notas de seguimiento."/>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full max-w-lg">
+            {ETAPAS.map((e, i) => (
+              <button key={e.id} type="button" onClick={() => setEtapaFiltro(e.id)} style={{ animationDelay: `${i*40}ms` }}
+                className="ui-boton animate-entrar p-3 rounded-2xl border-2 border-black/10 hover:border-monki-k hover:-translate-y-0.5 transition-all duration-300 ease-monki text-left bg-white">
+                <span className="flex items-center gap-1.5 monki-tag text-[10px] text-monki-k/55"><span className="w-2 h-2 rounded-full" style={{ background: e.color }}/>{e.label}</span>
+                <p className="text-[22px] font-black text-monki-k mt-1">{conteo[e.id] || 0}</p>
+              </button>
+            ))}
+          </div>
+        </Tarjeta>
       </div>
 
-      {/* Panel de detalle */}
       {seleccionado && (
-        <ClienteDetalle
-          cliente={seleccionado}
-          onClose={() => setSeleccionado(null)}
-          onActualizar={actualizarCliente}
-        />
+        <ClienteDetalle cliente={seleccionado} onClose={() => setSeleccionado(null)} onActualizar={actualizarCliente}/>
       )}
-    </div>
+    </Modulo>
   );
 }
