@@ -4,7 +4,8 @@
  * Vida útil por años; calcula depreciación mensual y valor en libros.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Edit2, X, Trash2, Package, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Package, TrendingDown, Landmark } from "lucide-react";
+import { Modulo, Boton, BotonIcono, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, genId, hoy } from "../utils/fmt";
@@ -71,49 +72,31 @@ function ActivoModal({ activo, onClose, onSave }) {
     onSave(); onClose();
   };
 
+  const OPCIONES = { tipo: TIPOS, metodo: METODOS };
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-base font-bold text-slate-900">{esNuevo?"Nuevo activo":"Editar activo"}</h2>
-          <button onClick={onClose}><X size={16} className="text-slate-400"/></button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            ["Nombre del activo *", "nombre", "text", "col-span-2"],
-            ["Tipo",                "tipo",   "select",""],
-            ["Método",              "metodo", "select",""],
-            ["Costo (₡) *",         "costo",  "number",""],
-            ["Valor residual (₡)",  "valorResidual","number",""],
-            ["Vida útil (años)",    "vidaUtil","number",""],
-            ["Fecha de compra",     "fechaCompra","date",""],
-            ["Ubicación",           "ubicacion","text",""],
-            ["Proveedor",           "proveedor","text",""],
-            ["Descripción",         "descripcion","text","col-span-2"],
-          ].map(([lbl,key,type,cls])=>(
-            <label key={key} className={`block ${cls}`}>
-              <span className="text-xs font-semibold text-slate-500 uppercase">{lbl}</span>
-              {type==="select"?(
-                <select value={form[key]||""} onChange={e=>u(key,e.target.value)}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                  {key==="tipo"   && TIPOS.map(t=><option key={t} value={t}>{t}</option>)}
-                  {key==="metodo" && METODOS.map(t=><option key={t} value={t}>{t}</option>)}
-                </select>
-              ):(
-                <input type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)} min={type==="number"?0:undefined}
-                  className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400"/>
-              )}
-            </label>
-          ))}
-        </div>
-
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 border border-gray-200 text-slate-600 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50">Cancelar</button>
-          <button onClick={guardar}  className="flex-1 bg-yellow-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">Guardar</button>
-        </div>
+    <Modal titulo={esNuevo?"Nuevo activo":"Editar activo"} subtitulo="Se deprecia solo cada mes" onCerrar={onClose}
+      pie={<><Boton variante="fantasma" onClick={onClose}>Cancelar</Boton><Boton onClick={guardar}>Guardar activo</Boton></>}>
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          ["Nombre del activo *", "nombre", "text", "col-span-2"],
+          ["Tipo",                "tipo",   "select",""],
+          ["Método",              "metodo", "select",""],
+          ["Costo (₡) *",         "costo",  "number",""],
+          ["Valor residual (₡)",  "valorResidual","number",""],
+          ["Vida útil (años)",    "vidaUtil","number",""],
+          ["Fecha de compra",     "fechaCompra","date",""],
+          ["Ubicación",           "ubicacion","text",""],
+          ["Proveedor",           "proveedor","text",""],
+          ["Descripción",         "descripcion","text","col-span-2"],
+        ].map(([lbl,key,type,cls])=>(
+          <Campo key={key} etiqueta={lbl} className={cls}>
+            {type==="select"
+              ? <Seleccion value={form[key]||""} onChange={e=>u(key,e.target.value)} opciones={OPCIONES[key]}/>
+              : <Entrada type={type} value={form[key]||""} onChange={e=>u(key,e.target.value)} min={type==="number"?0:undefined}/>}
+          </Campo>
+        ))}
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -126,8 +109,9 @@ export default function ActivosFijosScreen() {
   useEffect(()=>{ cargar(); },[cargar]);
   useSyncRefresh(cargar);
 
+  const { confirmar, dialogo } = useConfirmar();
   const eliminar = async (id) => {
-    if (!confirm("¿Eliminar este activo?")) return;
+    if (!(await confirmar("Eliminar activo", "¿Eliminar este activo fijo? Esta acción no se puede deshacer.", { peligro: true, boton: "Eliminar" }))) return;
     const todos = await db.getActivosFijos();
     await db.setActivosFijos(todos.filter(x=>x.id!==id));
     cargar();
@@ -138,99 +122,55 @@ export default function ActivosFijosScreen() {
   const totalLibros    = activos.reduce((s,a)=>s+calcDepreciacion(a).valorLibros,0);
   const totalAcumulada = activos.reduce((s,a)=>s+calcDepreciacion(a).acumulada,0);
 
+  const columnas = [
+    { key: "nombre", titulo: "Activo", render: a => (
+      <div className="flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Package size={14}/></span>
+        <div><p className="font-bold text-monki-k">{a.nombre}</p><p className="font-mono text-[10px] text-monki-k/45">{fmtDate(a.fechaCompra)} · {a.vidaUtil} años</p></div>
+      </div>) },
+    { key: "tipo", titulo: "Tipo", render: a => <span className="text-monki-k/60 text-xs">{a.tipo}</span> },
+    { key: "metodo", titulo: "Método", render: a => <Estado>{a.metodo==="Línea recta"?"Línea recta":"Saldo decr."}</Estado> },
+    { key: "costo", titulo: "Costo", alinear: "right", render: a => <b>{fmtMoney(a.costo,"CRC")}</b> },
+    { key: "mensual", titulo: "Dep. mensual", alinear: "right", render: a => <span className="text-red-600 text-xs">{fmtMoney(calcDepreciacion(a).depMensual,"CRC")}</span> },
+    { key: "acumulada", titulo: "Acumulada", alinear: "right", render: a => <span className="text-red-600">{fmtMoney(calcDepreciacion(a).acumulada,"CRC")}</span> },
+    { key: "libros", titulo: "Valor en libros", alinear: "right", render: a => <b className="text-monki-k">{fmtMoney(calcDepreciacion(a).valorLibros,"CRC")}</b> },
+    { key: "pct", titulo: "Depreciado", render: a => {
+      const d = calcDepreciacion(a); const total = d.pctDeprec>=100;
+      return (
+        <div className="flex items-center gap-2 min-w-[120px]">
+          <div className="flex-1 bg-black/10 rounded-full h-1.5 overflow-hidden"><div className={`h-full rounded-full ${total?"bg-red-500":"bg-monki-k"}`} style={{width:`${Math.min(100,d.pctDeprec||0)}%`}}/></div>
+          <span className={`font-mono text-[11px] ${total?"text-red-600 font-bold":"text-monki-k/55"}`}>{(d.pctDeprec||0).toFixed(0)}%</span>
+        </div>);
+    } },
+    { key: "acciones", titulo: "", alinear: "right", render: a => (
+      <div className="flex justify-end gap-0.5" onClick={e=>e.stopPropagation()}>
+        <BotonIcono icono={Edit2} titulo="Editar" onClick={()=>setModal(a)}/>
+        <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminar(a.id)}/>
+      </div>) },
+  ];
+
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Activos Fijos</h1>
-            <p className="text-sm text-slate-500">Depreciación automática — línea recta o saldo decreciente</p>
-          </div>
-          <button onClick={()=>setModal({})} className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
-            <Plus size={14}/> Nuevo activo
-          </button>
-        </div>
-
-        {/* Resumen */}
-        {activos.length>0 && (
-          <div className="flex gap-6 mt-4 pt-4 border-t border-slate-100">
-            {[
-              ["Total activos", activos.length+" registros", "text-slate-700"],
-              ["Costo histórico", fmtMoney(totalCosto,"CRC"), "text-slate-900"],
-              ["Dep. acumulada",  fmtMoney(totalAcumulada,"CRC"), "text-red-600"],
-              ["Valor en libros", fmtMoney(totalLibros,"CRC"), "text-yellow-700 font-bold"],
-            ].map(([lbl,val,cls])=>(
-              <div key={lbl}>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase">{lbl}</p>
-                <p className={`text-sm mt-0.5 ${cls}`}>{val}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Tabla */}
-      <div className="flex-1 overflow-auto px-4 py-4">
-        {activos.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
-            <Package size={40} className="text-slate-300"/>
-            <p className="text-lg font-semibold">Sin activos registrados</p>
-            <button onClick={()=>setModal({})} className="btn-primary mt-2">+ Agregar activo</button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  {["Activo","Tipo","Método","Costo","Dep. mensual","Acumulada","Valor libros","% dep.","Acciones"].map(h=>(
-                    <th key={h} className="text-left px-3 py-2.5 text-[11px] font-bold text-slate-500 uppercase">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {activos.map(a=>{
-                  const d = calcDepreciacion(a);
-                  const vencido = d.pctDeprec>=100;
-                  return (
-                    <tr key={a.id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-800">{a.nombre}</p>
-                        <p className="text-[11px] text-slate-400">{fmtDate(a.fechaCompra)} · {a.vidaUtil} años</p>
-                      </td>
-                      <td className="px-3 py-3 text-slate-600 text-xs">{a.tipo}</td>
-                      <td className="px-3 py-3 text-slate-500 text-xs">{a.metodo==="Línea recta"?"Línea recta":"Sal. decr."}</td>
-                      <td className="px-3 py-3 font-semibold text-slate-700">{fmtMoney(a.costo,"CRC")}</td>
-                      <td className="px-3 py-3 text-red-500 text-xs">{fmtMoney(d.depMensual,"CRC")}</td>
-                      <td className="px-3 py-3 text-red-600">{fmtMoney(d.acumulada,"CRC")}</td>
-                      <td className="px-3 py-3 font-bold text-slate-900">{fmtMoney(d.valorLibros,"CRC")}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-slate-200 rounded-full h-1.5">
-                            <div className={`h-1.5 rounded-full ${vencido?"bg-red-500":"bg-slate-600"}`} style={{width:`${Math.min(100,d.pctDeprec)}%`}}/>
-                          </div>
-                          <span className="text-xs text-slate-500">{d.pctDeprec.toFixed(0)}%</span>
-                          {vencido && <AlertCircle size={11} className="text-red-500"/>}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-1">
-                          <button onClick={()=>setModal(a)} className="p-1.5 rounded hover:bg-gray-100 text-slate-400"><Edit2 size={12}/></button>
-                          <button onClick={()=>eliminar(a.id)} className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600"><Trash2 size={12}/></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Activos fijos"
+      descripcion="Equipo, vehículos y bienes de la empresa, con su depreciación calculada automáticamente."
+      acciones={<Boton icono={Plus} onClick={()=>setModal({})}>Nuevo activo</Boton>}
+      indicadores={activos.length>0 && (
+        <Indicadores>
+          <Indicador etiqueta="Activos" valor={activos.length} detalle="Registrados" icono={Package} delay={40}/>
+          <Indicador etiqueta="Costo histórico" valor={fmtMoney(totalCosto,"CRC")} icono={Landmark} delay={90}/>
+          <Indicador etiqueta="Dep. acumulada" valor={fmtMoney(totalAcumulada,"CRC")} icono={TrendingDown} delay={140}/>
+          <Indicador etiqueta="Valor en libros" valor={fmtMoney(totalLibros,"CRC")} destacado delay={190}/>
+        </Indicadores>
+      )}
+    >
+      <Tabla columnas={columnas} filas={activos} onFila={a=>setModal(a)}
+        vacio={<Vacio icono={Package} titulo="Sin activos registrados" texto="Registrá computadoras, vehículos o mobiliario para llevar su depreciación."
+          accion={<Boton icono={Plus} onClick={()=>setModal({})}>Agregar activo</Boton>}/>}/>
       {modal!==null && (
         <ActivoModal activo={Object.keys(modal).length>0?modal:null} onClose={()=>setModal(null)} onSave={cargar}/>
       )}
-    </div>
+      {dialogo}
+    </Modulo>
   );
 }
