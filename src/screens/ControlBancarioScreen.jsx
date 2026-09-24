@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
+import { fechaLocal } from "../utils/fmt";
 
-const hoy = () => new Date().toISOString().slice(0, 10);
+const hoy = () => fechaLocal(new Date());
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const fmt = (n, mon = "CRC") => {
   if (!n && n !== 0) return "—";

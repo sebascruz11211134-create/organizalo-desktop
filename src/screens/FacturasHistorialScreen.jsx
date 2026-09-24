@@ -2,10 +2,14 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, FileText, CheckCircle, Clock, XCircle, Trash2, Ban } from "lucide-react";
+import { Search, FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, Loader2 } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate } from "../utils/fmt";
+import { getToken } from "../utils/auth";
+import { etiquetaEstado, facturaReintentable, reintentarFactura } from "../utils/comprobantes";
+import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
+import { useCurrency } from "../contexts/CurrencyContext";
 
 const ESTADOS = {
   aceptada: { label: "Aceptada", cls: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -13,6 +17,15 @@ const ESTADOS = {
   pendiente: { label: "Pendiente", cls: "bg-yellow-100 text-yellow-700", icon: Clock },
   rechazada: { label: "Rechazada", cls: "bg-red-100 text-red-700",    icon: XCircle },
   anulada:   { label: "Anulada",   cls: "bg-slate-100 text-slate-500", icon: Ban },
+  // Estados que devuelve el backend al emitir
+  enviado:        { label: "Enviada",        cls: "bg-green-100 text-green-800",  icon: CheckCircle },
+  aceptado:       { label: "Aceptada",       cls: "bg-green-100 text-green-800",  icon: CheckCircle },
+  simulado:       { label: "Simulada",       cls: "bg-blue-100 text-blue-700",    icon: CheckCircle },
+  rechazado:      { label: "Rechazada",      cls: "bg-red-100 text-red-700",      icon: XCircle },
+  error_firma:    { label: "Sin firmar",     cls: "bg-red-100 text-red-700",      icon: XCircle },
+  error_envio:    { label: "Envío rechazado", cls: "bg-red-100 text-red-700",     icon: XCircle },
+  envio_incierto: { label: "Sin confirmar",  cls: "bg-yellow-100 text-yellow-700", icon: Clock },
+  sin_conexion:   { label: "Sin conexión",   cls: "bg-yellow-100 text-yellow-700", icon: Clock },
 };
 
 function DetalleFact({ f, moneda, recibos = [] }) {
@@ -105,6 +118,32 @@ export default function FacturasHistorialScreen() {
     cargar();
   };
 
+  // Retoma una factura que quedó a medias, con la misma clave (nunca crea otra).
+  const [reintentando, setReintentando] = useState(false);
+  const { tipoCambio, recargar: recargarTipoCambio } = useCurrency();
+  const reintentar = async (f) => {
+    setReintentando(true);
+    try {
+      const token = await getToken();
+      // Ya está en Hacienda pero le falta inventario/CxC/asiento: solo completar lo local.
+      if (!facturaReintentable(f)) {
+        await guardarFacturaVenta(f, token);
+        cargar();
+        alert("✅ Registro de la factura completado (inventario, CxC y asiento).");
+        return;
+      }
+      const { r, campos, requiereCotizacion } = await reintentarFactura(f, token, tipoCambio);
+      if (requiereCotizacion) recargarTipoCambio?.();
+      // Además de los datos fiscales, completa inventario/CxC/asiento si
+      // quedaron pendientes (sin repetir los ya aplicados).
+      await guardarFacturaVenta({ ...f, ...campos }, token);
+      cargar();
+      alert(r.ok ? `✅ ${etiquetaEstado(campos.estado)}` : `❌ ${etiquetaEstado(campos.estado || f.estado)}\n${r.error}`);
+    } finally {
+      setReintentando(false);
+    }
+  };
+
   const eliminar = async (f) => {
     if (!confirm(`¿Eliminar definitivamente la factura ${f.numero}? Esta acción no se puede deshacer.`)) return;
     const todas = await db.getFacturas();
@@ -137,6 +176,14 @@ export default function FacturasHistorialScreen() {
           className="flex items-center gap-1.5 border border-yellow-400 text-yellow-300 hover:bg-yellow-500/20 disabled:opacity-30 disabled:cursor-not-allowed px-3 py-1.5 rounded text-xs font-semibold transition-colors">
           <Ban size={13} /> Anular
         </button>
+        <button
+          disabled={!(facturaReintentable(sel) || efectosPendientes(sel)) || reintentando}
+          onClick={() => sel && reintentar(sel)}
+          title={sel?.error || (facturaReintentable(sel) ? "Retomar el envío a Hacienda con la misma clave" : "Completar inventario, CxC y asiento pendientes")}
+          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
+          {reintentando ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+          {sel && !facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
+        </button>
         {/* Eliminar — sólido rojo: acción permanente e irreversible */}
         <button
           disabled={!sel}
@@ -152,6 +199,10 @@ export default function FacturasHistorialScreen() {
           <option value="pendiente">Pendientes</option>
           <option value="guardada">Borradores</option>
           <option value="rechazada">Rechazadas</option>
+          <option value="envio_incierto">Sin confirmar</option>
+          <option value="error_envio">Envío rechazado</option>
+          <option value="error_firma">Sin firmar</option>
+          <option value="sin_conexion">Sin conexión</option>
         </select>
         <div className="flex items-center gap-1.5 bg-slate-600 rounded px-2 py-1.5">
           <Search size={12} className="text-slate-300" />
@@ -168,6 +219,7 @@ export default function FacturasHistorialScreen() {
           <span className="text-slate-500">{sel.cliente?.nombre || "Consumidor Final"}</span>
           <span className="font-bold text-yellow-700">{fmtMoney(sel.total, sel.moneda)}</span>
           {sel.estado === "anulada" && <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-bold">Anulada</span>}
+          {sel.error && <span className="text-red-600 truncate max-w-md" title={sel.error}>{sel.error}</span>}
           <button onClick={() => setSelected(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">✕ Deseleccionar</button>
         </div>
       ) : (

@@ -1,12 +1,13 @@
 {
   "name": "organizalo-desktop",
   "version": "1.0.0",
-  "description": "Organ\u00edzalo.AI \u2014 Sistema de gesti\u00f3n empresarial web",
+  "description": "Organízalo.AI — Sistema de gestión empresarial web",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test test/*.test.mjs"
+    "test": "TZ=America/Costa_Rica node --import ./test/_register.mjs --test test/*.test.mjs",
+    "lint": "eslint --ext .js,.jsx,.mjs src test"
   },
   "dependencies": {
     "axios": "^1.6.8",
@@ -24,6 +25,9 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "vite": "^5.2.8"

@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Search, X, Check, ShoppingCart } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
+import { fmtMoney, hoy, genId, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
 import { crearCXP, aumentarInventario } from "../utils/clienteUtils";
 
 const CATEGORIAS = ["Mercadería","Materia prima","Servicios","Equipo","Suministros","Alquiler","Publicidad","Transporte","Otro"];
@@ -71,7 +71,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
       setMedio("Crédito proveedor");
       const vence = new Date();
       vence.setDate(vence.getDate() + dias);
-      setFechaVence(vence.toISOString().slice(0, 10));
+      setFechaVence(fechaLocal(vence));
     }
   };
 
@@ -394,7 +394,7 @@ export default function ComprasScreen() {
   const sel = filtradas.find(c => c.id === selected);
 
   const totPendiente = compras.filter(x=>x.estado==="pendiente").reduce((s,c)=>s+c.total,0);
-  const totMes = compras.filter(x=>x.fecha?.startsWith(new Date().toISOString().slice(0,7))).reduce((s,c)=>s+c.total,0);
+  const totMes = compras.filter(x=>x.fecha?.startsWith(mesLocal(new Date()))).reduce((s,c)=>s+c.total,0);
   const totIVA  = compras.filter(x=>x.estado!=="vencida").reduce((s,c)=>s+(c.montoIVA||0),0);
 
   return (

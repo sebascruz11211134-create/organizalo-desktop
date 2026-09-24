@@ -1,0 +1,13 @@
+{
+  "root": true,
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module", "ecmaFeatures": { "jsx": true } },
+  "env": { "browser": true, "es2022": true, "node": true },
+  "plugins": ["react", "react-hooks"],
+  "settings": { "react": { "version": "18" } },
+  "rules": {
+    "no-undef": "error",
+    "react/jsx-no-undef": "error",
+    "react/jsx-uses-vars": "error",
+    "react-hooks/rules-of-hooks": "error"
+  }
+}

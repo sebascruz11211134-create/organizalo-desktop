@@ -3,6 +3,7 @@ import { Plus, Trash2, Search, X, Check, Users } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, genId } from "../utils/fmt";
+import { TOTAL_OBRERO, TOTAL_PATRONO } from "../utils/planilla";
 
 const PUESTOS = ["Gerente","Administrador","Vendedor","Técnico","Operario","Contador","Recepcionista","Repartidor","Otro"];
 const TIPOS_JORNADA = ["Tiempo completo","Tiempo parcial","Por hora","Por proyecto"];
@@ -13,7 +14,7 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
     cedula:     emp?.cedula || "",
     puesto:     emp?.puesto || "Vendedor",
     jornada:    emp?.jornada || "Tiempo completo",
-    salario:    emp?.salario || "",
+    salario:    emp?.salario ?? emp?.salarioBruto ?? "",
     email:      emp?.email || "",
     telefono:   emp?.telefono || "",
     fechaIngreso:emp?.fechaIngreso || "",
@@ -25,8 +26,8 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
 
   // Cálculos CCSS
   const salario  = parseFloat(f.salario)||0;
-  const ccssObrero  = salario * 0.1067;
-  const ccssPatrono = salario * 0.2625;
+  const ccssObrero  = salario * TOTAL_OBRERO;
+  const ccssPatrono = salario * TOTAL_PATRONO;
   const salarioNeto = salario - ccssObrero;
 
   return (
@@ -79,8 +80,8 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
           </div>
           {salario>0 && (
             <div className="bg-slate-50 rounded-xl p-3 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-slate-500">Carga obrera (10.67%)</span><span className="text-red-600">-{fmtMoney(ccssObrero,"CRC")}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Carga patronal (26.25%)</span><span className="text-yellow-600">{fmtMoney(ccssPatrono,"CRC")}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Carga obrera (10.83%)</span><span className="text-red-600">-{fmtMoney(ccssObrero,"CRC")}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Carga patronal (26.83%)</span><span className="text-yellow-600">{fmtMoney(ccssPatrono,"CRC")}</span></div>
               <div className="flex justify-between font-bold border-t border-slate-200 pt-1"><span>Salario neto a pagar</span><span className="text-yellow-700">{fmtMoney(salarioNeto,"CRC")}</span></div>
             </div>
           )}
@@ -112,7 +113,7 @@ function FormEmpleado({ emp, onGuardar, onCancelar }) {
         </div>
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex justify-end gap-2 rounded-b-2xl">
           <button onClick={onCancelar} className="px-4 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50">Cancelar</button>
-          <button onClick={()=>onGuardar({ id:emp?.id||genId(), ...f, salario:parseFloat(f.salario)||0, creadoEn:emp?.creadoEn||new Date().toISOString() })}
+          <button onClick={()=>onGuardar({ id:emp?.id||genId(), ...emp, ...f, salario:parseFloat(f.salario)||0, salarioBruto:parseFloat(f.salario)||0, creadoEn:emp?.creadoEn||new Date().toISOString() })}
             className="flex items-center gap-2 bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-700">
             <Check size={14}/> Guardar
           </button>

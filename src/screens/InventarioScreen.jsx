@@ -7,7 +7,7 @@ import { Plus, Edit2, Package, Trash2, FileSpreadsheet, SlidersHorizontal, Alert
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Selector, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, Interruptor, Tarjeta, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
+import { fmtMoney, fmtDate, hoy, genId, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
 const CATEGORIAS = ["Producto", "Servicio", "Materia Prima", "Consumible", "Activo", "Otro"];
@@ -19,7 +19,7 @@ const MOTIVOS = {
   Ajuste:  ["Corrección de inventario", "Conteo físico", "Error de sistema", "Otro"],
 };
 
-function mesActual() { return new Date().toISOString().slice(0, 7); }
+function mesActual() { return mesLocal(new Date()); }
 
 // ── Helpers Kardex ────────────────────────────────────────────────────────────
 function buildKardex(producto, facturas, compras, ordenes, manuales) {

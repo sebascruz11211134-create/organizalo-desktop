@@ -8,10 +8,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Package, Search, FileSpreadsheet, Plus, X, ChevronDown } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtDate, hoy, genId } from "../utils/fmt";
+import { fmtDate, hoy, genId, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
-function mesActual() { return new Date().toISOString().slice(0, 7); }
+function mesActual() { return mesLocal(new Date()); }
 
 const MOTIVOS = {
   Entrada: ["Compra directa", "Devolución de cliente", "Ajuste inicial de stock", "Donación / regalo", "Producción propia", "Otro"],

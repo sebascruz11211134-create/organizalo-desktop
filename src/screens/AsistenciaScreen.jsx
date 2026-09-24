@@ -6,10 +6,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Clock, UserCheck, Printer, FileSpreadsheet, ChevronDown } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtDate, genId, hoy } from "../utils/fmt";
+import { fmtDate, genId, hoy, fechaLocal, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
-function mesActual() { return new Date().toISOString().slice(0, 7); }
+function mesActual() { return mesLocal(new Date()); }
 function horaActual() { return new Date().toTimeString().slice(0, 5); }
 function diffHoras(entrada, salida) {
   if (!entrada || !salida) return 0;
@@ -87,7 +87,7 @@ export default function AsistenciaScreen() {
 
   // ── Filtros ───────────────────────────────────────────────────────────────
   const desde = mes + "-01";
-  const hasta = (() => { const [y,m]=mes.split("-").map(Number); return new Date(y,m,0).toISOString().slice(0,10); })();
+  const hasta = (() => { const [y,m]=mes.split("-").map(Number); return fechaLocal(new Date(y,m,0)); })();
 
   const regFiltrados = registros.filter(r => {
     const enMes   = r.fecha >= desde && r.fecha <= hasta;

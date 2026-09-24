@@ -11,67 +11,8 @@ import {
   AlertCircle, CheckCircle2, TrendingDown
 } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney, genId, hoy } from "../utils/fmt";
-
-// ── Tasas CCSS 2024 ──────────────────────────────────────────────────────────
-const TASA_TRAB_CCSS = 0.1067;
-const TASA_TRAB_BP   = 0.01;
-const TASA_PAT_CCSS  = 0.2667;
-const TASA_PAT_INS   = 0.01;
-const TASA_PAT_ASIGN = 0.05;
-const TASA_PAT_IMAS  = 0.005;
-const TASA_PAT_INA   = 0.015;
-const TASA_PAT_BP    = 0.0025;
-const TASA_PAT_FOD   = 0.005;
-const TASA_PAT_FCL   = 0.03;
-
-const BRACKETS_RENTA = [
-  { hasta: 929000,   tasa: 0.00 },
-  { hasta: 1363000,  tasa: 0.10 },
-  { hasta: 2394000,  tasa: 0.15 },
-  { hasta: 4788000,  tasa: 0.20 },
-  { hasta: Infinity, tasa: 0.25 },
-];
-
-function calcRenta(bruto) {
-  let imp = 0, resto = bruto, prev = 0;
-  for (const b of BRACKETS_RENTA) {
-    const tramo = Math.min(resto, b.hasta - prev);
-    if (tramo <= 0) break;
-    imp += tramo * b.tasa;
-    resto -= tramo;
-    prev = b.hasta;
-    if (resto <= 0) break;
-  }
-  return Math.round(imp);
-}
-
-function calcNomina(emp) {
-  const bruto   = parseFloat(emp.salarioBruto) || 0;
-  const ccssT   = Math.round(bruto * TASA_TRAB_CCSS);
-  const bpT     = Math.round(bruto * TASA_TRAB_BP);
-  const renta   = emp.aplicaRenta ? calcRenta(bruto) : 0;
-  const dedTotal = ccssT + bpT + renta;
-  const neto    = bruto - dedTotal;
-  const ccssP   = Math.round(bruto * TASA_PAT_CCSS);
-  const insP    = Math.round(bruto * TASA_PAT_INS);
-  const asignP  = Math.round(bruto * TASA_PAT_ASIGN);
-  const imasP   = Math.round(bruto * TASA_PAT_IMAS);
-  const inaP    = Math.round(bruto * TASA_PAT_INA);
-  const bpP     = Math.round(bruto * TASA_PAT_BP);
-  const fodP    = Math.round(bruto * TASA_PAT_FOD);
-  const fclP    = Math.round(bruto * TASA_PAT_FCL);
-  const patTotal = ccssP + insP + asignP + imasP + inaP + bpP + fodP + fclP;
-  return { bruto, ccssT, bpT, renta, dedTotal, neto, ccssP, insP, asignP, imasP, inaP, bpP, fodP, fclP, patTotal, costoTotal: bruto + patTotal, aguinaldo: Math.round(bruto / 12) };
-}
-
-function calcHoras(emp, semKey, semanasData) {
-  const tarifa = (parseFloat(emp.salarioBruto) || 0) / 48;
-  const get = (tipo) => Number(semanasData[`${emp.id}_${semKey}_${tipo}`] || 0);
-  const hN = get("normal"), hTM = get("tm"), hD = get("doble");
-  const bruto = Math.round(hN * tarifa + hTM * tarifa * 1.5 + hD * tarifa * 2);
-  return { hN, hTM, hD, tarifa, bruto };
-}
+import { fmtMoney, genId, hoy, fechaLocal } from "../utils/fmt";
+import { calcNomina, calcHoras, lineasAsientoPlanilla, idAsientoPlanilla, asientoPlanillaExistente } from "../utils/planilla";
 
 // ── Helpers fecha ─────────────────────────────────────────────────────────────
 function ymHoy() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
@@ -96,12 +37,13 @@ function semanasDelMes(ym) {
 
 // ── Modal empleado ────────────────────────────────────────────────────────────
 function EmpleadoModal({ emp, onClose, onSave }) {
-  const [form, setForm] = useState(emp || { nombre: "", puesto: "", cedula: "", salarioBruto: "", aplicaRenta: false, activo: true });
+  const [form, setForm] = useState(emp ? { ...emp, salarioBruto: emp.salarioBruto ?? emp.salario ?? "" } : { nombre: "", puesto: "", cedula: "", salarioBruto: "", aplicaRenta: false, activo: true });
   const u = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const guardar = async () => {
     if (!form.nombre || !form.salarioBruto) return alert("Nombre y salario requeridos.");
     const todos = await db.getEmpleados();
-    const item = { ...form, salarioBruto: parseFloat(form.salarioBruto) || 0 };
+    const salario = parseFloat(form.salarioBruto) || 0;
+    const item = { ...form, salarioBruto: salario, salario }; // mismo dato para Empleados y Planillas
     if (!item.id) { item.id = genId(); item.creadoEn = new Date().toISOString(); await db.setEmpleados([...todos, item]); }
     else await db.setEmpleados(todos.map(x => x.id === item.id ? item : x));
     onSave(); onClose();
@@ -121,6 +63,17 @@ function EmpleadoModal({ emp, onClose, onSave }) {
             </label>
           ))}
           <label className="flex items-center gap-2 col-span-2"><input type="checkbox" checked={form.aplicaRenta} onChange={e => u("aplicaRenta", e.target.checked)} className="rounded" /><span className="text-sm">Aplica retención de renta</span></label>
+          {form.aplicaRenta && (<>
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Hijos (crédito fiscal)</span>
+              <input type="number" min="0" value={form.hijos || ""} onChange={e => u("hijos", e.target.value)} className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+            </label>
+            <label className="flex items-center gap-2 mt-5"><input type="checkbox" checked={!!form.conyuge} onChange={e => u("conyuge", e.target.checked)} className="rounded" /><span className="text-sm">Cónyuge (crédito fiscal)</span></label>
+          </>)}
+          <label className="block col-span-2">
+            <span className="text-xs font-semibold text-slate-500 uppercase">Tarifa por hora (₡, opcional)</span>
+            <input type="number" min="0" value={form.tarifaHora || ""} onChange={e => u("tarifaHora", e.target.value)} placeholder="Vacío = salario ÷ 240" className="mt-1 w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+          </label>
           <label className="flex items-center gap-2 col-span-2"><input type="checkbox" checked={form.activo} onChange={e => u("activo", e.target.checked)} className="rounded" /><span className="text-sm">Activo</span></label>
         </div>
         <div className="flex gap-3 mt-5">
@@ -144,7 +97,7 @@ function PrestamoModal({ empleados, onClose, onSave }) {
       monto: Number(form.monto),
       cuota: Number(form.cuota),
       saldo: Number(form.monto),
-      fecha: new Date().toISOString().slice(0, 10),
+      fecha: fechaLocal(new Date()),
       activo: true,
     });
     onClose();
@@ -198,18 +151,18 @@ function DetalleRow({ emp }) {
           <td colSpan={8} className="px-6 py-3">
             <div className="grid grid-cols-2 gap-x-10 gap-y-1 text-xs">
               <div className="font-semibold text-slate-600 col-span-2 mb-1">Deducciones trabajador</div>
-              <span className="text-slate-500">CCSS (10.67%)</span><span className="font-semibold text-red-600">-{fmtMoney(c.ccssT, "CRC")}</span>
+              <span className="text-slate-500">CCSS (SEM 5.5% + IVM 4.33%)</span><span className="font-semibold text-red-600">-{fmtMoney(c.ccssT, "CRC")}</span>
               <span className="text-slate-500">Banco Popular (1%)</span><span className="font-semibold text-red-600">-{fmtMoney(c.bpT, "CRC")}</span>
               {emp.aplicaRenta && <><span className="text-slate-500">Renta</span><span className="font-semibold text-red-600">-{fmtMoney(c.renta, "CRC")}</span></>}
-              <div className="font-semibold text-slate-600 col-span-2 mt-2 mb-1">Cargas patronales</div>
-              <span className="text-slate-500">CCSS patrono (26.67%)</span><span>{fmtMoney(c.ccssP, "CRC")}</span>
-              <span className="text-slate-500">INS (1%)</span><span>{fmtMoney(c.insP, "CRC")}</span>
-              <span className="text-slate-500">Asignaciones (5%)</span><span>{fmtMoney(c.asignP, "CRC")}</span>
+              <div className="font-semibold text-slate-600 col-span-2 mt-2 mb-1">Cargas patronales (26.83%)</div>
+              <span className="text-slate-500">CCSS (SEM 9.25% + IVM 5.58% + BP 0.25%)</span><span>{fmtMoney(c.ccssP, "CRC")}</span>
+              <span className="text-slate-500">Asignaciones Familiares (5%)</span><span>{fmtMoney(c.asignP, "CRC")}</span>
               <span className="text-slate-500">IMAS (0.5%)</span><span>{fmtMoney(c.imasP, "CRC")}</span>
               <span className="text-slate-500">INA (1.5%)</span><span>{fmtMoney(c.inaP, "CRC")}</span>
-              <span className="text-slate-500">BP patrono (0.25%)</span><span>{fmtMoney(c.bpP, "CRC")}</span>
-              <span className="text-slate-500">FODESAF (0.5%)</span><span>{fmtMoney(c.fodP, "CRC")}</span>
-              <span className="text-slate-500">FCL (3%)</span><span>{fmtMoney(c.fclP, "CRC")}</span>
+              <span className="text-slate-500">Aporte Banco Popular (0.25%)</span><span>{fmtMoney(c.bpP, "CRC")}</span>
+              <span className="text-slate-500">FCL (1.5%)</span><span>{fmtMoney(c.fclP, "CRC")}</span>
+              <span className="text-slate-500">OPC (2%)</span><span>{fmtMoney(c.opcP, "CRC")}</span>
+              <span className="text-slate-500">INS (1%)</span><span>{fmtMoney(c.insP, "CRC")}</span>
             </div>
           </td>
         </tr>
@@ -282,8 +235,9 @@ export default function PlanillasScreen() {
   // ── Totales nómina ──
   const totNomina = empleados.reduce((acc, emp) => {
     const c = calcNomina(emp);
-    return { bruto: acc.bruto + c.bruto, dedTotal: acc.dedTotal + c.dedTotal, neto: acc.neto + c.neto, patTotal: acc.patTotal + c.patTotal, costoTotal: acc.costoTotal + c.costoTotal, aguinaldo: acc.aguinaldo + c.aguinaldo };
-  }, { bruto: 0, dedTotal: 0, neto: 0, patTotal: 0, costoTotal: 0, aguinaldo: 0 });
+    const campos = ["bruto", "ccssT", "bpT", "renta", "dedTotal", "neto", "patTotal", "costoTotal", "aguinaldo"];
+    return Object.fromEntries(campos.map(k => [k, acc[k] + c[k]]));
+  }, { bruto: 0, ccssT: 0, bpT: 0, renta: 0, dedTotal: 0, neto: 0, patTotal: 0, costoTotal: 0, aguinaldo: 0 });
 
   // ── Totales horas semana seleccionada ──
   const semActual = sems[semSel];
@@ -363,29 +317,24 @@ export default function PlanillasScreen() {
             )}
           </div>
           <div className="px-6 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-            <span className="text-[11px] text-slate-400">Tasas CCSS 2024 · Clic en empleado para ver desglose</span>
+            <span className="text-[11px] text-slate-400">Tasas CCSS y renta 2026 · Clic en empleado para ver desglose</span>
             {empleados.length > 0 && (
               <button
                 onClick={async () => {
                   if (!confirm(`¿Confirmar planilla de ${mesLabel(mes)}? Se creará un asiento contable automático.`)) return;
                   try {
                     const asientos = await db.getAsientos();
+                    if (asientoPlanillaExistente(asientos, mes, mesLabel(mes))) {
+                      return alert(`La planilla de ${mesLabel(mes)} ya tiene su asiento contable.`);
+                    }
                     const seq = String(asientos.length + 1).padStart(5, "0");
-                    const bruto = totNomina.bruto;
-                    const cargas = totNomina.patTotal;
-
-                    const lineas = [
-                      { cuentaCodigo:"5101", cuentaNombre:"Gasto salarios",          debe: bruto,  haber: 0 },
-                      { cuentaCodigo:"5102", cuentaNombre:"Cargas sociales patronales", debe: cargas, haber: 0 },
-                      { cuentaCodigo:"2101", cuentaNombre:"CxP nómina — empleados",  debe: 0, haber: bruto },
-                      { cuentaCodigo:"2102", cuentaNombre:"CxP CCSS patronal",       debe: 0, haber: cargas },
-                    ];
+                    const lineas = lineasAsientoPlanilla(totNomina);
                     const totalDebe  = lineas.reduce((s, l) => s + l.debe, 0);
                     const totalHaber = lineas.reduce((s, l) => s + l.haber, 0);
 
                     const asiento = {
-                      id: genId(), numero: `AJ-${seq}`,
-                      descripcion: `Planilla ${mesLabel(mes)} — ${empleados.length} empleados`,
+                      id: idAsientoPlanilla(mes), numero: `AJ-${seq}`,
+                      descripcion: `Planilla ${mesLabel(mes)} — ${empleados.length} empleados`, planillaMes: mes,
                       fecha: hoy(), totalDebe, totalHaber,
                       estado: "confirmado", lineas,
                       creadoEn: new Date().toISOString(), autoGenerado: true,

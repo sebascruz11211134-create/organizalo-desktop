@@ -8,7 +8,7 @@ import ClienteAutocomplete from "../components/ClienteAutocomplete";
 import { Plus, Search, Printer, FileSpreadsheet, Trash2, Ban } from "lucide-react";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
-import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
+import { fmtMoney, fmtDate, hoy, genId, fechaLocal, fechaDesplazada } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
 
@@ -280,11 +280,9 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
       const montoFmt = parseFloat(total).toLocaleString("es-CR", { style: "currency", currency: "CRC", minimumFractionDigits: 0 });
       await crearEvento({ token, titulo: `💰 Cobro: ${nombre.trim()}`, descripcion: `Vence por ${montoFmt}.`, fecha: vence, tipo: "recordatorio", color: "#10b981" });
       // Recordatorio 3 días antes
-      const venceD = new Date(vence);
-      const antes = new Date(venceD);
-      antes.setDate(antes.getDate() - 3);
-      if (antes.toISOString().slice(0, 10) > new Date().toISOString().slice(0, 10)) {
-        await crearEvento({ token, titulo: `⏰ Cobro próximo: ${nombre.trim()}`, descripcion: `Vence en 3 días (${vence}). ${montoFmt}`, fecha: antes.toISOString().slice(0, 10), tipo: "recordatorio", color: "#f59e0b" });
+      const antesStr = fechaDesplazada(vence, -3);
+      if (antesStr > fechaLocal(new Date())) {
+        await crearEvento({ token, titulo: `⏰ Cobro próximo: ${nombre.trim()}`, descripcion: `Vence en 3 días (${vence}). ${montoFmt}`, fecha: antesStr, tipo: "recordatorio", color: "#f59e0b" });
       }
     }
 
@@ -306,7 +304,7 @@ function NuevaCXCModal({ onClose, onSave, settings }) {
                   // auto-sugerir fecha de vencimiento según plazo del cliente
                   const d = new Date();
                   d.setDate(d.getDate() + c.dias_credito);
-                  setVence(d.toISOString().slice(0, 10));
+                  setVence(fechaLocal(d));
                 }
               }}
               tipo="cliente"

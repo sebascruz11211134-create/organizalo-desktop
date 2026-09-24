@@ -9,18 +9,19 @@
  *   Contactos          → código de cliente CLI-XXXX
  */
 import db from "./db";
-import { genId, hoy } from "./fmt";
+import { genId, hoy, fechaLocal, fechaDesplazada } from "./fmt";
 import { BACKEND } from "./config";
+import { fetchWithTimeout } from "./fetchTimeout";
 
 // ── Crear evento en el calendario (backend) ───────────────────────────────────
 export async function crearEvento({ token, titulo, descripcion, fecha, tipo = "recordatorio", color }) {
   if (!token || !fecha) return;
   try {
-    await fetch(`${BACKEND}/api/eventos`, {
+    await fetchWithTimeout(`${BACKEND}/api/eventos`, {
       method:  "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ titulo, descripcion, tipo, fecha, hora: "08:00", todo_el_dia: true, color: color || "#f59e0b" }),
-    });
+    }, 10000);
   } catch (e) {
     console.warn("[clienteUtils] No se pudo crear evento:", e.message);
   }
@@ -63,7 +64,7 @@ export function generarCodigoCliente(contactos) {
  *
  * @param {Array} lineas - Líneas de la factura/venta
  */
-export async function reducirInventario(lineas) {
+export async function reducirInventario(lineas, ventaId) {
   if (!lineas?.length) return;
   const productos = await db.getProductos();
   let changed = false;
@@ -74,15 +75,37 @@ export async function reducirInventario(lineas) {
         (l.productoId && l.productoId === p.id) ||
         (l.descripcion?.toLowerCase().trim() === p.nombre?.toLowerCase().trim())
     );
-    if (linea && p.stock != null) {
+    // Con ventaId, cada producto recuerda qué ventas ya descontó (en la misma
+    // escritura del stock): reintentar la misma venta no descuenta dos veces.
+    if (linea && p.stock != null && !(ventaId && p.ventasAplicadas?.includes(ventaId))) {
       changed = true;
       const cant = parseFloat(linea.cantidad) || 0;
-      return { ...p, stock: Math.max(0, (parseFloat(p.stock) || 0) - cant) };
+      return {
+        ...p,
+        stock: Math.max(0, (parseFloat(p.stock) || 0) - cant),
+        ...(ventaId ? { ventasAplicadas: [...(p.ventasAplicadas || []), ventaId] } : {}),
+      };
     }
     return p;
   });
 
   if (changed) await db.setProductos(actualizados);
+}
+
+/**
+ * Borra la marca ventaId de los productos una vez que la factura ya registró
+ * que su inventario quedó aplicado (efectos.inventario). Si esta limpieza no
+ * llega a correr, la marca sobrante no causa nada.
+ */
+export async function limpiarVentaAplicada(ventaId) {
+  const productos = await db.getProductos();
+  if (!productos.some(p => p.ventasAplicadas?.includes(ventaId))) return;
+  await db.setProductos(productos.map(p => {
+    if (!p.ventasAplicadas?.includes(ventaId)) return p;
+    const resto = p.ventasAplicadas.filter(id => id !== ventaId);
+    const { ventasAplicadas, ...sinMarca } = p;
+    return resto.length ? { ...p, ventasAplicadas: resto } : sinMarca;
+  }));
 }
 
 /**
@@ -153,13 +176,15 @@ export async function restaurarInventarioPorFactura(facturaRef) {
  *
  * @param {{ cliente, total, moneda, plazo, facturaRef, token }} params
  */
-export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, token }) {
+export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, facturaId, token }) {
   const debts = await db.getDebts();
+  // Una sola CxC por factura aunque se reintente guardarla.
+  if (facturaId && debts.some(d => d.facturaId === facturaId)) return;
 
   const dias = parseInt(plazo) || 30;
   const vence = new Date();
   vence.setDate(vence.getDate() + dias);
-  const fechaVencimiento = vence.toISOString().slice(0, 10);
+  const fechaVencimiento = fechaLocal(vence);
 
   const monto = parseFloat(total) || 0;
   const nombreCliente = cliente?.nombre || "Consumidor Final";
@@ -180,10 +205,18 @@ export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, toke
     creadoEn: new Date().toISOString(),
     autoGenerada: true,
     facturaRef,
+    ...(facturaId ? { facturaId } : {}),
   };
 
   await db.setDebts([nueva, ...debts]);
 
+  // Recordatorios de calendario en segundo plano: la CxC ya quedó guardada y
+  // no se espera al servidor (se llama dentro del bloqueo de ventas).
+  crearRecordatoriosCXC({ token, nombreCliente, facturaRef, montoFmt, dias, vence, fechaVencimiento })
+    .catch(e => console.warn("[clienteUtils] Recordatorios de CxC:", e.message));
+}
+
+async function crearRecordatoriosCXC({ token, nombreCliente, facturaRef, montoFmt, dias, vence, fechaVencimiento }) {
   // Crear evento en el calendario para el día de vencimiento
   await crearEvento({
     token,
@@ -202,7 +235,7 @@ export async function crearCXC({ cliente, total, moneda, plazo, facturaRef, toke
       token,
       titulo:      `⏰ Cobro próximo: ${nombreCliente}`,
       descripcion: `Factura ${facturaRef} vence en 3 días (${fechaVencimiento}). ${montoFmt}`,
-      fecha:       antes.toISOString().slice(0, 10),
+      fecha:       fechaLocal(antes),
       tipo:        "recordatorio",
       color:       "#f59e0b",
     });
@@ -251,16 +284,13 @@ export async function crearCXP({ proveedor, total, moneda, fechaVence, facturaRe
     });
 
     // Recordatorio 3 días antes
-    const vence = new Date(fechaVence);
-    const antes = new Date(vence);
-    antes.setDate(antes.getDate() - 3);
-    const hoyStr = new Date().toISOString().slice(0, 10);
-    if (antes.toISOString().slice(0, 10) > hoyStr) {
+    const antesStr = fechaDesplazada(fechaVence, -3);
+    if (antesStr > fechaLocal(new Date())) {
       await crearEvento({
         token,
         titulo:      `⏰ Pago próximo: ${nombreProveedor}`,
         descripcion: `Factura ${facturaRef || ""} a ${nombreProveedor} vence en 3 días (${fechaVence}). ${montoFmt}`,
-        fecha:       antes.toISOString().slice(0, 10),
+        fecha:       antesStr,
         tipo:        "recordatorio",
         color:       "#f97316",
       });

@@ -9,15 +9,13 @@ import {
 } from "recharts";
 import { TrendingUp, Package, Users, FileSpreadsheet } from "lucide-react";
 import db from "../utils/db";
-import { fmtMoney, hoy } from "../utils/fmt";
+import { fmtMoney, hoy, fechaLocal, mesLocal, mesDesplazado } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
 
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#84cc16"];
 
 function getMesKey(offset = 0) {
-  const d = new Date();
-  d.setMonth(d.getMonth() + offset);
-  return d.toISOString().slice(0, 7);
+  return mesDesplazado(mesLocal(), offset); // "2025-06"
 }
 function getMesLabel(offset = 0) {
   const d = new Date();
@@ -101,7 +99,7 @@ export default function AnalyticsScreen() {
     // ── Tendencia últimos 30 días (línea) ─────────────────────────────────────
     const tendenciaDiaria = Array.from({ length: 30 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (29 - i));
-      const key = d.toISOString().slice(0, 10);
+      const key = fechaLocal(d);
       const lbl = i % 5 === 0 ? d.toLocaleString("es-CR", { day: "numeric", month: "short" }) : "";
       const valor = facturas.filter(f => (f.fecha || "").startsWith(key))
         .reduce((s, f) => s + (f.total || f.totalGeneral || 0), 0);
