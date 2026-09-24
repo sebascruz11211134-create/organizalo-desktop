@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Hash, Lock, MessageSquare, ChevronDown, ChevronRight, Bot } from "lucide-react";
 import { getToken, getUser } from "../utils/auth";
 import { BACKEND } from "../utils/config";
+import { Modulo } from "../components/ui";
 
 const CANALES = [
   { id: "general",      nombre: "general",      emoji: "💬" },
@@ -23,7 +24,7 @@ function iniciales(nombre = "") {
   return nombre.trim().split(/\s+/).map(p => p[0]?.toUpperCase() || "").join("").slice(0, 2) || "?";
 }
 
-const COLORES = ["#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#ec4899","#14b8a6","#f97316"];
+const COLORES = ["#111111","#2a2a2a","#3a3a3a","#111111","#2a2a2a","#3a3a3a","#111111","#2a2a2a"];
 function colorAvatar(id = "") {
   const n = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   return COLORES[n % COLORES.length];
@@ -34,7 +35,7 @@ function Avatar({ nombre, userId, size = 8 }) {
   return (
     <div
       style={{ backgroundColor: colorAvatar(userId), width: size * 4, height: size * 4, minWidth: size * 4 }}
-      className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+      className="rounded-full flex items-center justify-center text-monki-y font-black flex-shrink-0"
       title={nombre}>
       <span style={{ fontSize: size * 1.5 }}>{iniciales(nombre)}</span>
     </div>
@@ -52,9 +53,9 @@ function SepFecha({ fecha }) {
   else label = d.toLocaleDateString("es-CR", { weekday: "long", month: "long", day: "numeric" });
   return (
     <div className="flex items-center gap-3 my-4 px-4">
-      <div className="flex-1 h-px bg-gray-200"/>
-      <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">{label}</span>
-      <div className="flex-1 h-px bg-gray-200"/>
+      <div className="flex-1 h-px bg-black/10"/>
+      <span className="monki-tag text-[10px] text-monki-k/50 bg-monki-cream rounded-full px-3 py-1 whitespace-nowrap">{label}</span>
+      <div className="flex-1 h-px bg-black/10"/>
     </div>
   );
 }
@@ -69,31 +70,29 @@ function GrupoMensajes({ msgs, meId }) {
   const hora     = (m) => new Date(m.creado_en || m.creadoEn).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="flex gap-3 px-4 py-1.5 hover:bg-gray-50 group rounded-lg mx-2">
+    <div className="animate-desplegar flex gap-3 px-4 py-2 hover:bg-monki-cream/60 group rounded-2xl mx-2 transition-colors">
       {/* Avatar */}
       <div className="flex-shrink-0 mt-0.5">
         {esBot
-          ? <div className="w-9 h-9 rounded-full bg-yellow-500 flex items-center justify-center text-white text-base">🤖</div>
+          ? <div className="w-9 h-9 rounded-full bg-monki-y flex items-center justify-center text-monki-k"><Bot size={17}/></div>
           : <Avatar nombre={nombre} userId={uid} size={9}/>}
       </div>
 
       {/* Contenido */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 mb-0.5">
-          <span className={`text-sm font-semibold ${esBot ? "text-yellow-700" : esPropio ? "text-slate-900" : "text-slate-800"}`}>
+          <span className="text-sm font-extrabold text-monki-k">
             {esBot ? "Asistente Monki" : nombre}
           </span>
           {esBot && (
-            <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold border border-yellow-200">IA</span>
+            <span className="text-[9px] bg-monki-k text-monki-y px-1.5 py-0.5 rounded-full font-bold">IA</span>
           )}
-          <span className="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="font-mono text-[10px] text-monki-k/40 opacity-0 group-hover:opacity-100 transition-opacity">
             {hora(primero)}
           </span>
         </div>
         {msgs.map((m, i) => (
-          <p key={m.id} className={`text-sm leading-relaxed whitespace-pre-wrap ${
-            esBot ? "text-slate-700" : "text-slate-700"
-          } ${i > 0 ? "mt-0.5" : ""}`}>
+          <p key={m.id} className={`text-sm leading-relaxed whitespace-pre-wrap text-monki-k/80 ${i > 0 ? "mt-0.5" : ""}`}>
             {m.texto}
           </p>
         ))}
@@ -124,10 +123,10 @@ function Escribiendo({ nombres }) {
     <div className="flex items-center gap-2 px-6 py-1">
       <div className="flex gap-0.5">
         {[0,150,300].map(d => (
-          <span key={d} className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }}/>
+          <span key={d} className="w-1.5 h-1.5 bg-monki-k rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }}/>
         ))}
       </div>
-      <span className="text-xs text-slate-400 italic">{txt}</span>
+      <span className="text-xs text-monki-k/50 italic">{txt}</span>
     </div>
   );
 }
@@ -303,234 +302,169 @@ export default function ChatScreen() {
   const meId   = me?.id;
   const otrosEquipo = equipo.filter(m => m.id !== meId);
 
+  const itemCanal = activo => `ui-boton w-[calc(100%-8px)] mx-1 flex items-center gap-2 px-3 py-2 text-sm rounded-full transition-all duration-200 ${
+    activo ? "bg-monki-k text-monki-y font-bold" : "text-monki-k/65 hover:bg-black/5 hover:text-monki-k"}`;
+  const Contador = ({ n }) => <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">{n}</span>;
+  const Grupo = ({ children, onClick, abierto = true }) => (
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-1 px-4 py-1 monki-tag text-[10px] text-monki-k/45">
+      {abierto ? <ChevronDown size={11}/> : <ChevronRight size={11}/>}{children}
+    </button>
+  );
+
   return (
-    <div className="flex h-full bg-white overflow-hidden">
+    <Modulo seccion="Equipo" titulo="Chat interno" descripcion="Canales por área, mensajes directos y soporte con IA las 24 horas.">
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-3">
+        <aside className="ui-tarjeta w-full md:w-60 shrink-0 bg-white rounded-[18px] border-2 border-black/10 flex flex-col select-none overflow-hidden max-h-64 md:max-h-none">
+          <div className="px-4 py-3.5 border-b-2 border-black/10">
+            <p className="font-extrabold text-monki-k text-sm truncate">{me?.empresaNombre || me?.empresa_nombre || "Mi empresa"}</p>
+            <p className="text-monki-k/50 text-xs mt-0.5 flex items-center gap-1.5">
+              <span className="monki-pulse"/>{otrosEquipo.length + 1} miembro{otrosEquipo.length !== 0 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex-1 overflow-y-auto py-2 space-y-0.5">
+            <Grupo>Canales</Grupo>
+            {CANALES.map(c => {
+              const activo = canalActivo === c.id;
+              const n = noLeidos[c.id] || 0;
+              return (
+                <button key={c.id} type="button" onClick={() => cambiarCanal(c.id)} className={itemCanal(activo)}>
+                  <Hash size={13} className={activo ? "text-monki-y" : "text-monki-k/35"}/>
+                  <span className="flex-1 text-left truncate">{c.nombre}</span>
+                  {c.ia && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${activo ? "bg-monki-y text-monki-k" : "bg-monki-k text-monki-y"}`}>IA</span>}
+                  {n > 0 && !activo && <Contador n={n}/>}
+                </button>
+              );
+            })}
 
-      {/* ── Sidebar claro ────────────────────────────────────────────────── */}
-      <div className="w-56 flex-shrink-0 bg-slate-50 border-r border-gray-200 flex flex-col select-none">
-
-        {/* Cabecera */}
-        <div className="px-4 py-3.5 border-b border-gray-200">
-          <p className="font-bold text-slate-900 text-sm truncate">{me?.empresaNombre || me?.empresa_nombre || "Mi empresa"}</p>
-          <p className="text-slate-500 text-xs mt-0.5 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"/>
-            {otrosEquipo.length + 1} miembro{otrosEquipo.length !== 0 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* Cuerpo */}
-        <div className="flex-1 overflow-y-auto py-3 space-y-0.5">
-
-          {/* Canales */}
-          <button onClick={() => {}} className="w-full flex items-center gap-1 px-3 py-1 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-            <ChevronDown size={11}/>
-            Canales
-          </button>
-
-          {CANALES.map(c => {
-            const activo = canalActivo === c.id;
-            const n = noLeidos[c.id] || 0;
-            return (
-              <button key={c.id} onClick={() => cambiarCanal(c.id)}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg mx-1 w-[calc(100%-8px)] transition-colors ${
-                  activo
-                    ? "bg-yellow-50 text-yellow-800 font-semibold"
-                    : "text-slate-600 hover:bg-gray-100 hover:text-slate-900"
-                }`}>
-                <Hash size={13} className={activo ? "text-yellow-600" : "text-slate-400"}/>
-                <span className="flex-1 text-left truncate">{c.nombre}</span>
-                {c.ia && <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1 py-0.5 rounded font-bold border border-yellow-200">IA</span>}
-                {n > 0 && !activo && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">{n}</span>
-                )}
-              </button>
-            );
-          })}
-
-          {/* Mensajes Directos */}
-          <div className="mt-3">
-            <button onClick={() => setDmsCerrado(p => !p)}
-              className="w-full flex items-center gap-1 px-3 py-1 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-              {dmsCerrado ? <ChevronRight size={11}/> : <ChevronDown size={11}/>}
-              Mensajes directos
-            </button>
-
-            {!dmsCerrado && (
-              <div className="mt-1">
-                {/* DMs abiertos */}
-                {dmsAbiertos.map(dm => {
-                  const cDM   = dmCanalId(me?.id || "", dm.id);
-                  const activo = canalActivo === cDM;
-                  const n = noLeidos[cDM] || 0;
-                  return (
-                    <button key={dm.id} onClick={() => cambiarCanal(cDM)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg mx-1 w-[calc(100%-8px)] transition-colors ${
-                        activo ? "bg-yellow-50 text-yellow-800 font-semibold" : "text-slate-600 hover:bg-gray-100"
-                      }`}>
-                      <Avatar nombre={dm.nombre} userId={dm.id} size={5}/>
-                      <span className="flex-1 text-left truncate">{dm.nombre}</span>
-                      <Lock size={10} className="text-slate-300"/>
-                      {n > 0 && !activo && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">{n}</span>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Drop zone */}
-                <div
-                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={onDrop}
-                  className={`mx-2 my-1 rounded-lg border-2 border-dashed text-xs text-center py-2 transition-colors cursor-pointer ${
-                    dragOver
-                      ? "border-yellow-400 bg-yellow-50 text-yellow-700"
-                      : "border-gray-200 text-slate-400 hover:border-yellow-300 hover:text-slate-500"
-                  }`}>
-                  {dragOver ? "Soltar para abrir DM ✓" : "Arrastrá un miembro aquí"}
+            <div className="pt-3">
+              <Grupo onClick={() => setDmsCerrado(p => !p)} abierto={!dmsCerrado}>Mensajes directos</Grupo>
+              {!dmsCerrado && (
+                <div className="mt-1 space-y-0.5">
+                  {dmsAbiertos.map(dm => {
+                    const cDM = dmCanalId(me?.id || "", dm.id);
+                    const activo = canalActivo === cDM;
+                    const n = noLeidos[cDM] || 0;
+                    return (
+                      <button key={dm.id} type="button" onClick={() => cambiarCanal(cDM)} className={itemCanal(activo)}>
+                        <Avatar nombre={dm.nombre} userId={dm.id} size={5}/>
+                        <span className="flex-1 text-left truncate">{dm.nombre}</span>
+                        <Lock size={10} className="opacity-40"/>
+                        {n > 0 && !activo && <Contador n={n}/>}
+                      </button>
+                    );
+                  })}
+                  <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={onDrop}
+                    className={`mx-2 my-1 rounded-2xl border-2 border-dashed text-xs font-semibold text-center py-2.5 transition-all duration-200 ${
+                      dragOver ? "border-monki-k bg-monki-y text-monki-k" : "border-black/15 text-monki-k/40"}`}>
+                    {dragOver ? "Soltá para abrir el mensaje ✓" : "Arrastrá un miembro aquí"}
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {otrosEquipo.length > 0 && (
+              <div className="pt-3">
+                <p className="px-4 py-1 monki-tag text-[10px] text-monki-k/45">Equipo · arrastrá o tocá</p>
+                {otrosEquipo.map(m => (
+                  <div key={m.id} draggable onDragStart={e => onDragStart(e, m)} onClick={() => abrirDM(m)} title="Arrastrá o tocá para escribirle"
+                    className="flex items-center gap-2 px-3 py-1.5 mx-1 rounded-full text-monki-k/70 hover:bg-black/5 hover:text-monki-k cursor-grab active:cursor-grabbing transition-colors text-sm">
+                    <Avatar nombre={m.nombre} userId={m.id} size={5}/>
+                    <span className="flex-1 truncate">{m.nombre}</span>
+                    <span className={`w-2 h-2 rounded-full ${m.activo ? "bg-[#35e06b]" : "bg-black/15"}`}/>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Equipo (draggable) */}
-          {otrosEquipo.length > 0 && (
-            <div className="mt-3">
-              <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                Equipo <span className="font-normal normal-case text-slate-400">· arrastrá para DM</span>
-              </p>
-              {otrosEquipo.map(m => (
-                <div key={m.id}
-                  draggable
-                  onDragStart={e => onDragStart(e, m)}
-                  onClick={() => abrirDM(m)}
-                  className="flex items-center gap-2 px-3 py-1.5 mx-1 rounded-lg text-slate-600 hover:bg-gray-100 hover:text-slate-900 cursor-grab active:cursor-grabbing transition-colors text-sm"
-                  title="Arrastrá para DM o hacé click">
-                  <Avatar nombre={m.nombre} userId={m.id} size={5}/>
-                  <span className="flex-1 truncate">{m.nombre}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${m.activo ? "bg-green-500" : "bg-gray-300"}`}/>
+          <div className="px-3 py-3 border-t-2 border-black/10 flex items-center gap-2 bg-monki-cream/50">
+            {me && (
+              <>
+                <Avatar nombre={me.nombre || me.email || "Yo"} userId={me.id || ""} size={8}/>
+                <div className="flex-1 min-w-0">
+                  <p className="text-monki-k text-xs font-bold truncate">{me.nombre || me.email}</p>
+                  <p className="font-mono text-monki-k/45 text-[10px]">{me.rol}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Usuario actual */}
-        <div className="px-3 py-3 border-t border-gray-200 flex items-center gap-2 bg-white">
-          {me && (
-            <>
-              <Avatar nombre={me.nombre || me.email || "Yo"} userId={me.id || ""} size={8}/>
-              <div className="flex-1 min-w-0">
-                <p className="text-slate-900 text-xs font-semibold truncate">{me.nombre || me.email}</p>
-                <p className="text-slate-400 text-[10px]">{me.rol}</p>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"/>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Área de mensajes ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
-
-        {/* Header */}
-        <div className="px-5 py-3.5 border-b border-gray-200 flex items-center gap-2.5 bg-white shadow-sm">
-          {canalInfo.isDM ? (
-            <>
-              <MessageSquare size={16} className="text-slate-400"/>
-              <span className="font-semibold text-slate-900">{canalInfo.nombre}</span>
-              <Lock size={12} className="text-slate-400"/>
-              <span className="text-xs text-slate-400">· Mensaje privado</span>
-            </>
-          ) : (
-            <>
-              <Hash size={16} className="text-slate-400"/>
-              <span className="font-semibold text-slate-900">{canalInfo.nombre}</span>
-              {canalInfo.ia && (
-                <span className="ml-1 text-xs bg-yellow-100 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-semibold">
-                  🤖 IA 24/7
-                </span>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Banner soporte */}
-        {canalActivo === "soporte" && (
-          <div className="mx-4 mt-3 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3">
-            <span className="text-2xl">🤖</span>
-            <div>
-              <p className="text-sm font-semibold text-yellow-800">Asistente Monki — Soporte técnico con IA</p>
-              <p className="text-xs text-yellow-600">Escribí tu duda y te respondo al instante. Disponible 24/7.</p>
-            </div>
+                <span className="w-2 h-2 rounded-full bg-[#35e06b] flex-shrink-0"/>
+              </>
+            )}
           </div>
-        )}
+        </aside>
 
-        {/* Mensajes */}
-        <div className="flex-1 overflow-y-auto py-4">
-          {mensajes.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-8">
-              <div className="text-5xl mb-4">{canalInfo.isDM ? "💬" : (CANALES.find(c => c.id === canalActivo)?.emoji || "#")}</div>
-              <p className="text-slate-800 font-bold text-lg mb-1">
-                {canalInfo.isDM ? `DM con ${canalInfo.nombre}` : `# ${canalInfo.nombre}`}
-              </p>
-              <p className="text-slate-400 text-sm">
-                {canalInfo.isDM ? "Inicio de la conversación privada." : "Sé el primero en escribir algo."}
-              </p>
-            </div>
-          ) : (
-            <>
-              {(() => {
-                const items = []; let lastDate = null;
-                for (const g of grupos) {
-                  const ds = new Date(g[0].creado_en || g[0].creadoEn).toDateString();
-                  if (ds !== lastDate) { items.push(<SepFecha key={`sep-${ds}`} fecha={g[0].creado_en || g[0].creadoEn}/>); lastDate = ds; }
-                  items.push(<GrupoMensajes key={g[0].id} msgs={g} meId={meId}/>);
-                }
-                return items;
-              })()}
-            </>
-          )}
+        <section className="ui-tarjeta flex-1 min-h-[360px] md:min-h-0 min-w-0 bg-white rounded-[18px] border-2 border-black/10 flex flex-col overflow-hidden">
+          <div className="px-5 py-3.5 border-b-2 border-black/10 flex items-center gap-2.5">
+            {canalInfo.isDM ? (
+              <>
+                <span className="w-8 h-8 rounded-full bg-monki-cream flex items-center justify-center"><MessageSquare size={15}/></span>
+                <span className="font-extrabold text-monki-k">{canalInfo.nombre}</span>
+                <span className="monki-tag text-[10px] text-monki-k/45 flex items-center gap-1"><Lock size={10}/> Privado</span>
+              </>
+            ) : (
+              <>
+                <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center"><Hash size={15}/></span>
+                <span className="font-extrabold text-monki-k">{canalInfo.nombre}</span>
+                {canalInfo.ia && <span className="text-[10px] bg-monki-k text-monki-y px-2 py-0.5 rounded-full font-bold">IA 24/7</span>}
+              </>
+            )}
+          </div>
 
-          {/* IA escribiendo */}
-          {iaEsc && canalActivo === "soporte" && (
-            <div className="flex items-center gap-3 px-4 py-2 mx-2">
-              <div className="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center text-lg">🤖</div>
-              <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-xl flex gap-1.5 items-center">
-                {[0,150,300].map(d => (
-                  <span key={d} className="w-2 h-2 bg-yellow-500 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }}/>
-                ))}
+          {canalActivo === "soporte" && (
+            <div className="animate-desplegar mx-4 mt-3 px-4 py-3 bg-monki-k text-white rounded-2xl flex items-center gap-3">
+              <span className="w-9 h-9 rounded-full bg-monki-y text-monki-k flex items-center justify-center shrink-0"><Bot size={18}/></span>
+              <div>
+                <p className="text-sm font-extrabold text-monki-y">Asistente Monki — soporte con IA</p>
+                <p className="text-xs text-white/60">Escribí tu duda y te respondo al instante, a cualquier hora.</p>
               </div>
             </div>
           )}
 
-          <Escribiendo nombres={escribiendo.filter(n => n !== (me?.nombre || ""))}/>
-          <div ref={bottomRef}/>
-        </div>
-
-        {/* Input */}
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100">
-          <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus-within:border-yellow-300 focus-within:bg-white transition-colors">
-            <textarea
-              ref={inputRef}
-              value={texto}
-              onChange={e => setTexto(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder={canalInfo.isDM ? `Mensaje a ${canalInfo.nombre}…` : `Mensaje en #${canalInfo.nombre}…`}
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 resize-none focus:outline-none max-h-40"
-              style={{ lineHeight: "1.6" }}
-            />
-            <button
-              onClick={enviar}
-              disabled={!texto.trim() || enviando}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-yellow-600 text-white hover:bg-yellow-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0">
-              <Send size={14}/>
-            </button>
+          <div className="flex-1 overflow-y-auto py-4">
+            {mensajes.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center px-8 gap-3">
+                <div className="w-16 h-16 rounded-full bg-monki-y flex items-center justify-center shadow-[4px_4px_0_#111] animate-flotar text-2xl">
+                  {canalInfo.isDM ? <MessageSquare size={26}/> : (CANALES.find(c => c.id === canalActivo)?.emoji || "#")}
+                </div>
+                <p className="text-monki-k font-black text-lg">{canalInfo.isDM ? `Mensaje con ${canalInfo.nombre}` : `# ${canalInfo.nombre}`}</p>
+                <p className="text-monki-k/50 text-sm">{canalInfo.isDM ? "Inicio de la conversación privada." : "Sé el primero en escribir algo."}</p>
+              </div>
+            ) : (
+              <>
+                {(() => {
+                  const items = []; let lastDate = null;
+                  for (const g of grupos) {
+                    const ds = new Date(g[0].creado_en || g[0].creadoEn).toDateString();
+                    if (ds !== lastDate) { items.push(<SepFecha key={`sep-${ds}`} fecha={g[0].creado_en || g[0].creadoEn}/>); lastDate = ds; }
+                    items.push(<GrupoMensajes key={g[0].id} msgs={g} meId={meId}/>);
+                  }
+                  return items;
+                })()}
+              </>
+            )}
+            {iaEsc && canalActivo === "soporte" && (
+              <div className="flex items-center gap-3 px-4 py-2 mx-2">
+                <div className="w-9 h-9 rounded-full bg-monki-y flex items-center justify-center"><Bot size={17}/></div>
+                <div className="px-3.5 py-2.5 bg-monki-cream rounded-2xl flex gap-1.5 items-center">
+                  {[0,150,300].map(d => <span key={d} className="w-2 h-2 bg-monki-k rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }}/>)}
+                </div>
+              </div>
+            )}
+            <Escribiendo nombres={escribiendo.filter(n => n !== (me?.nombre || ""))}/>
+            <div ref={bottomRef}/>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1.5 text-center">Enter para enviar · Shift+Enter para nueva línea</p>
-        </div>
+
+          <div className="shrink-0 px-4 pb-4 pt-3 border-t-2 border-black/10 bg-monki-cream/40">
+            <div className="flex items-end gap-2 bg-white border-2 border-black/10 rounded-[20px] pl-4 pr-1.5 py-1.5 focus-within:border-monki-k transition-colors">
+              <textarea ref={inputRef} value={texto} onChange={e => setTexto(e.target.value)} onKeyDown={onKeyDown}
+                placeholder={canalInfo.isDM ? `Mensaje a ${canalInfo.nombre}…` : `Mensaje en #${canalInfo.nombre}…`}
+                rows={1} className="ui-sin-foco flex-1 bg-transparent border-0 text-sm text-monki-k placeholder:text-monki-k/35 resize-none outline-none max-h-40 py-2" style={{ lineHeight: "1.6" }}/>
+              <button type="button" onClick={enviar} disabled={!texto.trim() || enviando} title="Enviar"
+                className="ui-boton w-10 h-10 flex items-center justify-center rounded-full bg-monki-k text-monki-y transition-all duration-300 ease-monki hover:scale-105 disabled:opacity-30 disabled:hover:scale-100 flex-shrink-0">
+                <Send size={15}/>
+              </button>
+            </div>
+            <p className="font-mono text-[10px] text-monki-k/40 mt-1.5 text-center">Enter para enviar · Shift+Enter para nueva línea</p>
+          </div>
+        </section>
       </div>
-    </div>
+    </Modulo>
   );
 }
