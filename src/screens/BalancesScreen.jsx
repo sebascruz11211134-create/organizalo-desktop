@@ -3,7 +3,8 @@
  * Calcula automáticamente desde los asientos contables registrados.
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Printer, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { Modulo, BotonIcono, Tarjeta, Vacio, Estado } from "../components/ui";
 import db from "../utils/db";
 import { PLAN_DEFAULT } from "../utils/planCuentas";
 import { fmtMoney } from "../utils/fmt";
@@ -52,42 +53,45 @@ function LibroMayor({ asientos, cuentas, mes }) {
   const etiqs  = mesLabel(mes);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {detalle.length === 0 ? (
-        <p className="text-center text-slate-400 py-16">Sin movimientos en {etiqs}</p>
-      ) : detalle.map(cuenta => {
+        <Tarjeta><Vacio icono={BookOpen} titulo={`Sin movimientos en ${etiqs}`} texto="Cuando registres asientos, cada cuenta aparece acá con su saldo."/></Tarjeta>
+      ) : detalle.map((cuenta, ci) => {
         const s = saldos[cuenta.codigo];
         const asientosCuenta = asientos.filter(a =>
           (a.fecha||"").startsWith(mes) && a.lineas?.some(l=>l.cuentaCodigo===cuenta.codigo)
         ).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
 
         return (
-          <div key={cuenta.codigo} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
-              <div>
-                <span className="font-mono text-xs text-slate-400">{cuenta.codigo}</span>
-                <span className="ml-3 font-semibold text-slate-900">{cuenta.nombre}</span>
+          <div key={cuenta.codigo} style={{ animationDelay: `${Math.min(ci,10)*40}ms` }} className="animate-entrar bg-white border-2 border-black/10 rounded-[18px] overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b-2 border-black/10">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-[11px] bg-monki-cream px-2 py-0.5 rounded-md">{cuenta.codigo}</span>
+                <span className="font-extrabold text-monki-k">{cuenta.nombre}</span>
               </div>
-              <div className="flex gap-6 text-xs text-slate-500">
-                <span>Debe: <strong className="text-slate-800">{fmtMoney(s.debe,"CRC")}</strong></span>
-                <span>Haber: <strong className="text-slate-800">{fmtMoney(s.haber,"CRC")}</strong></span>
-                <span className="font-bold text-slate-900">Saldo: {fmtMoney(s.saldo,"CRC")}</span>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-monki-k/55">
+                <span>Debe <b className="text-monki-k">{fmtMoney(s.debe,"CRC")}</b></span>
+                <span>Haber <b className="text-monki-k">{fmtMoney(s.haber,"CRC")}</b></span>
+                <span className="bg-monki-k text-monki-y rounded-full px-3 py-1 font-black">Saldo {fmtMoney(s.saldo,"CRC")}</span>
               </div>
             </div>
-            <table className="table-base text-xs">
+            <table className="ui-tabla w-full text-sm">
               <thead>
-                <tr><th>Fecha</th><th>Asiento</th><th>Descripción</th><th className="text-right">Debe</th><th className="text-right">Haber</th></tr>
+                <tr className="monki-tag text-monki-k/45">
+                  <th className="text-left px-4 py-2 font-medium">Fecha</th><th className="text-left px-4 py-2 font-medium">Asiento</th><th className="text-left px-4 py-2 font-medium">Descripción</th>
+                  <th className="text-right px-4 py-2 font-medium">Debe</th><th className="text-right px-4 py-2 font-medium">Haber</th>
+                </tr>
               </thead>
               <tbody>
                 {asientosCuenta.map(a => {
                   const linea = a.lineas?.find(l=>l.cuentaCodigo===cuenta.codigo);
                   return (
-                    <tr key={a.id}>
-                      <td className="text-slate-500">{a.fecha}</td>
-                      <td className="font-mono text-slate-400">{a.numero}</td>
-                      <td className="text-slate-700">{a.descripcion}</td>
-                      <td className="text-right">{linea?.debe>0?fmtMoney(linea.debe,"CRC"):""}</td>
-                      <td className="text-right text-slate-400">{linea?.haber>0?fmtMoney(linea.haber,"CRC"):""}</td>
+                    <tr key={a.id} className="border-t border-black/5 hover:bg-monki-cream/60 transition-colors">
+                      <td className="px-4 py-2 font-mono text-xs text-monki-k/55">{a.fecha}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{a.numero}</td>
+                      <td className="px-4 py-2 text-monki-k/80">{a.descripcion}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{linea?.debe>0?fmtMoney(linea.debe,"CRC"):""}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-monki-k/55">{linea?.haber>0?fmtMoney(linea.haber,"CRC"):""}</td>
                     </tr>
                   );
                 })}
@@ -127,14 +131,14 @@ function BalanceGeneral({ asientos, cuentas, settings }) {
 
   const Section = ({ titulo, items, total, cls="" }) => (
     <div className="mb-4">
-      <p className="font-bold text-slate-700 text-sm mb-1 uppercase">{titulo}</p>
+      <p className="monki-tag text-monki-k/50 mb-1.5">{titulo}</p>
       {items.map(([lbl,val])=>(
-        <div key={lbl} className="flex justify-between text-sm py-0.5">
-          <span className="text-slate-600 pl-4">{lbl}</span>
-          <span className="text-slate-800">{fmtMoney(val,"CRC")}</span>
+        <div key={lbl} className="flex justify-between text-sm py-1 border-b border-black/5">
+          <span className="text-monki-k/70 pl-3">{lbl}</span>
+          <span className="text-monki-k tabular-nums">{fmtMoney(val,"CRC")}</span>
         </div>
       ))}
-      <div className={`flex justify-between font-bold border-t border-slate-200 mt-1 pt-1 text-sm ${cls}`}>
+      <div className={`flex justify-between font-extrabold mt-1.5 text-sm ${cls}`}>
         <span>Total {titulo}</span>
         <span>{fmtMoney(total,"CRC")}</span>
       </div>
@@ -148,25 +152,23 @@ function BalanceGeneral({ asientos, cuentas, settings }) {
   const cuentasPat     = cuentas.filter(c=>!c.esGrupo&&c.tipo==="patrimonio"&&saldos[c.codigo]);
 
   return (
-    <div className="grid grid-cols-2 gap-6 max-w-4xl">
-      {/* ACTIVO */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <h3 className="text-base font-black text-slate-900 mb-4 pb-2 border-b border-slate-200">ACTIVO</h3>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 max-w-5xl">
+      <div className="animate-entrar bg-white border-2 border-black/10 rounded-[18px] p-5">
+        <h3 className="text-[20px] font-black tracking-[-0.03em] text-monki-k mb-4">Activo<span className="text-monki-y" style={{ WebkitTextStroke: "1px #111" }}>.</span></h3>
         <Section titulo="Activo Circulante"
           items={cuentasActCir.map(c=>[c.nombre, saldos[c.codigo]?.saldo||0])}
           total={activoCir}/>
         <Section titulo="Activo No Circulante"
           items={cuentasActFijo.map(c=>[c.nombre, saldos[c.codigo]?.saldo||0])}
           total={activoFijo}/>
-        <div className="flex justify-between font-black text-base border-t-2 border-slate-900 mt-2 pt-2">
-          <span>TOTAL ACTIVO</span>
-          <span>{fmtMoney(totalActivo,"CRC")}</span>
+        <div className="flex justify-between items-center font-black bg-monki-k text-monki-y rounded-2xl px-4 py-3 mt-2">
+          <span className="monki-tag">Total activo</span>
+          <span className="text-lg">{fmtMoney(totalActivo,"CRC")}</span>
         </div>
       </div>
 
-      {/* PASIVO + PATRIMONIO */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <h3 className="text-base font-black text-slate-900 mb-4 pb-2 border-b border-slate-200">PASIVO Y PATRIMONIO</h3>
+      <div className="animate-entrar bg-white border-2 border-black/10 rounded-[18px] p-5" style={{ animationDelay: "80ms" }}>
+        <h3 className="text-[20px] font-black tracking-[-0.03em] text-monki-k mb-4">Pasivo y patrimonio<span className="text-monki-y" style={{ WebkitTextStroke: "1px #111" }}>.</span></h3>
         <Section titulo="Pasivo Circulante"
           items={cuentasPasCir.map(c=>[c.nombre, saldos[c.codigo]?.saldo||0])}
           total={pasivoCir}/>
@@ -176,11 +178,11 @@ function BalanceGeneral({ asientos, cuentas, settings }) {
         <Section titulo="Patrimonio"
           items={cuentasPat.map(c=>[c.nombre, saldos[c.codigo]?.saldo||0])}
           total={patrimonio}/>
-        <div className={`flex justify-between font-black text-base border-t-2 mt-2 pt-2 ${balanceado?"border-yellow-300 text-green-800":"border-red-500 text-red-700"}`}>
-          <span>TOTAL PASIVO + PATRIMONIO</span>
-          <span>{fmtMoney(totalPasivoPat,"CRC")}</span>
+        <div className={`flex justify-between items-center font-black rounded-2xl px-4 py-3 mt-2 ${balanceado?"bg-monki-k text-monki-y":"bg-red-600 text-white"}`}>
+          <span className="monki-tag">Total pasivo + patrimonio</span>
+          <span className="text-lg">{fmtMoney(totalPasivoPat,"CRC")}</span>
         </div>
-        {!balanceado && <p className="text-xs text-red-600 mt-1">⚠ Balance no cuadra. Revisá los asientos.</p>}
+        <div className="mt-2">{balanceado ? <Estado tono="exito">El balance cuadra</Estado> : <Estado tono="peligro">No cuadra: revisá los asientos</Estado>}</div>
       </div>
     </div>
   );
@@ -202,9 +204,9 @@ function EstadoResultados({ asientos, cuentas, mes }) {
   const etiqs = mesLabel(mes);
 
   const Row = ({ label, value, bold=false, subrow=false, color="" }) => (
-    <div className={`flex justify-between py-1 text-sm ${subrow?"pl-4":""} ${bold?"font-bold":"font-normal"} border-b border-slate-50`}>
-      <span className={color||"text-slate-700"}>{label}</span>
-      <span className={color||"text-slate-900"}>{fmtMoney(value,"CRC")}</span>
+    <div className={`flex justify-between py-1.5 text-sm ${subrow?"pl-3":""} ${bold?"font-extrabold":"font-normal"} border-b border-black/5`}>
+      <span className={color||"text-monki-k/75"}>{label}</span>
+      <span className={`tabular-nums ${color||"text-monki-k"}`}>{fmtMoney(value,"CRC")}</span>
     </div>
   );
 
@@ -213,31 +215,26 @@ function EstadoResultados({ asientos, cuentas, mes }) {
   const cuentasGasto   = cuentas.filter(c=>!c.esGrupo&&c.tipo==="gasto"&&saldos[c.codigo]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 max-w-xl">
-      <h3 className="text-base font-black text-slate-900 mb-1">Estado de Resultados</h3>
-      <p className="text-xs text-slate-400 mb-4">{etiqs}</p>
+    <div className="animate-entrar bg-white border-2 border-black/10 rounded-[18px] p-5 max-w-xl">
+      <h3 className="text-[20px] font-black tracking-[-0.03em] text-monki-k">Estado de resultados<span className="text-monki-y" style={{ WebkitTextStroke: "1px #111" }}>.</span></h3>
+      <p className="font-mono text-[11px] text-monki-k/45 mb-4 capitalize">{etiqs}</p>
 
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Ingresos</p>
+      <p className="monki-tag text-monki-k/50 mb-1">Ingresos</p>
       {cuentasIngreso.map(c=><Row key={c.codigo} label={c.nombre} value={saldos[c.codigo]?.saldo||0} subrow/>)}
-      <Row label="Total Ingresos" value={ingresos} bold color="text-green-800"/>
+      <Row label="Total ingresos" value={ingresos} bold/>
 
-      <div className="my-3 border-t border-slate-200"/>
-
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">(-) Costos</p>
+      <p className="monki-tag text-monki-k/50 mb-1 mt-4">(−) Costos</p>
       {cuentasCosto.map(c=><Row key={c.codigo} label={c.nombre} value={saldos[c.codigo]?.saldo||0} subrow/>)}
-      <Row label="Total Costos" value={costos} bold/>
-      <Row label="Utilidad Bruta" value={utilBruta} bold color={utilBruta>=0?"text-blue-800":"text-red-700"}/>
+      <Row label="Total costos" value={costos} bold/>
+      <div className="flex justify-between items-center bg-monki-y rounded-xl px-3 py-2 mt-2 text-sm font-black"><span>Utilidad bruta</span><span className={utilBruta>=0?"":"text-red-700"}>{fmtMoney(utilBruta,"CRC")}</span></div>
 
-      <div className="my-3 border-t border-slate-200"/>
-
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">(-) Gastos operativos</p>
+      <p className="monki-tag text-monki-k/50 mb-1 mt-4">(−) Gastos operativos</p>
       {cuentasGasto.map(c=><Row key={c.codigo} label={c.nombre} value={saldos[c.codigo]?.saldo||0} subrow/>)}
-      <Row label="Total Gastos" value={gastos} bold/>
+      <Row label="Total gastos" value={gastos} bold/>
 
-      <div className="my-2 border-t-2 border-slate-900"/>
-      <div className={`flex justify-between font-black text-base py-2 ${utilNeta>=0?"text-green-800":"text-red-700"}`}>
-        <span>UTILIDAD NETA</span>
-        <span>{fmtMoney(utilNeta,"CRC")}</span>
+      <div className={`flex justify-between items-center rounded-2xl px-4 py-3 mt-4 font-black ${utilNeta>=0?"bg-monki-k text-monki-y":"bg-red-600 text-white"}`}>
+        <span className="monki-tag">Utilidad neta</span>
+        <span className="text-xl">{fmtMoney(utilNeta,"CRC")}</span>
       </div>
     </div>
   );
@@ -263,39 +260,24 @@ export default function BalancesScreen() {
   useEffect(()=>{ cargar(); },[cargar]);
 
   return (
-    <div className="flex flex-col h-full overflow-auto bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
-        <div className="flex gap-1">
-          {TABS.map(t=>(
-            <button key={t} onClick={()=>setTab(t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                ${tab===t?"bg-yellow-600 text-white":"text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}>
-              {t}
-            </button>
-          ))}
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Mayor y balances"
+      descripcion="Libro mayor, balance general y estado de resultados, calculados desde los asientos."
+      acciones={tab !== "Balance General" && (
+        <div className="flex items-center gap-1 bg-white rounded-full border-2 border-black/10 p-1">
+          <BotonIcono icono={ChevronLeft} titulo="Mes anterior" onClick={()=>setMes(prevMes(mes))}/>
+          <span className="text-sm font-bold min-w-[140px] text-center capitalize">{mesLabel(mes)}</span>
+          <BotonIcono icono={ChevronRight} titulo="Mes siguiente" onClick={()=>setMes(nextMes(mes))}/>
         </div>
-
-        {/* Selector de mes (solo para Mayor y Estado de Resultados) */}
-        {tab !== "Balance General" && (
-          <div className="flex items-center gap-2">
-            <button onClick={()=>setMes(prevMes(mes))} className="p-1.5 rounded hover:bg-slate-100 border border-slate-200">
-              <ChevronLeft size={14}/>
-            </button>
-            <span className="text-sm font-semibold text-slate-700 min-w-[140px] text-center capitalize">{mesLabel(mes)}</span>
-            <button onClick={()=>setMes(nextMes(mes))} className="p-1.5 rounded hover:bg-slate-100 border border-slate-200">
-              <ChevronRight size={14}/>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 p-8">
+      )}
+      pestanas={{ activa: tab, onCambiar: setTab, items: TABS.map(t => ({ key: t, label: t })) }}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
         {tab==="Libro Mayor"           && <LibroMayor    asientos={asientos} cuentas={cuentas} mes={mes}/>}
         {tab==="Balance General"       && <BalanceGeneral asientos={asientos} cuentas={cuentas} settings={settings}/>}
         {tab==="Estado de Resultados"  && <EstadoResultados asientos={asientos} cuentas={cuentas} mes={mes}/>}
       </div>
-    </div>
+    </Modulo>
   );
 }
