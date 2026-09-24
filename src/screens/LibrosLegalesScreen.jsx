@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { BookOpen, Printer, FileSpreadsheet } from "lucide-react";
+import { Modulo, Entrada } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
@@ -79,39 +80,39 @@ function LibroVentas({ mes, settings }) {
             f.clienteNombre||f.cliente?.nombre||"", f.clienteCedula||f.cliente?.cedula||"",
             fmtMoney(f.subtotal||f.total||0,settings), fmtMoney(f.iva||f.impuesto||0,settings), fmtMoney(f.total||0,settings)]),
           ["","","","","","TOTALES →", fmtMoney(totalIVA,settings), fmtMoney(totalNeto,settings)]
-        )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        )} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] hover:bg-monki-k hover:text-monki-y">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-monki-k text-monki-y hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="ui-tarjeta overflow-x-auto bg-white rounded-[18px] border-2 border-black/10">
         <table className="table-base w-full">
           <thead><tr>
             <th>#</th><th>Fecha</th><th>N° Factura</th><th>Cliente</th><th>Cédula</th>
             <th className="text-right">Gravado</th><th className="text-right">IVA</th><th className="text-right">Total</th>
           </tr></thead>
           <tbody>
-            {facturas.length === 0 && <tr><td colSpan={8} className="text-center text-slate-400 py-8">Sin facturas en este período</td></tr>}
+            {facturas.length === 0 && <tr><td colSpan={8} className="text-center text-monki-k/40 py-10">Sin facturas en este período</td></tr>}
             {facturas.map((f,i) => (
               <tr key={f.id}>
-                <td className="text-slate-500">{i+1}</td>
+                <td className="text-monki-k/50">{i+1}</td>
                 <td>{fmtDate(f.fecha||f.creadoEn)}</td>
                 <td className="font-mono text-xs">{f.numero||"—"}</td>
                 <td>{f.clienteNombre||f.cliente?.nombre||"—"}</td>
-                <td className="text-slate-500 text-xs">{f.clienteCedula||f.cliente?.cedula||"—"}</td>
+                <td className="text-monki-k/50 text-xs font-mono">{f.clienteCedula||f.cliente?.cedula||"—"}</td>
                 <td className="text-right">{fmtMoney(f.subtotal||f.total||0,settings)}</td>
-                <td className="text-right text-yellow-600">{fmtMoney(f.iva||f.impuesto||0,settings)}</td>
+                <td className="text-right text-monki-k">{fmtMoney(f.iva||f.impuesto||0,settings)}</td>
                 <td className="text-right font-semibold">{fmtMoney(f.total||0,settings)}</td>
               </tr>
             ))}
           </tbody>
           {facturas.length > 0 && (
-            <tfoot><tr className="bg-yellow-50 font-semibold">
-              <td colSpan={5} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
+            <tfoot><tr className="bg-monki-k text-white font-bold [&_td]:!text-white">
+              <td colSpan={5} className="px-4 py-2 text-right text-xs monki-tag !text-monki-y">TOTALES</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalGravado,settings)}</td>
-              <td className="px-4 py-2 text-right text-yellow-600">{fmtMoney(totalIVA,settings)}</td>
+              <td className="px-4 py-2 text-right text-monki-k">{fmtMoney(totalIVA,settings)}</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalNeto,settings)}</td>
             </tr></tfoot>
           )}
@@ -160,39 +161,39 @@ function LibroCompras({ mes, settings }) {
             c.proveedor||"", c.cedulaProveedor||"",
             fmtMoney(c.subtotal||c.total||0,settings), fmtMoney(c.ivaCreditoFiscal||c.iva||0,settings), fmtMoney(c.total||0,settings)]),
           ["","","","","","TOTALES →", fmtMoney(totalIVAcred,settings), fmtMoney(totalNeto,settings)]
-        )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        )} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] hover:bg-monki-k hover:text-monki-y">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-monki-k text-monki-y hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="ui-tarjeta overflow-x-auto bg-white rounded-[18px] border-2 border-black/10">
         <table className="table-base w-full">
           <thead><tr>
             <th>#</th><th>Fecha</th><th>N° Factura</th><th>Proveedor</th><th>Cédula</th>
             <th className="text-right">Gravado</th><th className="text-right">IVA Crédito</th><th className="text-right">Total</th>
           </tr></thead>
           <tbody>
-            {compras.length === 0 && <tr><td colSpan={8} className="text-center text-slate-400 py-8">Sin compras en este período</td></tr>}
+            {compras.length === 0 && <tr><td colSpan={8} className="text-center text-monki-k/40 py-10">Sin compras en este período</td></tr>}
             {compras.map((c,i) => (
               <tr key={c.id}>
-                <td className="text-slate-500">{i+1}</td>
+                <td className="text-monki-k/50">{i+1}</td>
                 <td>{fmtDate(c.fecha||c.creadoEn)}</td>
                 <td className="font-mono text-xs">{c.numeroFactura||c.numero||"—"}</td>
                 <td>{c.proveedor||"—"}</td>
-                <td className="text-slate-500 text-xs">{c.cedulaProveedor||"—"}</td>
+                <td className="text-monki-k/50 text-xs font-mono">{c.cedulaProveedor||"—"}</td>
                 <td className="text-right">{fmtMoney(c.subtotal||c.total||0,settings)}</td>
-                <td className="text-right text-yellow-600">{fmtMoney(c.ivaCreditoFiscal||c.iva||0,settings)}</td>
+                <td className="text-right text-monki-k">{fmtMoney(c.ivaCreditoFiscal||c.iva||0,settings)}</td>
                 <td className="text-right font-semibold">{fmtMoney(c.total||0,settings)}</td>
               </tr>
             ))}
           </tbody>
           {compras.length > 0 && (
-            <tfoot><tr className="bg-yellow-50 font-semibold">
-              <td colSpan={5} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
+            <tfoot><tr className="bg-monki-k text-white font-bold [&_td]:!text-white">
+              <td colSpan={5} className="px-4 py-2 text-right text-xs monki-tag !text-monki-y">TOTALES</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalGravado,settings)}</td>
-              <td className="px-4 py-2 text-right text-yellow-600">{fmtMoney(totalIVAcred,settings)}</td>
+              <td className="px-4 py-2 text-right text-monki-k">{fmtMoney(totalIVAcred,settings)}</td>
               <td className="px-4 py-2 text-right">{fmtMoney(totalNeto,settings)}</td>
             </tr></tfoot>
           )}
@@ -246,26 +247,26 @@ function LibroDiario({ mes, settings }) {
           imprimirTabla(`Libro Diario — ${mes}`,
             ["Fecha","N° Asiento","Descripción","Cuenta","Debe","Haber"], filas,
             ["","","","TOTALES →", fmtMoney(totalDebe,settings), fmtMoney(totalHaber,settings)]);
-        }} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        }} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] hover:bg-monki-k hover:text-monki-y">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-monki-k text-monki-y hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="ui-tarjeta overflow-x-auto bg-white rounded-[18px] border-2 border-black/10">
         <table className="table-base w-full">
           <thead><tr>
             <th>Fecha</th><th>N° Asiento</th><th>Descripción</th><th>Cuenta</th>
             <th className="text-right">Debe</th><th className="text-right">Haber</th>
           </tr></thead>
           <tbody>
-            {asientos.length === 0 && <tr><td colSpan={6} className="text-center text-slate-400 py-8">Sin asientos en este período</td></tr>}
+            {asientos.length === 0 && <tr><td colSpan={6} className="text-center text-monki-k/40 py-10">Sin asientos en este período</td></tr>}
             {asientos.map(a => (
               (a.lineas||[]).map((l,i) => (
-                <tr key={`${a.id}-${i}`} className={i===0?"border-t-2 border-slate-200":""}>
-                  {i===0 ? <><td>{fmtDate(a.fecha)}</td><td className="font-mono text-xs">{a.numero}</td><td className="text-slate-600 max-w-[200px] truncate">{a.descripcion}</td></> : <><td/><td/><td/></>}
-                  <td className="text-slate-600">{l.cuentaCodigo} — {l.cuentaNombre}</td>
+                <tr key={`${a.id}-${i}`} className={i===0?"border-t-2 border-black/10":""}>
+                  {i===0 ? <><td>{fmtDate(a.fecha)}</td><td className="font-mono text-xs">{a.numero}</td><td className="text-monki-k/70 max-w-[200px] truncate">{a.descripcion}</td></> : <><td/><td/><td/></>}
+                  <td className="text-monki-k/70">{l.cuentaCodigo} — {l.cuentaNombre}</td>
                   <td className="text-right text-blue-700">{l.debe>0 ? fmtMoney(l.debe,settings) : ""}</td>
                   <td className="text-right text-rose-700">{l.haber>0 ? fmtMoney(l.haber,settings) : ""}</td>
                 </tr>
@@ -273,8 +274,8 @@ function LibroDiario({ mes, settings }) {
             ))}
           </tbody>
           {asientos.length > 0 && (
-            <tfoot><tr className="bg-yellow-50 font-semibold">
-              <td colSpan={4} className="px-4 py-2 text-right text-xs text-slate-500">TOTALES</td>
+            <tfoot><tr className="bg-monki-k text-white font-bold [&_td]:!text-white">
+              <td colSpan={4} className="px-4 py-2 text-right text-xs monki-tag !text-monki-y">TOTALES</td>
               <td className="px-4 py-2 text-right text-blue-700">{fmtMoney(totalDebe,settings)}</td>
               <td className="px-4 py-2 text-right text-rose-700">{fmtMoney(totalHaber,settings)}</td>
             </tr></tfoot>
@@ -336,28 +337,28 @@ function LibroMayor({ mes, settings }) {
           ["","","TOTALES →",
             fmtMoney(cuentas.reduce((s,c)=>s+c.debe,0),settings),
             fmtMoney(cuentas.reduce((s,c)=>s+c.haber,0),settings), ""]
-        )} className="flex items-center gap-1.5 bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        )} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] hover:bg-monki-k hover:text-monki-y">
           <Printer size={13}/> Imprimir
         </button>
-        <button onClick={exportar} className="flex items-center gap-1.5 bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-semibold">
+        <button onClick={exportar} className="ui-boton inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-bold transition-all duration-300 ease-monki bg-monki-k text-monki-y hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600]">
           <FileSpreadsheet size={13}/> Excel
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="ui-tarjeta overflow-x-auto bg-white rounded-[18px] border-2 border-black/10">
         <table className="table-base w-full">
           <thead><tr>
             <th>Código</th><th>Cuenta</th>
             <th className="text-right">Debe</th><th className="text-right">Haber</th><th className="text-right">Saldo</th>
           </tr></thead>
           <tbody>
-            {cuentas.length === 0 && <tr><td colSpan={5} className="text-center text-slate-400 py-8">Sin movimientos en este período</td></tr>}
+            {cuentas.length === 0 && <tr><td colSpan={5} className="text-center text-monki-k/40 py-10">Sin movimientos en este período</td></tr>}
             {cuentas.map((c,i) => (
               <tr key={i}>
                 <td className="font-mono text-xs">{c.codigo||"—"}</td>
                 <td className="font-medium">{c.nombre}</td>
                 <td className="text-right text-blue-700">{fmtMoney(c.debe,settings)}</td>
                 <td className="text-right text-rose-700">{fmtMoney(c.haber,settings)}</td>
-                <td className={`text-right font-semibold ${c.saldo>=0?"text-slate-800":"text-red-600"}`}>
+                <td className={`text-right font-semibold ${c.saldo>=0?"text-monki-k":"text-red-600"}`}>
                   {fmtMoney(Math.abs(c.saldo),settings)} {c.saldo>=0?"D":"H"}
                 </td>
               </tr>
@@ -381,35 +382,19 @@ export default function LibrosLegalesScreen() {
   useEffect(() => { db.getSettings().then(setSettings); }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 border-b border-slate-600">
-        <BookOpen size={14} className="text-yellow-400"/>
-        <span className="text-white text-xs font-semibold">Libros Legales</span>
-        <div className="w-px h-5 bg-slate-500 mx-1"/>
-        <label className="text-slate-300 text-xs">Período:</label>
-        <input type="month" value={mes} onChange={e=>setMes(e.target.value)}
-          className="bg-slate-600 text-white text-xs border border-slate-500 rounded px-2 py-1 focus:outline-none"/>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 bg-white px-4 pt-2 gap-1">
-        {TABS.map((t,i) => (
-          <button key={i} onClick={()=>setTab(i)}
-            className={`px-4 py-2 text-xs font-semibold rounded-t transition-colors
-              ${tab===i ? "bg-yellow-700 text-white" : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"}`}>
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {/* Contenido */}
-      <div className="flex-1 overflow-auto p-4 bg-white">
+    <Modulo
+      seccion="Contabilidad"
+      titulo="Libros legales"
+      descripcion="Libros de ventas, compras, diario y mayor que pide Hacienda, listos para imprimir o exportar."
+      acciones={<label className="flex items-center gap-2 monki-tag text-monki-k/55">Período <Entrada type="month" value={mes} onChange={e=>setMes(e.target.value)} className="!w-auto !py-1.5"/></label>}
+      pestanas={{ activa: tab, onCambiar: setTab, items: TABS.map((t, i) => ({ key: i, label: t })) }}
+    >
+      <div className="flex-1 overflow-auto -mx-1 px-1 pb-1">
         {tab === 0 && <LibroVentas  mes={mes} settings={settings}/>}
         {tab === 1 && <LibroCompras mes={mes} settings={settings}/>}
         {tab === 2 && <LibroDiario  mes={mes} settings={settings}/>}
         {tab === 3 && <LibroMayor   mes={mes} settings={settings}/>}
       </div>
-    </div>
+    </Modulo>
   );
 }
