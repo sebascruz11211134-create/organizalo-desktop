@@ -12,3 +12,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </HashRouter>
   </React.StrictMode>
 );
+
+// Instalar como app en el celular (solo en la web publicada; no en Electron ni en desarrollo)
+if ("serviceWorker" in navigator && window.location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

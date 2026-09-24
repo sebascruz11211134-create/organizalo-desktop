@@ -203,8 +203,8 @@ function BottomTabBar() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-monki-k flex px-1 pt-1"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 4px)" }}
     >
       {tabs.map(tab => {
         const active =
@@ -215,10 +215,12 @@ function BottomTabBar() {
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors
-              ${active ? "text-yellow-600" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-0.5 text-[10px] font-bold transition-colors duration-200
+              ${active ? "text-monki-y" : "text-white/55"}`}
           >
-            <tab.icon size={20} className={active ? "text-yellow-600" : "text-slate-400"} />
+            <span className={`w-11 h-7 rounded-full flex items-center justify-center transition-all duration-300 ease-monki ${active ? "bg-monki-y text-monki-k" : ""}`}>
+              <tab.icon size={19} />
+            </span>
             <span>{tr(tab.label)}</span>
           </button>
         );
