@@ -139,8 +139,21 @@ async function agregarFaltantes(cubeta, pares, conexionAbierta) {
   registrar(cubeta);
 }
 
-// Datos del negocio que quedaron en localStorage: al espacio de su dueño
-async function migrarLocalStorage(cubetaActual, conexionActual) {
+// Datos del negocio que quedaron en localStorage: al espacio de su dueño.
+// El dueño sale de la marca, del baseline de sincronización o —solo si es
+// seguro (la sesión que ya estaba abierta en este equipo)— de la empresa actual.
+// Si no se sabe de quién son, NO se mueven: se pregunta (ver datosSinDueno).
+function clavesDelNegocioEnLocal() {
+  const claves = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (esDatoDelNegocio(k)) claves.push(k);
+  }
+  return claves;
+}
+const duenoConocido = claves => localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(claves);
+
+async function migrarLocalStorage(cubetaActual, conexionActual, duenoSeguro) {
   const claves = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -157,7 +170,8 @@ async function migrarLocalStorage(cubetaActual, conexionActual) {
     aLiberar.push(k);
     if (valor !== null) pares.push([k, valor]);
   }
-  const dueno = localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(claves) || cubetaActual;
+  const dueno = duenoConocido(claves) || (duenoSeguro ? cubetaActual : null);
+  if (!dueno) return; // de quién son no se sabe: quedan intactos hasta que alguien lo confirme
   await agregarFaltantes(dueno, pares, dueno === cubetaActual ? conexionActual : null);
   aLiberar.forEach(k => localStorage.removeItem(k)); // solo después de confirmar la copia
   localStorage.removeItem(MARCA_DUENO);
@@ -171,7 +185,10 @@ export function iniciarAlmacen() {
   if (cubetaDeSesion() && !localStorage.getItem(MARCA_SESION)) {
     localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
   }
-  iniciado = abrirEspacio(cubetaDeSesion()).catch(() => {});
+  // Mientras otra pestaña cierra la sesión no se abre nada
+  if (sesionCerrada()) { iniciado = Promise.resolve(); return iniciado; }
+  // La sesión que ya estaba abierta en este equipo es dueña segura de sus datos
+  iniciado = abrirEspacio(cubetaDeSesion(), { duenoSeguro: true }).catch(() => {});
   return iniciado;
 }
 
@@ -180,18 +197,18 @@ let cola = Promise.resolve();
  * Abre el espacio de una empresa (recibe el usuario o el id de la empresa).
  * Si había otro abierto lo cierra SIN borrarlo. Falla si el almacén quedó bloqueado.
  */
-export function abrirEspacio(userOCubeta) {
+export function abrirEspacio(userOCubeta, { duenoSeguro = false } = {}) {
   // En fila: arranque, login y sincronización pueden pedirlo a la vez
-  const siguiente = cola.then(() => abrirEspacioAhora(userOCubeta));
+  const siguiente = cola.then(() => abrirEspacioAhora(userOCubeta, duenoSeguro));
   cola = siguiente.catch(() => {});
   return siguiente;
 }
 
-async function abrirEspacioAhora(userOCubeta) {
+async function abrirEspacioAhora(userOCubeta, duenoSeguro) {
   const cubeta = typeof userOCubeta === "string" ? userOCubeta : cubetaDe(userOCubeta);
   if (!cubeta) return;
-  if (!hayIndexedDB()) return usarLocalStorage(cubeta);
-  if (idb && espacioAbierto === cubeta) { sesionLigada = localStorage.getItem(MARCA_SESION); return; }
+  if (!hayIndexedDB()) return usarLocalStorage(cubeta, duenoSeguro);
+  if (idb && espacioAbierto === cubeta) return;
   cerrarEspacio();
   bloqueo = null;
 
@@ -200,7 +217,7 @@ async function abrirEspacioAhora(userOCubeta) {
   try {
     conexion = await abrir(nombreBase(cubeta));
     await conCandado("monki-migracion", async () => {
-      await migrarLocalStorage(cubeta, conexion);
+      await migrarLocalStorage(cubeta, conexion, duenoSeguro);
       for (const [k, v] of await leerTodoIdb(conexion)) {
         if (esDatoDelNegocio(k)) { datos.set(k, v); continue; }
         // Clave que debe vivir en localStorage (p. ej. se agregó a EN_LOCALSTORAGE después)
@@ -238,15 +255,11 @@ async function abrirEspacioAhora(userOCubeta) {
 // Sin IndexedDB (navegadores muy viejos): todo en localStorage, sin espacios
 // separados. Si hay datos de OTRA empresa no se borran: se pide cerrar esa
 // cuenta primero (así se suben sus cambios pendientes).
-function usarLocalStorage(cubeta) {
-  const claves = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (esDatoDelNegocio(k)) claves.push(k);
-  }
-  const dueno = localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(claves);
-  if (claves.length && dueno && dueno !== cubeta) {
-    throw new Error("Este navegador tiene datos de otra empresa. Entrá con esa cuenta y cerrá sesión antes de usar otra.");
+function usarLocalStorage(cubeta, duenoSeguro) {
+  const claves = clavesDelNegocioEnLocal();
+  const dueno = duenoConocido(claves) || (duenoSeguro ? cubeta : null);
+  if (claves.length && dueno !== cubeta) {
+    throw new Error("Este navegador tiene datos de otra empresa o de una sesión anterior. Entrá con esa cuenta y cerrá sesión antes de usar otra.");
   }
   localStorage.setItem(MARCA_DUENO, cubeta);
   espacioAbierto = cubeta;
@@ -281,6 +294,24 @@ export async function borrarEspacio(cubeta = espacioAbierto) {
 }
 
 export const espacioActual = () => espacioAbierto;
+const sesionCerrada = () => (localStorage.getItem(MARCA_SESION) || "").startsWith("cerrada");
+/** Liga el espacio abierto a la sesión actual (lo llama el login después de publicarla). */
+export function ligarSesion() { if (espacioAbierto) sesionLigada = localStorage.getItem(MARCA_SESION); }
+
+/** ¿Quedaron en este equipo datos de una sesión anterior sin dueño identificable? */
+export function datosSinDueno() {
+  if (!idb) return false;
+  const claves = clavesDelNegocioEnLocal();
+  return claves.length > 0 && !duenoConocido(claves);
+}
+
+/** El usuario confirmó que esos datos son de la empresa abierta: se incorporan a su espacio. */
+export async function adoptarDatosSinDueno() {
+  if (!idb || !espacioAbierto) return;
+  await conCandado("monki-migracion", () => migrarLocalStorage(espacioAbierto, idb, true));
+  for (const [k, v] of await leerTodoIdb(idb)) if (esDatoDelNegocio(k)) cache.set(k, v);
+  canal?.postMessage({ claves: [...cache.keys()] });
+}
 export const almacenBloqueado = () => bloqueo;
 
 // Otra pestaña del mismo espacio cambió algo: refrescar esas claves
@@ -343,7 +374,7 @@ export async function escribirVarias(datos) {
   if (pares.some(([k]) => esDatoDelNegocio(k))) {
     if (bloqueo) throw new Error(MSJ_BLOQUEO);
     // Otra pestaña cambió la sesión (entró otra cuenta o se cerró): no escribir con la vieja
-    if (espacioAbierto && localStorage.getItem(MARCA_SESION) !== sesionLigada) {
+    if (sesionCerrada() || (espacioAbierto && localStorage.getItem(MARCA_SESION) !== sesionLigada)) {
       throw new Error("La sesión cambió en otra pestaña. Recargá la página.");
     }
   }

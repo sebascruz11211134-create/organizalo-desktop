@@ -140,3 +140,28 @@ test('cerrar sesión con todo subido elimina el espacio; con cambios pendientes 
   await a.abrirEspacio('E1');
   assert.equal(a.leer('@finanzia/facturas'), null);
 });
+
+test('datos sin dueño identificable: no se adivina; quedan intactos hasta que se confirme', async () => {
+  ls('@finanzia/facturas', [{ id: 'anonima' }]);          // sin sesión, sin marca, sin baseline
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  sesion('E2');                                             // entra una empresa (login)
+  await a.abrirEspacio({ id: 'u2', empresaId: 'E2' });
+  assert.equal(a.leer('@finanzia/facturas'), null);         // no se metieron en E2
+  assert.ok(localStorage.getItem('@finanzia/facturas'));    // ni se borraron
+  assert.equal(a.datosSinDueno(), true);
+  await a.adoptarDatosSinDueno();                           // el usuario confirmó que son suyos
+  assert.deepEqual(a.leer('@finanzia/facturas'), [{ id: 'anonima' }]);
+  assert.equal(localStorage.getItem('@finanzia/facturas'), null);
+  assert.equal(a.datosSinDueno(), false);
+});
+
+test('mientras se cierra la sesión no se puede escribir, ni al recargar otra pestaña', async () => {
+  sesion('E1');
+  localStorage.setItem('monki:sesion', 'S1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  localStorage.setItem('monki:sesion', 'cerrada-123');      // logout en curso
+  await assert.rejects(a.escribir('@finanzia/facturas', [{ id: 'x' }]));
+  const b = await nuevaInstancia(); await b.iniciarAlmacen(); // pestaña que se recarga durante el cierre
+  assert.equal(b.espacioActual(), null);
+  await assert.rejects(b.escribir('@finanzia/facturas', [{ id: 'y' }]));
+});

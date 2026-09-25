@@ -957,6 +957,9 @@ const EN = {
   "Cambios sin subir": "Unsynced changes",
   "Salir igual": "Sign out anyway",
   "Hay cambios en este equipo que todavía no se subieron al servidor (¿sin internet?). Si salís igual, quedan guardados aquí y se suben la próxima vez que entres con esta empresa en este equipo.": "There are changes on this device that haven't been uploaded yet (no internet?). If you sign out anyway, they stay saved here and will upload the next time you sign in with this company on this device.",
+  "Datos de una sesión anterior": "Data from a previous session",
+  "Sí, son de esta empresa": "Yes, they belong to this company",
+  "Este equipo tiene datos guardados de una sesión anterior que no se pudieron identificar. ¿Son de esta empresa? Si no estás seguro, elegí Cancelar: quedan guardados sin tocarse.": "This device has data saved from a previous session that couldn't be identified. Does it belong to this company? If you're not sure, choose Cancel: it stays saved untouched.",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

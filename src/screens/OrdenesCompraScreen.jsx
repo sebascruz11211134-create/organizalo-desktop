@@ -162,18 +162,19 @@ export default function OrdenesCompraScreen() {
         const electron = !!window.electronAPI?.store;
         const compras = electron ? await db.getCompras() : await leerDeDisco("@finanzia/compras", []);
         const prod    = electron ? await db.getProductos() : await leerDeDisco("@finanzia/productos", []);
+        // Se usa la OC recién leída del disco (otra pestaña pudo cambiarla)
         const nueva = {
           id: genId(), numero: `COMP-${String(compras.length+1).padStart(5,"0")}`,
-          proveedor: oc.proveedor, cedulaProveedor: oc.cedulaProveedor||"",
-          fecha: hoy(), subtotal: oc.subtotal||0, iva: oc.iva||0,
-          ivaCreditoFiscal: oc.iva||0, total: oc.total||0,
-          moneda: oc.moneda||"CRC", medioPago: "Crédito proveedor",
-          lineas: oc.lineas||[], ocRef: oc.numero,
-          notas: `Generado desde OC ${oc.numero}`, creadoEn: new Date().toISOString(),
+          proveedor: actual.proveedor, cedulaProveedor: actual.cedulaProveedor||"",
+          fecha: hoy(), subtotal: actual.subtotal||0, iva: actual.iva||0,
+          ivaCreditoFiscal: actual.iva||0, total: actual.total||0,
+          moneda: actual.moneda||"CRC", medioPago: "Crédito proveedor",
+          lineas: actual.lineas||[], ocRef: actual.numero,
+          notas: `Generado desde OC ${actual.numero}`, creadoEn: new Date().toISOString(),
         };
         // Aumentar inventario
         const updProd = prod.map(p => {
-          const linea = (oc.lineas||[]).find(l => (l.producto||"").toLowerCase().includes((p.nombre||"").toLowerCase().slice(0,5)));
+          const linea = (actual.lineas||[]).find(l => (l.producto||"").toLowerCase().includes((p.nombre||"").toLowerCase().slice(0,5)));
           if (linea) return { ...p, stock: (parseFloat(p.stock)||0) + parseFloat(linea.cantidad||0) };
           return p;
         });

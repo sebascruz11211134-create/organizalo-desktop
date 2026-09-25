@@ -6,7 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
-import { abrirEspacio, borrarEspacio, cerrarEspacio } from "./almacen";
+import { abrirEspacio, borrarEspacio, cerrarEspacio, ligarSesion } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -35,6 +35,20 @@ async function storeSet(key, value) {
 const MARCA_SESION = "monki:sesion";
 const nuevaSesion = () => localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
+// Orden al entrar: credenciales → espacio de la empresa → publicar la sesión.
+// La marca de sesión cambia AL FINAL: las otras pestañas se recargan una sola
+// vez y ya con la sesión nueva completa (cada empresa tiene su propio espacio;
+// el de la cuenta anterior queda intacto).
+async function abrirSesion(datos) {
+  await storeSet(TOKEN_KEY, datos.token);
+  await storeSet(REFRESH_KEY, datos.refreshToken || null);
+  await storeSet(USER_KEY, datos.user);
+  if (!isElectron) await abrirEspacio(datos.user);
+  nuevaSesion();
+  if (!isElectron) ligarSesion();
+  window.__orgReanudarSync?.();
+}
+
 // ── Registro ──────────────────────────────────────────────────────────────────
 
 export async function register({ nombre, email, password, telefono, codigoAcceso }) {
@@ -43,13 +57,7 @@ export async function register({ nombre, email, password, telefono, codigoAcceso
     { nombre, email, password, telefono, codigoAcceso },
     { timeout: 20000 }
   );
-  // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
-  nuevaSesion(); // antes de abrir el espacio: queda ligado a esta sesión
-  if (!isElectron) await abrirEspacio(res.data.user);
-  await storeSet(TOKEN_KEY, res.data.token);
-  await storeSet(REFRESH_KEY, res.data.refreshToken || null);
-  await storeSet(USER_KEY, res.data.user);
-  window.__orgReanudarSync?.();
+  await abrirSesion(res.data);
   return res.data;
 }
 
@@ -61,14 +69,7 @@ export async function login({ email, password }) {
     { email, password },
     { timeout: 20000 }
   );
-  // Datos de otra empresa en este equipo: se borran antes de abrir la sesión
-  // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
-  nuevaSesion(); // antes de abrir el espacio: queda ligado a esta sesión
-  if (!isElectron) await abrirEspacio(res.data.user);
-  await storeSet(TOKEN_KEY, res.data.token);
-  await storeSet(REFRESH_KEY, res.data.refreshToken || null);
-  await storeSet(USER_KEY, res.data.user);
-  window.__orgReanudarSync?.();
+  await abrirSesion(res.data);
   return res.data;
 }
 
@@ -129,6 +130,8 @@ export async function logout({ conservarDatos = false } = {}) {
   await storeSet(REFRESH_KEY, null);
   await storeSet(USER_KEY, null);
   await storeSet(MODULOS_KEY, null);
+  // Segundo aviso: las pestañas que se recargaron durante el cierre vuelven al login
+  localStorage.setItem(MARCA_SESION, `cerrada-${Date.now()}-fin`);
 }
 
 // ── Refresh session ───────────────────────────────────────────────────────────

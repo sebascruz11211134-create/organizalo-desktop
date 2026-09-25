@@ -10,6 +10,7 @@ import { useIdioma } from "./utils/idioma";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { syncAll, startAutoSync, connectSocket, disconnectSocket, processQueue, onSyncUpdate, cambiosSinSubir } from "./utils/sync";
 import { useConfirmar } from "./components/ui";
+import { datosSinDueno, adoptarDatosSinDueno } from "./utils/almacen";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
 
 // ── Lazy imports — solo cargan al navegar a cada pantalla ─────────────────────
@@ -208,6 +209,7 @@ export default function App() {
   const [syncStatus,         setSyncStatus]         = useState("idle");
   // Si algo no se pudo guardar en el dispositivo (p. ej. sin espacio), avisar en vez de callar
   const [errorAlmacen,       setErrorAlmacen]       = useState(false);
+  const { confirmar: confirmarApp, dialogo: dialogoApp } = useConfirmar();
   // Si en otra pestaña entra otra cuenta o se cierra la sesión, esta pestaña
   // se recarga: nunca sigue mostrando ni guardando datos de la sesión anterior.
   useEffect(() => {
@@ -222,6 +224,19 @@ export default function App() {
   }, []);
   const [unreadChat,         setUnreadChat]         = useState(0);
   const [authState,          setAuthState]          = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
+  // Datos de una sesión anterior cuyo dueño no se pudo identificar: no se
+  // adivina, se pregunta. Si la respuesta es "No", quedan intactos en el equipo.
+  useEffect(() => {
+    if (authState !== "authenticated" || !datosSinDueno()) return;
+    (async () => {
+      const son = await confirmarApp("Datos de una sesión anterior",
+        "Este equipo tiene datos guardados de una sesión anterior que no se pudieron identificar. ¿Son de esta empresa? Si no estás seguro, elegí Cancelar: quedan guardados sin tocarse.",
+        { boton: "Sí, son de esta empresa" });
+      if (son) { await adoptarDatosSinDueno(); window.location.reload(); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authState]);
+
   const [user,               setUser]               = useState(null);
   const [plan,               setPlan]               = useState(null);
   const [modulosHabilitados, setModulosHabilitados] = useState(null); // null = todos
@@ -292,7 +307,6 @@ export default function App() {
     }
   }, []);
 
-  const { confirmar: confirmarApp, dialogo: dialogoApp } = useConfirmar();
   const handleLogout = useCallback(async () => {
     // Antes de salir, subir lo pendiente. Si no se puede, preguntar: y si sale
     // igual, los datos de esta empresa quedan guardados aparte en este equipo.
