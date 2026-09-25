@@ -208,7 +208,7 @@ export default function App() {
   // Si algo no se pudo guardar en el dispositivo (p. ej. sin espacio), avisar en vez de callar
   const [errorAlmacen,       setErrorAlmacen]       = useState(false);
   useEffect(() => {
-    const avisar = () => setErrorAlmacen(true);
+    const avisar = (e) => setErrorAlmacen(e?.detail?.mensaje || "No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.");
     window.addEventListener("monki:almacen-error", avisar);
     return () => window.removeEventListener("monki:almacen-error", avisar);
   }, []);
@@ -392,7 +392,7 @@ export default function App() {
       <TrialBanner plan={plan} />
       {errorAlmacen && (
         <div className="flex items-center justify-between gap-3 px-4 py-2 bg-red-600 text-white text-xs font-semibold shrink-0">
-          <span>⚠ {tr("No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.")}</span>
+          <span>⚠ {tr(errorAlmacen)}</span>
           <button onClick={() => setErrorAlmacen(false)} className="p-0.5 hover:opacity-70" aria-label={tr("Cerrar")}><X size={13} /></button>
         </div>
       )}

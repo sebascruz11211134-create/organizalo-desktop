@@ -953,6 +953,7 @@ const EN = {
   "Caja POS": "POS",
   "Bancos": "Banks",
   "No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.": "A change couldn't be saved on this device (low storage?). Free up space or sync before continuing.",
+  "No se pudo abrir el almacenamiento de este dispositivo. Recargá la página antes de seguir trabajando.": "Couldn't open this device's storage. Reload the page before continuing.",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

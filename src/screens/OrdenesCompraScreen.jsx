@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, ShoppingCart, Check, X, FileSpreadsheet, Send, FileText, PackageCheck, Ban } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
-import { leer, escribir } from "../utils/almacen";
+import { leer, escribir, escribirVarias } from "../utils/almacen";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
@@ -148,6 +148,7 @@ export default function OrdenesCompraScreen() {
 
   const { confirmar, dialogo } = useConfirmar();
   async function recibirOC(oc) {
+    if (oc.estado === "recibida") return alert("Esta OC ya fue recibida.");
     if (!(await confirmar("Recibir orden", `¿Marcar la OC ${oc.numero} como recibida? Se creará una factura de proveedor en Compras y se sumará el inventario.`, { boton: "Recibir" }))) return;
     // Crear entrada en ComprasScreen
     const compras = await db.getCompras();
@@ -160,8 +161,6 @@ export default function OrdenesCompraScreen() {
       lineas: oc.lineas||[], ocRef: oc.numero,
       notas: `Generado desde OC ${oc.numero}`, creadoEn: new Date().toISOString(),
     };
-    await db.setCompras([...compras, nueva]);
-
     // Aumentar inventario
     const prod = await db.getProductos();
     const updProd = prod.map(p => {
@@ -169,9 +168,19 @@ export default function OrdenesCompraScreen() {
       if (linea) return { ...p, stock: (parseFloat(p.stock)||0) + parseFloat(linea.cantidad||0) };
       return p;
     });
-    await db.setProductos(updProd);
-
-    cambiarEstado(oc.id, "recibida");
+    // Compra + inventario + estado de la OC en UNA sola escritura: o se guarda todo o nada
+    const updOcs = (leer("@finanzia/ordenesCompra") || []).map(o => o.id === oc.id ? { ...o, estado: "recibida" } : o);
+    try {
+      if (window.electronAPI?.store) {
+        await db.setCompras([...compras, nueva]);
+        await db.setProductos(updProd);
+        await escribir("@finanzia/ordenesCompra", updOcs);
+      } else {
+        await escribirVarias({ "@finanzia/compras": [...compras, nueva], "@finanzia/productos": updProd, "@finanzia/ordenesCompra": updOcs });
+      }
+    } catch (e) { return alert(e.message); }
+    if (typeof window.__orgPush === "function") window.__orgPush();
+    setOcs(updOcs);
     alert(`✓ OC recibida. Compra ${nueva.numero} creada e inventario actualizado.`);
   }
 

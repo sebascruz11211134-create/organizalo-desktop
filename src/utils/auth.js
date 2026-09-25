@@ -6,7 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
-import { borrarDatosDelNegocio } from "./almacen";
+import { borrarDatosDelNegocio, asegurarDueno } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -38,6 +38,7 @@ export async function register({ nombre, email, password, telefono, codigoAcceso
     { nombre, email, password, telefono, codigoAcceso },
     { timeout: 20000 }
   );
+  if (!isElectron) await asegurarDueno(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
@@ -52,9 +53,12 @@ export async function login({ email, password }) {
     { email, password },
     { timeout: 20000 }
   );
+  // Datos de otra empresa en este equipo: se borran antes de abrir la sesión
+  if (!isElectron) await asegurarDueno(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
+  window.__orgReanudarSync?.();
   return res.data;
 }
 
@@ -101,6 +105,9 @@ export async function logout() {
       { headers: token ? { Authorization: `Bearer ${token}` } : {}, timeout: 8000 }
     );
   } catch { /* ignorar si falla la red */ }
+  // Frenar la sincronización (y esperar la que esté en curso) antes de borrar,
+  // para que no vuelva a escribir datos de esta sesión después del borrado.
+  await window.__orgDetenerSync?.();
   // Limpiar datos de la empresa ANTES de borrar el token
   await clearLocalData();
   await storeSet(TOKEN_KEY, null);
