@@ -6,6 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
+import { borrarDatosDelNegocio } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -83,15 +84,8 @@ export function clearLocalData() {
     ];
     DATA_KEYS.forEach(k => window.electronAPI?.store?.delete?.(k));
   } else {
-    // Web: iterar localStorage y borrar todo lo que sea @finanzia/ y no sea auth
-    const toDelete = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("@finanzia/") && !AUTH_KEYS.has(key)) {
-        toDelete.push(key);
-      }
-    }
-    toDelete.forEach(k => localStorage.removeItem(k));
+    // Web: borrar todo lo que sea @finanzia/ y no sea auth (IndexedDB y localStorage)
+    return borrarDatosDelNegocio(AUTH_KEYS);
   }
 }
 
@@ -108,7 +102,7 @@ export async function logout() {
     );
   } catch { /* ignorar si falla la red */ }
   // Limpiar datos de la empresa ANTES de borrar el token
-  clearLocalData();
+  await clearLocalData();
   await storeSet(TOKEN_KEY, null);
   await storeSet(REFRESH_KEY, null);
   await storeSet(USER_KEY, null);

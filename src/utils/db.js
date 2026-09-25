@@ -8,7 +8,9 @@
 
 // ── Capa de almacenamiento unificada (Electron o Web) ─────────────────────────
 // En Electron: usa electron-store vía IPC (window.electronAPI.store)
-// En Web/PWA:  usa localStorage del navegador
+// En Web/PWA:  usa almacen.js → IndexedDB (datos del negocio) + localStorage (sesión)
+
+import { leer, escribir, claves, escribirVarias } from "./almacen";
 
 const isElectron = !!window.electronAPI?.store;
 
@@ -17,19 +19,12 @@ async function getJSON(key, fallback = null) {
     const val = await window.electronAPI.store.get(key);
     return val ?? fallback;
   }
-  try {
-    const raw = localStorage.getItem(key);
-    return raw !== null ? JSON.parse(raw) : fallback;
-  } catch { return fallback; }
+  return leer(key, fallback);
 }
 
 async function setJSON(key, value) {
-  if (isElectron) {
-    await window.electronAPI.store.set(key, value);
-  } else {
-    if (value === null || value === undefined) localStorage.removeItem(key);
-    else localStorage.setItem(key, JSON.stringify(value));
-  }
+  if (isElectron) await window.electronAPI.store.set(key, value);
+  else await escribir(key, value); // falla con un mensaje claro si no hay espacio
   // Auto-push al servidor después de cada write (debounced via sync.js)
   // window.__orgPush es inyectado por sync.js para evitar imports circulares
   if (typeof window.__orgPush === "function") window.__orgPush();
@@ -38,23 +33,15 @@ async function setJSON(key, value) {
 // getAll / setAll para web (electron-store los tiene nativos)
 function webGetAll() {
   const result = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith("@finanzia/")) {
-      try { result[key] = JSON.parse(localStorage.getItem(key)); }
-      catch { result[key] = localStorage.getItem(key); }
-    }
+  for (const key of claves()) {
+    if (key?.startsWith("@finanzia/")) result[key] = leer(key);
   }
   return result;
 }
 
 function webSetAll(data) {
-  Object.entries(data || {}).forEach(([key, value]) => {
-    if (key?.startsWith("@finanzia/")) {
-      try { localStorage.setItem(key, JSON.stringify(value)); }
-      catch {}
-    }
-  });
+  const soloNegocio = Object.fromEntries(Object.entries(data || {}).filter(([key]) => key?.startsWith("@finanzia/")));
+  return escribirVarias(soloNegocio);
 }
 
 // ── Claves (mismas que el móvil) ──────────────────────────────────────────────

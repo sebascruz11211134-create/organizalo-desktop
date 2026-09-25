@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, Send, Ban, FilePlus2 } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
+import { leer, escribir } from "../utils/almacen";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import { getToken, getAutorSync } from "../utils/auth";
@@ -68,11 +69,10 @@ export default function NotaDebitoComercialScreen() {
   const [lineas,        setLineas]        = useState([lineaVacia()]);
 
   const cargar = useCallback(async () => {
-    try {
-      const raw = localStorage.getItem("@finanzia/notasDebitoComercial");
-      const n = raw ? JSON.parse(raw) : [];
+    {
+      const n = leer("@finanzia/notasDebitoComercial") || [];
       setNotas(n.sort((a, b) => (b.creadoEn || "").localeCompare(a.creadoEn || "")));
-    } catch { setNotas([]); }
+    }
     const [s, c] = await Promise.all([db.getSettings(), db.getContactos()]);
     setSettings(s);
     setContactos(c || []);
@@ -83,7 +83,7 @@ export default function NotaDebitoComercialScreen() {
   useSyncRefresh(cargar);
 
   const guardarNotasLocal = async (nuevaLista) => {
-    localStorage.setItem("@finanzia/notasDebitoComercial", JSON.stringify(nuevaLista));
+    await escribir("@finanzia/notasDebitoComercial", nuevaLista);
     if (typeof window.__orgPush === "function") window.__orgPush();
   };
 
@@ -115,7 +115,7 @@ export default function NotaDebitoComercialScreen() {
     if (!lineas.some(l => l.descripcion && parseFloat(l.precioUnit) > 0)) {
       return alert("Agregá al menos una línea con descripción y precio.");
     }
-    const todas = JSON.parse(localStorage.getItem("@finanzia/notasDebitoComercial") || "[]");
+    const todas = (leer("@finanzia/notasDebitoComercial") || []);
     const seq   = String(todas.length + 1).padStart(5, "0");
     const nueva = {
       id: genId(),
@@ -137,7 +137,7 @@ export default function NotaDebitoComercialScreen() {
   const anular = async () => {
     if (!sel) return;
     if (!(await confirmar("Anular nota de débito", `¿Anular la nota de débito ${sel.numero}?`, { peligro: true, boton: "Anular" }))) return;
-    const todas = JSON.parse(localStorage.getItem("@finanzia/notasDebitoComercial") || "[]");
+    const todas = (leer("@finanzia/notasDebitoComercial") || []);
     await guardarNotasLocal(todas.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
     setNotas(prev => prev.map(x => x.id === sel.id ? { ...x, estado: "anulada" } : x));
     setSelected(null);
@@ -182,7 +182,7 @@ export default function NotaDebitoComercialScreen() {
 
       // Guardar el resultado también si falló: conserva el id para reenviar.
       const campos = camposHacienda(r, nota);
-      const todas = JSON.parse(localStorage.getItem("@finanzia/notasDebitoComercial") || "[]");
+      const todas = (leer("@finanzia/notasDebitoComercial") || []);
       await guardarNotasLocal(todas.map(x => x.id === nota.id ? { ...x, ...campos } : x));
       setNotas(prev => prev.map(x => x.id === nota.id ? { ...x, ...campos } : x));
       if (r.ok) alert(`✅ ND enviada a Hacienda\nEstado: ${r.comprobante.estado}\nClave: ${r.comprobante.clave}`);

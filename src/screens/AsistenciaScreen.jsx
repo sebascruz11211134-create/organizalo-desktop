@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Clock, UserCheck, FileSpreadsheet, LogIn, LogOut, Plus, Users, Timer } from "lucide-react";
 import { Modulo, Boton, BarraFiltros, Selector, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion } from "../components/ui";
 import db from "../utils/db";
+import { leer, escribir } from "../utils/almacen";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtDate, genId, hoy, fechaLocal, mesLocal } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
@@ -44,16 +45,13 @@ export default function AsistenciaScreen() {
     ]);
     setEmpleados(e);
     // Fallback si db.getJSON no existe
-    try {
-      const raw = localStorage.getItem("@finanzia/asistencia");
-      setRegistros(raw ? JSON.parse(raw) : []);
-    } catch { setRegistros([]); }
+    setRegistros(leer("@finanzia/asistencia") || []);
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   async function guardarRegistros(nuevos) {
-    localStorage.setItem("@finanzia/asistencia", JSON.stringify(nuevos));
+    try { await escribir("@finanzia/asistencia", nuevos); } catch (e) { return alert(e.message); }
     setRegistros(nuevos);
     if (typeof window.__orgPush === "function") window.__orgPush();
   }

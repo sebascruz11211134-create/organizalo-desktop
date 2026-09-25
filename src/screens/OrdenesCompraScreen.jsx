@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Plus, ShoppingCart, Check, X, FileSpreadsheet, Send, FileText, PackageCheck, Ban } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
+import { leer, escribir } from "../utils/almacen";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
@@ -43,13 +44,13 @@ function OCModal({ oc, contactos, productos, settings, onClose, onSave }) {
   const guardar = async () => {
     if (!form.proveedor) return alert("Proveedor requerido.");
     if (!form.lineas?.length) return alert("Agregá al menos un producto.");
-    const ocs = JSON.parse(localStorage.getItem("@finanzia/ordenesCompra") || "[]");
+    const ocs = (leer("@finanzia/ordenesCompra") || []);
     const seq  = ocs.length + 1;
     const item = { ...form, id: genId(), numero: `OC-${String(seq).padStart(5,"0")}`,
       estado: "borrador", subtotal, iva, total,
       fecha: hoy(), creadoEn: new Date().toISOString() };
     const nuevas = esNueva ? [...ocs, item] : ocs.map(o => o.id === item.id ? item : o);
-    localStorage.setItem("@finanzia/ordenesCompra", JSON.stringify(nuevas));
+    try { await escribir("@finanzia/ordenesCompra", nuevas); } catch (e) { return alert(e.message); }
     if (typeof window.__orgPush === "function") window.__orgPush();
     onSave(); onClose();
   };
@@ -133,14 +134,14 @@ export default function OrdenesCompraScreen() {
   const cargar = useCallback(async () => {
     const [c, p, s] = await Promise.all([db.getContactos(), db.getProductos(), db.getSettings()]);
     setContactos(c); setProductos(p); setSettings(s);
-    try { setOcs(JSON.parse(localStorage.getItem("@finanzia/ordenesCompra") || "[]")); } catch { setOcs([]); }
+    try { setOcs((leer("@finanzia/ordenesCompra") || [])); } catch { setOcs([]); }
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   function cambiarEstado(id, estado) {
     const upd = ocs.map(o => o.id === id ? { ...o, estado } : o);
-    localStorage.setItem("@finanzia/ordenesCompra", JSON.stringify(upd));
+    escribir("@finanzia/ordenesCompra", upd).catch(e => alert(e.message));
     if (typeof window.__orgPush === "function") window.__orgPush();
     setOcs(upd);
   }

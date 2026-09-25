@@ -205,6 +205,13 @@ export default function App() {
     return () => window.removeEventListener("resize", handler);
   }, []);
   const [syncStatus,         setSyncStatus]         = useState("idle");
+  // Si algo no se pudo guardar en el dispositivo (p. ej. sin espacio), avisar en vez de callar
+  const [errorAlmacen,       setErrorAlmacen]       = useState(false);
+  useEffect(() => {
+    const avisar = () => setErrorAlmacen(true);
+    window.addEventListener("monki:almacen-error", avisar);
+    return () => window.removeEventListener("monki:almacen-error", avisar);
+  }, []);
   const [unreadChat,         setUnreadChat]         = useState(0);
   const [authState,          setAuthState]          = useState("loading"); // "loading" | "authenticated" | "unauthenticated"
   const [user,               setUser]               = useState(null);
@@ -383,6 +390,12 @@ export default function App() {
     <CurrencyProvider>
     <div className="flex flex-col h-screen overflow-hidden bg-monki-app font-sans">
       <TrialBanner plan={plan} />
+      {errorAlmacen && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2 bg-red-600 text-white text-xs font-semibold shrink-0">
+          <span>⚠ {tr("No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.")}</span>
+          <button onClick={() => setErrorAlmacen(false)} className="p-0.5 hover:opacity-70" aria-label={tr("Cerrar")}><X size={13} /></button>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar

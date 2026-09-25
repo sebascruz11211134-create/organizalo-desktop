@@ -4,6 +4,7 @@ import db from './db';
 import { getToken,getUser } from './auth';
 import { BACKEND } from './config';
 import {clean,merge} from './syncMerge.mjs';
+import {leer,escribir} from './almacen';
 let listeners=[],status='idle',socket=null,interval=null,timer=null,running=null;
 function setStatus(value,error) { status=value; listeners.forEach(f=>f({status,error})); }
 function notify() {
@@ -20,7 +21,7 @@ async function perform() {
   if(!bucket) throw new Error('Sesión sin empresa');
   const key=`@finanzia/syncBaseline:${bucket}`;
   // Baselines never go through db.getAll/server sync.
-  let base={}; try {base=JSON.parse(localStorage.getItem(key)||'{}');} catch {}
+  const base=leer(key,{}) || {};
   const headers={Authorization:`Bearer ${token}`};
   setStatus('syncing');
   const remote=(await axios.get(`${BACKEND}/api/clouddata/pull`,{headers,timeout:15000})).data;
@@ -37,7 +38,7 @@ async function perform() {
   const current=clean(await db.getAll());
   const reconciled=merge(local,current,clean(accepted.data));
   await db.setAll(reconciled);
-  localStorage.setItem(key,JSON.stringify(clean(accepted.data)));
+  await escribir(key,clean(accepted.data));
   setStatus('idle'); notify();
   return {ok:true,synced:true};
 }

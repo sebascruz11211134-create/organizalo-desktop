@@ -6,9 +6,12 @@ import { getToken, getUser } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
 import { Modulo, useConfirmar } from "../components/ui";
+import { espacio } from "../utils/almacen";
 
 export default function ConfiguracionScreen() {
   const { confirmar, dialogo } = useConfirmar();
+  const [almacen, setAlmacen] = useState(null);
+  useEffect(() => { espacio().then(setAlmacen); }, []);
   const [s,       setS]       = useState({ nombreNegocio: "", cedula: "", moneda: "CRC", correo: "", sinpe: "", direccion: "" });
   const [saved,   setSaved]   = useState(false);
   const [syncing, setSyncing] = useState("");
@@ -769,6 +772,11 @@ export default function ConfiguracionScreen() {
         <p className="text-xs text-monki-k/45 mt-4">
           Backend: {BACKEND || "Servidor de desarrollo"}
         </p>
+        {almacen && (
+          <p className="text-xs text-monki-k/45 mt-1">
+            Datos en este dispositivo: {(almacen.usado / 1048576).toFixed(1)} MB de {Math.round(almacen.total / 1048576).toLocaleString("es-CR")} MB disponibles · {almacen.motor}
+          </p>
+        )}
       </div>
 
       {/* ── Notificaciones Push (ntfy) ─────────────────────────────────── */}
