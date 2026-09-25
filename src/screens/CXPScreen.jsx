@@ -226,7 +226,39 @@ export default function CXPScreen() {
       )}
 
       <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
+        {/* Celular: tarjetas */}
+        <div className="md:hidden flex-1 min-h-0 overflow-auto p-2 space-y-2">
+          {visibles.length === 0 ? (
+            <Vacio icono={CreditCard} titulo="Sin cuentas por pagar" texto={debts.length ? "Probá con otra búsqueda o filtro." : "Registrá lo que le debés a tus proveedores."}
+              accion={!debts.length && <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}/>
+          ) : visibles.map((d, i) => {
+            const mon = d.moneda || settings.moneda || "CRC";
+            const saldo = Math.max(0, d.total - (d.pagado || 0));
+            const est = ESTADO(d);
+            const isSel = selected === d.id;
+            const vencida = d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0;
+            return (
+              <button key={d.id} onClick={() => setSelected(isSel ? null : d.id)} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
+                className={`animate-desplegar w-full text-left rounded-2xl border-2 p-3 ${isSel ? "bg-[#FFF4B8] border-monki-y" : "bg-white border-black/10"} ${d.estado === "anulada" ? "opacity-60" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <b className="block truncate text-monki-k">{d.nombre}</b>
+                    <span className="text-[11px] text-monki-k/50">{d.notas || "—"}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <b className={`block tabular-nums ${saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldo, mon)}</b>
+                    <span className="text-[10px] text-monki-k/45">de {fmtMoney(d.total, mon)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Estado tono={est.tono}>{est.label}</Estado>
+                  <span className={`text-[11px] ${vencida ? "text-red-600 font-bold" : "text-monki-k/50"}`}>Vence {fmtDate(d.fechaVencimiento) || "—"}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="hidden md:block flex-1 min-h-0 overflow-auto">
           <table className="ui-tabla w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white">
               <tr>{["Proveedor","Referencia","Total","Pagado","Saldo","Vencimiento","Estado"].map(t => <th key={t} className={TH + (["Total","Pagado","Saldo"].includes(t) ? " !text-right" : "")}>{t}</th>)}</tr>

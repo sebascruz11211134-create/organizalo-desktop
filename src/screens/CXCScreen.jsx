@@ -5,13 +5,14 @@ import { getAutorSync } from "../utils/auth";
  */
 import React, { useState, useEffect, useCallback } from "react";
 import ClienteAutocomplete from "../components/ClienteAutocomplete";
-import { Plus, Printer, FileSpreadsheet, Trash2, Ban, Wallet, AlertTriangle, Receipt } from "lucide-react";
+import { Plus, Printer, FileSpreadsheet, Trash2, Ban, Wallet, AlertTriangle, Receipt, MessageCircle } from "lucide-react";
 import { Modulo, Boton, BarraFiltros, Buscador, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId, fechaLocal, fechaDesplazada } from "../utils/fmt";
 import { printHTML, exportExcel, htmlReporteCXC, sheetsReporteCXC } from "../utils/reportHelpers";
 import { cancelarEventoCalendario, crearEvento } from "../utils/clienteUtils";
+import { compartirTexto, telefonoDeCliente } from "../utils/contacto";
 
 const ESTADO = (d) => {
   if (d.estado === "anulada") return { label: "Anulada", tono: "neutro" };
@@ -252,6 +253,7 @@ export default function CXCScreen() {
   const [debts,       setDebts]       = useState([]);
   const [settings,    setSettings]    = useState({});
   const [contactoMap, setContactoMap] = useState({}); // nombre → dias_credito
+  const [contactos,   setContactos]   = useState([]);
   const [busq,        setBusq]        = useState("");
   const [selected,    setSelected]    = useState(null);
   const [modal,       setModal]       = useState(null);
@@ -266,6 +268,7 @@ export default function CXCScreen() {
     const map = {};
     (c || []).forEach(x => { if (x.nombre) map[x.nombre.toLowerCase()] = x.dias_credito || 0; });
     setContactoMap(map);
+    setContactos(c || []);
     import("../utils/auth").then(m => m.getToken()).then(setToken);
   }, []);
 
@@ -350,13 +353,57 @@ export default function CXCScreen() {
           <span className="text-white/60">Saldo <b className="text-monki-y">{fmtMoney(saldoSel, sel.moneda||"CRC")}</b></span>
           <span className="text-white/60">Vence {fmtDate(sel.fechaVencimiento)}</span>
           <div className="flex-1"/>
+          {saldoSel > 0 && sel.estado !== "anulada" && (
+            <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirTexto({
+              titulo: "Recordatorio de pago",
+              telefono: telefonoDeCliente({ nombre: sel.nombre, cedula: sel.cedula }, contactos),
+              texto: [
+                `Hola ${sel.nombre} 👋`,
+                `Le recordamos amablemente que tiene un saldo pendiente de *${fmtMoney(saldoSel, sel.moneda || "CRC")}* con ${settings.nombreNegocio || "nosotros"}${sel.fechaVencimiento ? ` (vence ${fmtDate(sel.fechaVencimiento)})` : ""}.`,
+                (settings.sinpe || settings.telefono) ? `Puede pagar por SINPE Móvil al ${settings.sinpe || settings.telefono}.` : null,
+                "¡Muchas gracias!",
+              ].filter(Boolean).join("\n"),
+            })}>Recordar por WhatsApp</Boton>
+          )}
           <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={anular}>Anular</Boton>
           <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
 
       <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
+        {/* Celular: tarjetas */}
+        <div className="md:hidden flex-1 min-h-0 overflow-auto p-2 space-y-2">
+          {visibles.length === 0 ? (
+            <Vacio icono={Wallet} titulo="Sin cuentas por cobrar" texto={debts.length ? "Probá con otra búsqueda o filtro." : "Se crean solas al facturar a crédito, o podés registrar una a mano."}
+              accion={!debts.length && <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}/>
+          ) : visibles.map((d, i) => {
+            const mon = d.moneda || settings.moneda || "CRC";
+            const saldo = Math.max(0, d.total - (d.pagado || 0));
+            const estado = ESTADO(d);
+            const isSel = selected === d.id;
+            const vencida = d.fechaVencimiento && d.fechaVencimiento < hoy() && saldo > 0;
+            return (
+              <button key={d.id} onClick={() => setSelected(isSel ? null : d.id)} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
+                className={`animate-desplegar w-full text-left rounded-2xl border-2 p-3 ${isSel ? "bg-[#FFF4B8] border-monki-y" : "bg-white border-black/10"} ${d.estado === "anulada" ? "opacity-60" : ""}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <b className="block truncate text-monki-k">{d.nombre}</b>
+                    <span className="text-[11px] text-monki-k/50">{d.notas || "—"}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <b className={`block tabular-nums ${saldo > 0 ? "text-red-600" : ""}`}>{fmtMoney(saldo, mon)}</b>
+                    <span className="text-[10px] text-monki-k/45">de {fmtMoney(d.total, mon)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Estado tono={estado.tono}>{estado.label}</Estado>
+                  <span className={`text-[11px] ${vencida ? "text-red-600 font-bold" : "text-monki-k/50"}`}>Vence {fmtDate(d.fechaVencimiento) || "—"}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="hidden md:block flex-1 min-h-0 overflow-auto">
           <table className="ui-tabla w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white">
               <tr>{["Cliente","Referencia","Total","Saldo","Emisión","Vencimiento","Plazo","Antigüedad","Estado"].map(t => <th key={t} className={TH + (["Total","Saldo"].includes(t) ? " !text-right" : ["Plazo"].includes(t) ? " !text-center" : "")}>{t}</th>)}</tr>
