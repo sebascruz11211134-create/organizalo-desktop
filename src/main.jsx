@@ -4,16 +4,42 @@ import { HashRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import "./i18n";
-import { iniciarAlmacen } from "./utils/almacen";
+import { iniciarAlmacen, almacenBloqueado } from "./utils/almacen";
 
 // Los datos del negocio se cargan (y migran a IndexedDB) antes de mostrar la app,
 // así todas las pantallas los leen al instante como antes.
+// Si los datos de la empresa existen pero no se pudieron abrir, NO se arranca
+// con una copia vacía: se pide reintentar.
+function AlmacenNoDisponible() {
+  const ingles = localStorage.getItem("monki_idioma") === "en";
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#FFFBEA", fontFamily: "system-ui, sans-serif", color: "#111" }}>
+      <div style={{ maxWidth: 420, textAlign: "center" }}>
+        <img src="/MK_Logo2.png" alt="Monki" width="56" height="56" />
+        <h1 style={{ fontSize: 22, fontWeight: 900, margin: "16px 0 8px" }}>
+          {ingles ? "Couldn't open your data" : "No se pudieron abrir tus datos"}
+        </h1>
+        <p style={{ fontSize: 14, opacity: 0.7, lineHeight: 1.5 }}>
+          {ingles
+            ? "Your data is safe on this device, but the browser couldn't open it right now. Close other Monki tabs and try again. If you're in a private window, use a normal one."
+            : "Tus datos están a salvo en este equipo, pero el navegador no pudo abrirlos ahora. Cerrá otras pestañas de Monki y reintentá. Si estás en una ventana privada, usá una normal."}
+        </p>
+        <button onClick={() => location.reload()} style={{ marginTop: 16, background: "#111", color: "#FFD600", border: 0, borderRadius: 999, padding: "10px 22px", fontWeight: 800, cursor: "pointer" }}>
+          {ingles ? "Try again" : "Reintentar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 iniciarAlmacen().finally(() => {
   ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      {almacenBloqueado() ? <AlmacenNoDisponible /> : (
+        <HashRouter>
+          <App />
+        </HashRouter>
+      )}
     </React.StrictMode>
   );
 });

@@ -8,7 +8,8 @@ import { navegacionVisible } from "./navegacion";
 import LoginScreen from "./screens/LoginScreen";
 import { useIdioma } from "./utils/idioma";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { syncAll, startAutoSync, connectSocket, disconnectSocket, processQueue, onSyncUpdate } from "./utils/sync";
+import { syncAll, startAutoSync, connectSocket, disconnectSocket, processQueue, onSyncUpdate, cambiosSinSubir } from "./utils/sync";
+import { useConfirmar } from "./components/ui";
 import { isAuthenticated, verifySession, logout, getUser, getPlanStatus, getModulosHabilitados } from "./utils/auth";
 
 // ── Lazy imports — solo cargan al navegar a cada pantalla ─────────────────────
@@ -284,9 +285,23 @@ export default function App() {
     }
   }, []);
 
+  const { confirmar: confirmarApp, dialogo: dialogoApp } = useConfirmar();
   const handleLogout = useCallback(async () => {
+    // Antes de salir, subir lo pendiente. Si no se puede, preguntar: y si sale
+    // igual, los datos de esta empresa quedan guardados aparte en este equipo.
+    let conservarDatos = false;
+    try {
+      await syncAll();
+      if (await cambiosSinSubir()) {
+        const salir = await confirmarApp("Cambios sin subir",
+          "Hay cambios en este equipo que todavía no se subieron al servidor (¿sin internet?). Si salís igual, quedan guardados aquí y se suben la próxima vez que entres con esta empresa en este equipo.",
+          { boton: "Salir igual" });
+        if (!salir) return;
+        conservarDatos = true;
+      }
+    } catch { conservarDatos = true; }
     disconnectSocket();   // cerrar WebSocket
-    await logout();
+    await logout({ conservarDatos });
     setUser(null);
     setPlan(null);
     // Contraer ventana antes de mostrar login
@@ -497,6 +512,7 @@ export default function App() {
 
       {/* Barra inferior + acciones rápidas — solo celular */}
       <BarraInferior modulos={navegacionVisible(modulosHabilitados)} />
+      {dialogoApp}
 
       {/* Onboarding wizard — solo la primera vez */}
       {showOnboarding && (

@@ -6,7 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
-import { borrarDatosDelNegocio, asegurarDueno } from "./almacen";
+import { abrirEspacio, borrarEspacio, cerrarEspacio, borrarDatosDelNegocio } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -30,6 +30,11 @@ async function storeSet(key, value) {
   else localStorage.setItem(key, JSON.stringify(value));
 }
 
+// Marca de sesión compartida entre pestañas: cambia al entrar y al salir, para
+// que una sincronización que empezó con la sesión anterior no suba nada.
+const MARCA_SESION = "monki:sesion";
+const nuevaSesion = () => localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
 // ── Registro ──────────────────────────────────────────────────────────────────
 
 export async function register({ nombre, email, password, telefono, codigoAcceso }) {
@@ -38,10 +43,13 @@ export async function register({ nombre, email, password, telefono, codigoAcceso
     { nombre, email, password, telefono, codigoAcceso },
     { timeout: 20000 }
   );
-  if (!isElectron) await asegurarDueno(res.data.user);
+  // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
+  if (!isElectron) await abrirEspacio(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
+  nuevaSesion();
+  window.__orgReanudarSync?.();
   return res.data;
 }
 
@@ -54,22 +62,25 @@ export async function login({ email, password }) {
     { timeout: 20000 }
   );
   // Datos de otra empresa en este equipo: se borran antes de abrir la sesión
-  if (!isElectron) await asegurarDueno(res.data.user);
+  // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
+  if (!isElectron) await abrirEspacio(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
+  nuevaSesion();
   window.__orgReanudarSync?.();
   return res.data;
 }
 
 // ── Limpiar datos locales de la empresa ───────────────────────────────────────
-// Borra TODAS las claves @finanzia/ excepto las de autenticación.
-// Se llama al hacer logout y antes de guardar un nuevo login,
-// para evitar que datos de una cuenta contaminen otra.
+// Web: cada empresa tiene su espacio propio en el equipo. Al cerrar sesión con
+// todo sincronizado se elimina; si quedaron cambios sin subir (y el usuario
+// eligió salir igual) se CONSERVA cerrado para no perderlos: se suben la
+// próxima vez que esa empresa entre en este equipo.
 
 const AUTH_KEYS = new Set([TOKEN_KEY, REFRESH_KEY, USER_KEY, MODULOS_KEY]);
 
-export function clearLocalData() {
+export async function clearLocalData({ conservar = false } = {}) {
   if (isElectron) {
     // En Electron no podemos iterar las claves fácilmente — limpiamos las conocidas
     const DATA_KEYS = [
@@ -88,14 +99,17 @@ export function clearLocalData() {
     ];
     DATA_KEYS.forEach(k => window.electronAPI?.store?.delete?.(k));
   } else {
-    // Web: borrar todo lo que sea @finanzia/ y no sea auth (IndexedDB y localStorage)
-    return borrarDatosDelNegocio(AUTH_KEYS);
+    if (conservar) return cerrarEspacio();
+    await borrarDatosDelNegocio(AUTH_KEYS); // IndexedDB y lo que haya en localStorage
+    await borrarEspacio();
   }
 }
 
 // ── Logout ────────────────────────────────────────────────────────────────────
 
-export async function logout() {
+export async function logout({ conservarDatos = false } = {}) {
+  // Antes que nada: invalidar la sesión para cualquier sincronización en curso (en todas las pestañas)
+  localStorage.setItem(MARCA_SESION, `cerrada-${Date.now()}`);
   const token        = await getToken();
   const refreshToken = await storeGet(REFRESH_KEY);
   try {
@@ -109,7 +123,7 @@ export async function logout() {
   // para que no vuelva a escribir datos de esta sesión después del borrado.
   await window.__orgDetenerSync?.();
   // Limpiar datos de la empresa ANTES de borrar el token
-  await clearLocalData();
+  await clearLocalData({ conservar: conservarDatos });
   await storeSet(TOKEN_KEY, null);
   await storeSet(REFRESH_KEY, null);
   await storeSet(USER_KEY, null);

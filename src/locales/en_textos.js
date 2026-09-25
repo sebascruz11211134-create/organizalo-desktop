@@ -954,6 +954,9 @@ const EN = {
   "Bancos": "Banks",
   "No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.": "A change couldn't be saved on this device (low storage?). Free up space or sync before continuing.",
   "No se pudo abrir el almacenamiento de este dispositivo. Recargá la página antes de seguir trabajando.": "Couldn't open this device's storage. Reload the page before continuing.",
+  "Cambios sin subir": "Unsynced changes",
+  "Salir igual": "Sign out anyway",
+  "Hay cambios en este equipo que todavía no se subieron al servidor (¿sin internet?). Si salís igual, quedan guardados aquí y se suben la próxima vez que entres con esta empresa en este equipo.": "There are changes on this device that haven't been uploaded yet (no internet?). If you sign out anyway, they stay saved here and will upload the next time you sign in with this company on this device.",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

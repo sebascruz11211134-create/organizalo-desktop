@@ -3,7 +3,7 @@
  * Estados: borrador → enviada → recibida / cancelada
  * "Recibir" → crea entrada en ComprasScreen automáticamente
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, ShoppingCart, Check, X, FileSpreadsheet, Send, FileText, PackageCheck, Ban } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
@@ -147,9 +147,15 @@ export default function OrdenesCompraScreen() {
   }
 
   const { confirmar, dialogo } = useConfirmar();
+  const recibiendo = useRef(false);
   async function recibirOC(oc) {
-    if (oc.estado === "recibida") return alert("Esta OC ya fue recibida.");
+    if (oc.estado === "recibida" || recibiendo.current) return alert("Esta OC ya fue recibida o se está recibiendo.");
     if (!(await confirmar("Recibir orden", `¿Marcar la OC ${oc.numero} como recibida? Se creará una factura de proveedor en Compras y se sumará el inventario.`, { boton: "Recibir" }))) return;
+    // Revalidar con lo guardado (otra pestaña o un doble clic pudo recibirla ya)
+    const actual = (leer("@finanzia/ordenesCompra") || []).find(o => o.id === oc.id);
+    if (!actual || actual.estado === "recibida" || recibiendo.current) return alert("Esta OC ya fue recibida.");
+    recibiendo.current = true;
+    try {
     // Crear entrada en ComprasScreen
     const compras = await db.getCompras();
     const nueva = {
@@ -182,6 +188,7 @@ export default function OrdenesCompraScreen() {
     if (typeof window.__orgPush === "function") window.__orgPush();
     setOcs(updOcs);
     alert(`✓ OC recibida. Compra ${nueva.numero} creada e inventario actualizado.`);
+    } finally { recibiendo.current = false; }
   }
 
   const visibles = ocs.filter(o => filtro === "todos" || o.estado === filtro)
