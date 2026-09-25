@@ -102,7 +102,7 @@ test('una copia vieja en localStorage no pisa datos más nuevos de IndexedDB', a
   ls('@finanzia/contactos', [{ id: 'c1', nombre: 'Viejo' }]); // resto de una migración a medias
   const b = await nuevaInstancia(); await b.iniciarAlmacen();
   assert.deepEqual(b.leer('@finanzia/contactos'), [{ id: 'c1', nombre: 'Nuevo' }]);
-  assert.equal(localStorage.getItem('@finanzia/contactos'), null);
+  assert.ok(localStorage.getItem('@finanzia/contactos'));   // distinta: no se borra, se preguntará
 });
 
 test('leer devuelve una copia: modificarla no cambia lo guardado', async () => {
@@ -164,4 +164,49 @@ test('mientras se cierra la sesión no se puede escribir, ni al recargar otra pe
   const b = await nuevaInstancia(); await b.iniciarAlmacen(); // pestaña que se recarga durante el cierre
   assert.equal(b.espacioActual(), null);
   await assert.rejects(b.escribir('@finanzia/facturas', [{ id: 'y' }]));
+});
+
+test('al confirmar datos viejos, si la empresa ya tiene esa lista se unen por id (nada se pierde)', async () => {
+  ls('@finanzia/facturas', [{ id: 'solo-local' }]);
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  sesion('E2');
+  await a.abrirEspacio({ id: 'u2', empresaId: 'E2' });
+  await a.escribir('@finanzia/facturas', [{ id: 'ya-en-idb' }]);   // p. ej. la trajo la sincronización
+  await a.adoptarDatosSinDueno();
+  const ids = a.leer('@finanzia/facturas').map(f => f.id).sort();
+  assert.deepEqual(ids, ['solo-local', 'ya-en-idb']);
+  assert.equal(localStorage.getItem('@finanzia/facturas'), null);
+});
+
+test('lo que no se puede copiar ni unir no se borra del origen', async () => {
+  sesion('E1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  await a.escribir('@finanzia/settings', { nombreNegocio: 'Nuevo' });
+  a.cerrarEspacio();
+  ls('@finanzia/settings', { nombreNegocio: 'Viejo distinto' });
+  ls('@finanzia/syncBaseline:E1', {});
+  const b = await nuevaInstancia(); await b.iniciarAlmacen();
+  assert.deepEqual(b.leer('@finanzia/settings'), { nombreNegocio: 'Nuevo' });
+  assert.ok(localStorage.getItem('@finanzia/settings'));             // la copia distinta queda intacta
+});
+
+test('login cortado a la mitad no convierte a la cuenta nueva en dueña de datos ajenos', async () => {
+  ls('@finanzia/facturas', [{ id: 'deE1' }]);                      // datos sin dueño
+  sesion('E2');                                                     // credenciales de E2 guardadas...
+  localStorage.setItem('monki:loginPendiente', 'E2');               // ...pero el login no terminó
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  assert.equal(a.leer('@finanzia/facturas'), null);
+  assert.ok(localStorage.getItem('@finanzia/facturas'));
+  assert.equal(a.datosSinDueno(), true);                            // se preguntará
+});
+
+test('señales de dos empresas distintas: dueño ambiguo, no se migra solo', async () => {
+  ls('@finanzia/facturas', [{ id: 'x' }]);
+  ls('@finanzia/syncBaseline:E1', {});
+  ls('@finanzia/syncBaseline:E2', {});
+  sesion('E1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  assert.equal(a.leer('@finanzia/facturas'), null);
+  assert.ok(localStorage.getItem('@finanzia/facturas'));
+  assert.equal(a.datosSinDueno(), true);
 });

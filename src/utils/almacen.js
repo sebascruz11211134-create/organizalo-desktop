@@ -122,27 +122,58 @@ function registrar(cubeta, existe = true) {
     localStorage.setItem(REGISTRO, JSON.stringify(r));
   } catch { /* solo informativo */ }
 }
-// La clave del baseline de sincronización dice de qué empresa son unos datos
-const cubetaDeClaves = claves => claves.find(k => k.startsWith(PREFIJO_BASELINE))?.slice(PREFIJO_BASELINE.length) || null;
+// ── ¿De qué empresa son unos datos viejos? ───────────────────────────────────
+// Señales: la marca de dueño y las claves "syncBaseline:<empresa>". Si no hay
+// ninguna, el dueño es desconocido; si hay varias distintas, es AMBIGUO. En
+// ambos casos no se migra solo: se pregunta al usuario (ver datosSinDueno).
+const AMBIGUO = Symbol("ambiguo");
+function senalesDeDueno(claves) {
+  const c = new Set();
+  const marca = localStorage.getItem(MARCA_DUENO);
+  if (marca) c.add(marca);
+  for (const k of claves) if (k.startsWith(PREFIJO_BASELINE)) c.add(k.slice(PREFIJO_BASELINE.length));
+  return c.size === 0 ? null : c.size === 1 ? [...c][0] : AMBIGUO;
+}
 
-// Agrega pares a un espacio sin pisar lo que ya tenga (lo que ya está manda)
-async function agregarFaltantes(cubeta, pares, conexionAbierta) {
-  if (!pares.length) return;
+const estable = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x)
+  ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x);
+
+// Listas con id se pueden unir sin perder registros (gana lo que ya estaba en el espacio)
+function fusionarPorId(enEspacio, viejo) {
+  const conId = l => Array.isArray(l) && l.every(x => x && typeof x === "object" && x.id != null);
+  if (!conId(enEspacio) || !conId(viejo)) return undefined;
+  const porId = new Map(viejo.map(x => [x.id, x]));
+  for (const x of enEspacio) porId.set(x.id, x);
+  return [...porId.values()];
+}
+
+/**
+ * Copia pares al espacio de una empresa y devuelve las claves que quedaron A SALVO
+ * (copiadas, idénticas a lo que ya había o —si se permite— unidas por id). Solo
+ * esas se pueden borrar del origen; el resto se deja intacto.
+ */
+async function copiarAEspacio(cubeta, pares, conexionAbierta, { unir = false } = {}) {
+  const aSalvo = new Set();
+  if (!pares.length) return aSalvo;
   const conexion = conexionAbierta || await abrir(nombreBase(cubeta));
   try {
-    const yaEstan = new Set((await leerTodoIdb(conexion)).map(([k]) => k));
-    const faltan = pares.filter(([k]) => !yaEstan.has(k));
-    if (faltan.length) await guardarIdb(conexion, faltan);
+    const actuales = new Map(await leerTodoIdb(conexion));
+    const escribirPares = [];
+    for (const [k, v] of pares) {
+      if (!actuales.has(k)) { escribirPares.push([k, v]); aSalvo.add(k); continue; }
+      if (estable(actuales.get(k)) === estable(v)) { aSalvo.add(k); continue; }
+      const unido = unir ? fusionarPorId(actuales.get(k), v) : undefined;
+      if (unido) { escribirPares.push([k, unido]); aSalvo.add(k); }
+      // distinto y no se puede unir: no se toca ninguna de las dos copias
+    }
+    if (escribirPares.length) await guardarIdb(conexion, escribirPares); // una sola transacción
   } finally {
     if (!conexionAbierta) conexion.close();
   }
   registrar(cubeta);
+  return aSalvo;
 }
 
-// Datos del negocio que quedaron en localStorage: al espacio de su dueño.
-// El dueño sale de la marca, del baseline de sincronización o —solo si es
-// seguro (la sesión que ya estaba abierta en este equipo)— de la empresa actual.
-// Si no se sabe de quién son, NO se mueven: se pregunta (ver datosSinDueno).
 function clavesDelNegocioEnLocal() {
   const claves = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -151,44 +182,66 @@ function clavesDelNegocioEnLocal() {
   }
   return claves;
 }
-const duenoConocido = claves => localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(claves);
 
-async function migrarLocalStorage(cubetaActual, conexionActual, duenoSeguro) {
-  const claves = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (esDatoDelNegocio(k)) claves.push(k);
-  }
+/**
+ * Datos del negocio que quedaron en localStorage → espacio de su dueño.
+ * duenoSeguro: la empresa actual es la dueña cuando NO hay señales (sesión que
+ * ya estaba abierta y confirmada en este equipo). forzar: el usuario confirmó
+ * que son de la empresa actual (se ignoran las señales y se une por id).
+ */
+async function migrarLocalStorage(cubetaActual, conexionActual, { duenoSeguro = false, forzar = false } = {}) {
+  const claves = clavesDelNegocioEnLocal();
   if (!claves.length) return;
+  const senal = senalesDeDueno(claves);
+  const dueno = forzar ? cubetaActual
+    : senal === AMBIGUO ? null
+    : senal || (duenoSeguro ? cubetaActual : null);
+  if (!dueno) return; // no se sabe de quién son: quedan intactos hasta que alguien lo confirme
   const pares = [];
-  const aLiberar = [];
   for (const k of claves) {
     const crudo = localStorage.getItem(k);
     if (crudo === null) continue;                          // otra pestaña ya la movió
     let valor;
     try { valor = JSON.parse(crudo); } catch { continue; } // no es JSON: se deja donde está
-    aLiberar.push(k);
-    if (valor !== null) pares.push([k, valor]);
+    pares.push([k, valor]);
   }
-  const dueno = duenoConocido(claves) || (duenoSeguro ? cubetaActual : null);
-  if (!dueno) return; // de quién son no se sabe: quedan intactos hasta que alguien lo confirme
-  await agregarFaltantes(dueno, pares, dueno === cubetaActual ? conexionActual : null);
-  aLiberar.forEach(k => localStorage.removeItem(k)); // solo después de confirmar la copia
-  localStorage.removeItem(MARCA_DUENO);
+  const vacios = pares.filter(([, v]) => v === null).map(([k]) => k);
+  const aSalvo = await copiarAEspacio(dueno, pares.filter(([, v]) => v !== null),
+    dueno === cubetaActual ? conexionActual : null, { unir: forzar });
+  [...aSalvo, ...vacios].forEach(k => localStorage.removeItem(k)); // solo lo confirmado
+  if (!clavesDelNegocioEnLocal().length) localStorage.removeItem(MARCA_DUENO);
 }
 
 // ── Abrir / cerrar espacios ──────────────────────────────────────────────────
+// Una sesión solo es "confirmada" cuando el login terminó entero. Un login
+// cortado a la mitad deja la marca de pendiente y nunca se trata como dueño seguro.
+const MARCA_CONFIRMADA = "monki:sesionConfirmada";
+const MARCA_PENDIENTE  = "monki:loginPendiente";
+export function marcarLoginPendiente(user) { localStorage.setItem(MARCA_PENDIENTE, cubetaDe(user) || "?"); }
+export function confirmarLogin(user) {
+  localStorage.setItem(MARCA_CONFIRMADA, cubetaDe(user) || "");
+  localStorage.removeItem(MARCA_PENDIENTE);
+}
+
 /** Arranque: abre el espacio de la sesión guardada (si hay). */
 export function iniciarAlmacen() {
   if (iniciado) return iniciado;
-  // Sesión abierta de la versión anterior (sin marca): se le crea una
-  if (cubetaDeSesion() && !localStorage.getItem(MARCA_SESION)) {
+  const cubeta = cubetaDeSesion();
+  // Sesión de la versión anterior de producción: nunca pasó por el login nuevo
+  const sesionHeredada = cubeta && !localStorage.getItem(MARCA_SESION) && !localStorage.getItem(MARCA_PENDIENTE);
+  if (sesionHeredada) {
+    localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    localStorage.setItem(MARCA_CONFIRMADA, cubeta);
+  }
+  // Login que se cortó a la mitad (credenciales guardadas, sesión sin publicar):
+  // se completa la sesión, pero nunca se la trata como dueña segura de datos viejos
+  if (cubeta && localStorage.getItem(MARCA_PENDIENTE) && (sesionCerrada() || !localStorage.getItem(MARCA_SESION))) {
     localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
   }
   // Mientras otra pestaña cierra la sesión no se abre nada
   if (sesionCerrada()) { iniciado = Promise.resolve(); return iniciado; }
-  // La sesión que ya estaba abierta en este equipo es dueña segura de sus datos
-  iniciado = abrirEspacio(cubetaDeSesion(), { duenoSeguro: true }).catch(() => {});
+  const duenoSeguro = !!cubeta && localStorage.getItem(MARCA_CONFIRMADA) === cubeta && !localStorage.getItem(MARCA_PENDIENTE);
+  iniciado = abrirEspacio(cubeta, { duenoSeguro }).catch(() => {});
   return iniciado;
 }
 
@@ -217,7 +270,7 @@ async function abrirEspacioAhora(userOCubeta, duenoSeguro) {
   try {
     conexion = await abrir(nombreBase(cubeta));
     await conCandado("monki-migracion", async () => {
-      await migrarLocalStorage(cubeta, conexion, duenoSeguro);
+      await migrarLocalStorage(cubeta, conexion, { duenoSeguro });
       for (const [k, v] of await leerTodoIdb(conexion)) {
         if (esDatoDelNegocio(k)) { datos.set(k, v); continue; }
         // Clave que debe vivir en localStorage (p. ej. se agregó a EN_LOCALSTORAGE después)
@@ -257,7 +310,8 @@ async function abrirEspacioAhora(userOCubeta, duenoSeguro) {
 // cuenta primero (así se suben sus cambios pendientes).
 function usarLocalStorage(cubeta, duenoSeguro) {
   const claves = clavesDelNegocioEnLocal();
-  const dueno = duenoConocido(claves) || (duenoSeguro ? cubeta : null);
+  const senal = senalesDeDueno(claves);
+  const dueno = senal === AMBIGUO ? null : senal || (duenoSeguro ? cubeta : null);
   if (claves.length && dueno !== cubeta) {
     throw new Error("Este navegador tiene datos de otra empresa o de una sesión anterior. Entrá con esa cuenta y cerrá sesión antes de usar otra.");
   }
@@ -302,13 +356,15 @@ export function ligarSesion() { if (espacioAbierto) sesionLigada = localStorage.
 export function datosSinDueno() {
   if (!idb) return false;
   const claves = clavesDelNegocioEnLocal();
-  return claves.length > 0 && !duenoConocido(claves);
+  if (!claves.length) return false;
+  const senal = senalesDeDueno(claves);
+  return senal === null || senal === AMBIGUO; // (con un dueño claro ya se movieron solas)
 }
 
 /** El usuario confirmó que esos datos son de la empresa abierta: se incorporan a su espacio. */
 export async function adoptarDatosSinDueno() {
   if (!idb || !espacioAbierto) return;
-  await conCandado("monki-migracion", () => migrarLocalStorage(espacioAbierto, idb, true));
+  await conCandado("monki-migracion", () => migrarLocalStorage(espacioAbierto, idb, { forzar: true }));
   for (const [k, v] of await leerTodoIdb(idb)) if (esDatoDelNegocio(k)) cache.set(k, v);
   canal?.postMessage({ claves: [...cache.keys()] });
 }

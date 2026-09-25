@@ -6,7 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
-import { abrirEspacio, borrarEspacio, cerrarEspacio, ligarSesion } from "./almacen";
+import { abrirEspacio, borrarEspacio, cerrarEspacio, ligarSesion, marcarLoginPendiente, confirmarLogin } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -40,12 +40,13 @@ const nuevaSesion = () => localStorage.setItem(MARCA_SESION, `${Date.now()}-${Ma
 // vez y ya con la sesión nueva completa (cada empresa tiene su propio espacio;
 // el de la cuenta anterior queda intacto).
 async function abrirSesion(datos) {
+  if (!isElectron) marcarLoginPendiente(datos.user); // si se corta a la mitad, no cuenta como sesión segura
   await storeSet(TOKEN_KEY, datos.token);
   await storeSet(REFRESH_KEY, datos.refreshToken || null);
   await storeSet(USER_KEY, datos.user);
   if (!isElectron) await abrirEspacio(datos.user);
   nuevaSesion();
-  if (!isElectron) ligarSesion();
+  if (!isElectron) { ligarSesion(); confirmarLogin(datos.user); }
   window.__orgReanudarSync?.();
 }
 
