@@ -275,7 +275,7 @@ export default function InventarioScreen() {
 
   const columnasProductos = [
     { key: "codigo", titulo: "Código", render: p => <span className="font-mono text-xs text-monki-k/50">{p.codigoInterno||"—"}</span> },
-    { key: "nombre", titulo: "Producto", render: p => (
+    { key: "nombre", titulo: "Producto", principal: true, render: p => (
       <div className="flex items-center gap-2.5">
         <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Package size={14} className="text-monki-k"/></span>
         <div className="min-w-0"><p className="font-bold text-monki-k truncate">{p.nombre}</p><p className="text-[11px] text-monki-k/45">{p.categoria||"—"}</p></div>
@@ -298,7 +298,7 @@ export default function InventarioScreen() {
 
   const columnasMovs = [
     { key: "fecha", titulo: "Fecha", render: m => fmtDate(m.fecha) },
-    { key: "producto", titulo: "Producto", render: m => <b>{m.productoNombre}</b> },
+    { key: "producto", titulo: "Producto", principal: true, render: m => <b>{m.productoNombre}</b> },
     { key: "tipo", titulo: "Tipo", render: m => <Estado tono={tonoMov(m.tipo)}>{m.tipo}</Estado> },
     { key: "motivo", titulo: "Motivo", render: m => <span className="text-monki-k/60">{m.motivo}</span> },
     { key: "cantidad", titulo: "Cantidad", alinear: "right", render: m => <b className={m.tipo==="Salida"?"text-red-600":""}>{signo(m)}</b> },

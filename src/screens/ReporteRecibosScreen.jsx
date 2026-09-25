@@ -55,7 +55,7 @@ export default function ReporteRecibosScreen() {
     { key: "numero", titulo: "N.°", render: r => <span className="font-mono text-xs font-bold">{r.numero}</span> },
     { key: "tipo", titulo: "Tipo", render: r => <span className="text-monki-k/55 text-xs">{r.tipo || "Caja"}</span> },
     { key: "fecha", titulo: "Fecha", render: r => fmtDate(r.fecha) },
-    { key: "cliente", titulo: "Cliente", render: r => <b className="text-monki-k">{r.cliente}</b> },
+    { key: "cliente", titulo: "Cliente", principal: true, render: r => <b className="text-monki-k">{r.cliente}</b> },
     { key: "metodo", titulo: "Método", render: r => <Estado>{r.metodo}</Estado> },
     { key: "moneda", titulo: "Moneda", render: r => <span className="font-mono text-xs text-monki-k/55">{r.moneda}</span> },
     { key: "monto", titulo: "Monto", alinear: "right", render: r => <b>{fmtMoney(r.monto, r.moneda)}</b> },

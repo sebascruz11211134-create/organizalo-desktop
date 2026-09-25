@@ -15,6 +15,7 @@ import { getToken } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
 import { Modulo, Boton, BotonIcono, Buscador, Tarjeta, Vacio, Estado, Pestanas, Entrada } from "../components/ui";
+import AccionesTelefono from "../components/AccionesTelefono";
 
 // Paleta Monki: del gris (frío) al negro (cliente), rojo para inactivo
 const ETAPAS = [
@@ -161,7 +162,7 @@ function ClienteDetalle({ cliente, onClose, onActualizar }) {
 
         <div className="px-6 pb-3 flex flex-wrap gap-2">
           {cliente.email    && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1"><Mail size={12} />{cliente.email}</span>}
-          {cliente.telefono && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1"><Phone size={12} />{cliente.telefono}</span>}
+          {cliente.telefono && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full pl-3 pr-1 py-1"><Phone size={12} />{cliente.telefono}<AccionesTelefono tel={cliente.telefono}/></span>}
           {cliente.cedula   && <span className="flex items-center gap-1.5 text-xs bg-monki-cream rounded-full px-3 py-1 font-mono"><Tag size={12} />{cliente.cedula}</span>}
         </div>
 

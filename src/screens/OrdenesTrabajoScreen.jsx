@@ -199,7 +199,7 @@ export default function OrdenesTrabajoScreen() {
         <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0"><Wrench size={14} className="text-monki-k"/></span>
         <span className="font-mono text-xs font-bold">OT-{o.numero}</span>
       </div>) },
-    { key: "cliente", titulo: "Cliente", render: o => <b className="text-monki-k">{o.cliente || "—"}</b> },
+    { key: "cliente", titulo: "Cliente", principal: true, render: o => <b className="text-monki-k">{o.cliente || "—"}</b> },
     { key: "equipo", titulo: "Equipo y problema", render: o => <div className="max-w-[260px]"><p className="font-semibold truncate">{o.equipo || "—"}</p><p className="text-xs text-monki-k/50 truncate">{o.problema}</p></div> },
     { key: "tecnico", titulo: "Técnico", render: o => <span className="text-monki-k/60">{o.tecnico || "—"}</span> },
     { key: "estado", titulo: "Estado", render: o => <Badge estado={o.estado}/> },

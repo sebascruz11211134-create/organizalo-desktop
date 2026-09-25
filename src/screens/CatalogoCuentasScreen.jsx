@@ -91,7 +91,7 @@ export default function CatalogoCuentasScreen() {
 
   const columnas = [
     { key: "codigo", titulo: "Código", render: c => <span className={`font-mono text-xs ${c.nivel===1?"font-black":c.nivel===2?"font-bold":"text-monki-k/55"}`} style={{ paddingLeft: `${(c.nivel-1)*14}px` }}>{c.codigo}</span> },
-    { key: "nombre", titulo: "Nombre", render: c => (
+    { key: "nombre", titulo: "Nombre", principal: true, render: c => (
       <span className={c.nivel===1?"font-black text-monki-k":c.nivel===2?"font-extrabold text-monki-k":"text-monki-k/80"} style={{ paddingLeft: `${(c.nivel-1)*14}px` }}>
         {c.nivel > 1 && <ChevronRight size={11} className="inline text-monki-k/30 mr-1"/>}{c.nombre}
       </span>) },

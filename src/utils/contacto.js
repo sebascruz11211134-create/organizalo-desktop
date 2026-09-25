@@ -34,3 +34,31 @@ export async function compartirTexto({ titulo, texto, telefono }) {
   }
   window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener");
 }
+
+// Teléfono del cliente de un documento, buscándolo en Contactos (cédula o nombre).
+// Recibe los contactos ya cargados: compartir debe ocurrir en el mismo toque
+// del usuario, o el teléfono bloquea la ventana de WhatsApp.
+export function telefonoDeCliente(cliente, contactos = []) {
+  if (!cliente) return "";
+  if (cliente.tel || cliente.telefono) return cliente.tel || cliente.telefono;
+  const ced = soloDigitos(cliente.cedula);
+  const c = (ced && contactos.find(x => soloDigitos(x.cedula) === ced))
+    || contactos.find(x => x.nombre && x.nombre === cliente.nombre);
+  return c?.tel || c?.telefono || "";
+}
+
+// Mensaje de WhatsApp con el resumen de una factura y el SINPE para pagar
+export function compartirFactura(f, { settings, contactos, fmtMoney }) {
+  const s = settings || {};
+  const sinpe = s.sinpe || s.telefono;
+  const lineas = [
+    `Hola${f.cliente?.nombre ? " " + f.cliente.nombre : ""} 👋`,
+    `Le compartimos ${f.tipoDoc === "04" ? "el tiquete electrónico" : "la factura electrónica"} *${f.numero}* de ${s.nombreNegocio || "nuestro negocio"}.`,
+    `Total: *${fmtMoney(f.totalGeneral || f.total, f.moneda)}*`,
+    f.vencimiento ? `Vence: ${f.vencimiento}` : null,
+    f.clave ? `Clave Hacienda: ${f.clave}` : null,
+    sinpe ? `Puede pagar por SINPE Móvil al ${sinpe}.` : null,
+    "¡Gracias por su preferencia!",
+  ].filter(Boolean);
+  return compartirTexto({ titulo: f.numero, texto: lineas.join("\n"), telefono: telefonoDeCliente(f.cliente, contactos) });
+}

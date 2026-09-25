@@ -314,7 +314,7 @@ export default function RecibosScreen() {
   const columnas = [
     { key: "numero", titulo: "N.° recibo", render: r => <span className={`font-mono font-bold ${r.estado === "anulado" ? "line-through text-monki-k/35" : ""}`}>#{r.numero}</span> },
     { key: "fecha", titulo: "Fecha", render: r => <div><div>{fmtDate(r.fecha)}</div>{r.creadoPor && <div className="text-[10px] text-monki-k/45">Por {r.creadoPor}</div>}</div> },
-    { key: "cliente", titulo: "Cliente", render: r => <b className={r.estado === "anulado" ? "line-through text-monki-k/35" : "text-monki-k"}>{r.clienteNombre || r.cliente || "Consumidor Final"}</b> },
+    { key: "cliente", titulo: "Cliente", principal: true, render: r => <b className={r.estado === "anulado" ? "line-through text-monki-k/35" : "text-monki-k"}>{r.clienteNombre || r.cliente || "Consumidor Final"}</b> },
     { key: "tipo", titulo: "Tipo", render: r => r.esAdelanto ? <Estado tono="alerta">Adelanto</Estado>
         : r.cxcId ? <Estado tono="oscuro">CXC</Estado>
         : r.facturaNumero ? <span className="font-mono text-xs font-bold bg-monki-cream px-2 py-0.5 rounded-md">Fact #{r.facturaNumero}</span>

@@ -49,7 +49,7 @@ function ListView({ cotizaciones, onNueva, onEditar, onConvertir, onDuplicar, on
 
   const columnas = [
     { key:"numero", titulo:"N.°", render:c => <span className="font-mono text-xs font-bold">{c.numero}</span> },
-    { key:"cliente", titulo:"Cliente", render:c => <b className="text-monki-k">{c.cliente?.nombre || "—"}</b> },
+    { key:"cliente", titulo:"Cliente", principal: true, render:c => <b className="text-monki-k">{c.cliente?.nombre || "—"}</b> },
     { key:"fecha", titulo:"Fecha", render:c => <div><div>{fmtDate(c.fecha)}</div>{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },
     { key:"validez", titulo:"Válida por", render:c => <span className="text-monki-k/60">{c.validez ? `${c.validez} días` : "—"}</span> },
     { key:"total", titulo:"Total", alinear:"right", render:c => <b>{fmtMoney(totalDe(c),"CRC")}</b> },

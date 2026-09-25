@@ -71,7 +71,7 @@ function AccionesRapidas({ onCerrar }) {
       onDetectado={codigo => { onCerrar(); navigate(`/inventario?buscar=${encodeURIComponent(codigo)}`); }} />;
   }
   return (
-    <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true">
+    <div className="md:hidden fixed inset-0 z-[39] flex flex-col justify-end" role="dialog" aria-modal="true">
       <button aria-label={tr("Cerrar")} className="absolute inset-0 bg-monki-k/50 backdrop-blur-sm animate-entrar" onClick={onCerrar} />
       <div className="relative animate-desplegar bg-monki-cream rounded-t-[26px] border-t-2 border-monki-k px-4 pt-3"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)" }}>
@@ -124,7 +124,7 @@ export default function BarraInferior({ modulos }) {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[70] bg-monki-k flex items-end px-1 pt-1"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-monki-k flex items-end px-1 pt-1"
         style={{ paddingBottom: "max(env(safe-area-inset-bottom, 0px), 4px)" }}>
         {fav.slice(0, 2).map(h => <Pestana key={h.path} path={h.path} icon={h.icon} label={nombreCorto(h)} />)}
         <div className="flex-1 flex justify-center">

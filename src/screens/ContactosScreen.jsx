@@ -6,6 +6,7 @@ import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { useAccionInicial } from "../hooks/useAccionInicial";
 import { genId } from "../utils/fmt";
 import { generarCodigoCliente } from "../utils/clienteUtils";
+import AccionesTelefono from "../components/AccionesTelefono";
 
 function ContactoModal({ contacto, onClose, onSave }) {
   const [nombre,        setNombre]        = useState(contacto?.nombre        || "");
@@ -176,7 +177,7 @@ export default function ContactosScreen() {
 
   const columnas = [
     { key: "codigo", titulo: "Código", render: c => c.codigoCliente ? <span className="font-mono text-xs font-bold bg-monki-cream px-2 py-0.5 rounded-md">{c.codigoCliente}</span> : <span className="text-monki-k/25">—</span> },
-    { key: "nombre", titulo: "Nombre", render: c => (
+    { key: "nombre", titulo: "Nombre", principal: true, render: c => (
       <div className="flex items-center gap-2.5">
         <span className="w-8 h-8 rounded-full bg-monki-y flex items-center justify-center shrink-0 text-[12px] font-black text-monki-k">{(c.nombre || "?").trim().charAt(0).toUpperCase()}</span>
         <span className="font-bold text-monki-k">{c.nombre}</span>
@@ -185,7 +186,7 @@ export default function ContactosScreen() {
     { key: "tipo", titulo: "Tipo", render: c => <Estado tono={TONO_TIPO[c.tipo] || "neutro"}>{TIPO_LABEL[c.tipo] || c.tipo}</Estado> },
     { key: "credito", titulo: "Crédito", render: c => c.dias_credito > 0 ? <b>{c.dias_credito} días</b> : <span className="text-monki-k/40">Contado</span> },
     { key: "email", titulo: "Correo", render: c => <span className="text-monki-k/60">{c.email || "—"}</span> },
-    { key: "tel", titulo: "Teléfono", render: c => <span className="text-monki-k/60">{c.tel || "—"}</span> },
+    { key: "tel", titulo: "Teléfono", render: c => <span className="inline-flex items-center gap-2 text-monki-k/60">{c.tel || "—"}<AccionesTelefono tel={c.tel}/></span> },
     { key: "acciones", titulo: "", alinear: "right", render: c => (
       <div className="flex justify-end gap-0.5" onClick={e => e.stopPropagation()}>
         <BotonIcono icono={Edit2} titulo="Editar" onClick={() => setModal(c)} />

@@ -297,7 +297,7 @@ export default function ControlBancarioScreen() {
   );
   const columnasNota = (tipo) => [
     { key: "numero", titulo: "N° Nota", render: n => <span className={`font-mono text-xs ${n.anulado ? "opacity-50" : ""}`}>{n.numero}</span> },
-    { key: "cuenta", titulo: "Cuenta", render: n => <b className="text-monki-k">{cuentas.find(x=>x.id===n.cuentaId)?.nombre || "—"}</b> },
+    { key: "cuenta", titulo: "Cuenta", principal: true, render: n => <b className="text-monki-k">{cuentas.find(x=>x.id===n.cuentaId)?.nombre || "—"}</b> },
     { key: "fecha", titulo: "Fecha", render: n => <span className="font-mono text-xs text-monki-k/60">{n.fecha}</span> },
     { key: "tipo", titulo: "Tipo" },
     tipo === "debito"

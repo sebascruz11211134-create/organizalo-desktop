@@ -158,7 +158,7 @@ export default function RecepcionScreen() {
 
   const columnas = [
     { key: "fecha", titulo: "Fecha", render: f => <span className="whitespace-nowrap">{f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString("es-CR") : "—"}</span> },
-    { key: "emisor", titulo: "Emisor", render: f => <b className="text-monki-k block max-w-[220px] truncate">{f.emisor_nombre || "—"}</b> },
+    { key: "emisor", titulo: "Emisor", principal: true, render: f => <b className="text-monki-k block max-w-[220px] truncate">{f.emisor_nombre || "—"}</b> },
     { key: "cedula", titulo: "Cédula", render: f => <span className="font-mono text-xs text-monki-k/55">{f.emisor_cedula || "—"}</span> },
     { key: "total", titulo: "Total", alinear: "right", render: f => <b>{f.moneda === "USD" ? "$" : "₡"}{fmt(f.total_factura)}</b> },
     { key: "iva", titulo: "IVA", alinear: "right", render: f => <span className="text-monki-k/55">{fmt(f.total_iva)}</span> },

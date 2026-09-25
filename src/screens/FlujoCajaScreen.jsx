@@ -203,7 +203,7 @@ export default function FlujoCajaScreen() {
   ];
   const columnasMovs = [
     { key: "fecha", titulo: "Fecha", render: mv => <span className="font-mono text-xs text-monki-k/55">{mv.fecha}</span> },
-    { key: "desc", titulo: "Descripción", render: mv => <b className="text-monki-k">{mv.descripcion}</b> },
+    { key: "desc", titulo: "Descripción", principal: true, render: mv => <b className="text-monki-k">{mv.descripcion}</b> },
     { key: "cat", titulo: "Categoría", render: mv => <Estado>{mv.categoria}</Estado> },
     { key: "tipo", titulo: "Tipo", render: mv => <Estado tono={mv.tipo === "entrada" ? "exito" : "peligro"}>{mv.tipo === "entrada" ? "Entrada" : "Salida"}</Estado> },
     { key: "monto", titulo: "Monto", alinear: "right", render: mv => <b className={mv.tipo === "entrada" ? "" : "text-red-600"}>{mv.tipo === "entrada" ? "+" : "−"}{fmt(mv.monto)}</b> },

@@ -2,7 +2,7 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, AlertTriangle } from "lucide-react";
+import { FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, AlertTriangle, MessageCircle } from "lucide-react";
 import { Modulo, Boton, BarraFiltros, Buscador, Selector, Vacio, Estado, Indicadores, Indicador, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
@@ -11,6 +11,7 @@ import { getToken } from "../utils/auth";
 import { etiquetaEstado, facturaReintentable, reintentarFactura } from "../utils/comprobantes";
 import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
 import { useCurrency } from "../contexts/CurrencyContext";
+import { compartirFactura } from "../utils/contacto";
 
 const ESTADOS = {
   aceptada: { label: "Aceptada", tono: "exito", icon: CheckCircle },
@@ -85,6 +86,7 @@ export default function FacturasHistorialScreen() {
   const [facturas,  setFacturas]  = useState([]);
   const [recibos,   setRecibos]   = useState([]);
   const [settings,  setSettings]  = useState({});
+  const [contactos, setContactos] = useState([]);
   const [busq,      setBusq]      = useState("");
   const [filtroEst, setFiltroEst] = useState("todos");
   const [selected,  setSelected]  = useState(null);
@@ -94,6 +96,7 @@ export default function FacturasHistorialScreen() {
     setFacturas(f.sort((a, b) => (b.creadoEn || "").localeCompare(a.creadoEn || "")));
     setSettings(s);
     setRecibos(r || []);
+    setContactos(await db.getContactos() || []);
   }, []);
 
   const { confirmar, dialogo } = useConfirmar();
@@ -191,13 +194,40 @@ export default function FacturasHistorialScreen() {
             onClick={() => reintentar(sel)}>
             {!facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
           </Boton>
+          <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirFactura(sel, { settings, contactos, fmtMoney })}>WhatsApp</Boton>
           <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={() => anular(sel)}>Anular</Boton>
           <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
       )}
 
       <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
-        <div className="flex-1 min-h-0 overflow-auto">
+        {/* Celular: tarjetas */}
+        <div className="md:hidden flex-1 min-h-0 overflow-auto p-2 space-y-2">
+          {visibles.length === 0 ? (
+            <Vacio icono={FileText} titulo="Sin facturas emitidas" texto={facturas.length ? "Probá con otra búsqueda o estado." : "Las facturas que emitas aparecen acá."}/>
+          ) : visibles.map((f, i) => {
+            const est = ESTADOS[f.estado] || ESTADOS.pendiente;
+            const isSel = selected === f.id;
+            const esAnulada = f.estado === "anulada";
+            return (
+              <div key={f.id} style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
+                className={`animate-desplegar rounded-2xl border-2 overflow-hidden ${isSel ? "border-monki-y" : "border-black/10"} ${esAnulada ? "opacity-60" : ""}`}>
+                <button onClick={() => setSelected(isSel ? null : f.id)} className={`w-full text-left p-3 ${isSel ? "bg-[#FFF4B8]" : "bg-white"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <b className={`block truncate text-monki-k ${esAnulada ? "line-through" : ""}`}>{f.cliente?.nombre || "Consumidor Final"}</b>
+                      <span className="font-mono text-[11px] text-monki-k/50">{f.numero} · {f.tipoDoc === "04" ? "Tiquete" : "Factura"} · {fmtDate(f.fecha)}</span>
+                    </div>
+                    <b className={`shrink-0 tabular-nums ${esAnulada ? "line-through" : ""}`}>{fmtMoney(f.total, f.moneda)}</b>
+                  </div>
+                  <div className="mt-2"><Estado tono={est.tono}>{est.label}</Estado></div>
+                </button>
+                {isSel && <DetalleFact f={f} moneda={f.moneda} recibos={recibos} />}
+              </div>
+            );
+          })}
+        </div>
+        <div className="hidden md:block flex-1 min-h-0 overflow-auto">
           <table className="ui-tabla w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white">
               <tr>{["N.°","Tipo","Fecha","Cliente","Cédula","Moneda","Total","Estado"].map(t => <th key={t} className={TH + (t==="Total" ? " !text-right" : "")}>{t}</th>)}</tr>

@@ -3,14 +3,15 @@ import { getAutorSync } from "../utils/auth";
  * ComprasScreen — Facturas de proveedor / compras
  * Registra gastos con crédito fiscal de IVA.
  */
-import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, X, Check, ShoppingCart, Edit2, CreditCard, Receipt } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Trash2, X, Check, ShoppingCart, Edit2, CreditCard, Receipt, Camera } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Buscador, Tabla, Tarjeta, Vacio, Estado, Indicadores, Indicador, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { useAccionInicial } from "../hooks/useAccionInicial";
 import { fmtMoney, hoy, genId, fmtDate, fechaLocal, mesLocal } from "../utils/fmt";
 import { crearCXP, aumentarInventario } from "../utils/clienteUtils";
+import { comprimirImagen } from "../utils/imagen";
 
 const CATEGORIAS = ["Mercadería","Materia prima","Servicios","Equipo","Suministros","Alquiler","Publicidad","Transporte","Otro"];
 const MEDIOS = ["Efectivo","Transferencia","SINPE Móvil","Tarjeta","Cheque","Crédito proveedor"];
@@ -38,6 +39,15 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
   const [pctIVA,     setPctIVA]     = useState(compra?.pctIVA ?? 13);
   const [notas,      setNotas]      = useState(compra?.notas || "");
   const [proyectoId, setProyectoId] = useState(compra?.proyectoId || "");
+  const [foto,       setFoto]       = useState(compra?.foto || "");
+  const [verFoto,    setVerFoto]    = useState(false);
+  const fotoRef = useRef(null);
+  const elegirFoto = async (e) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!archivo) return;
+    try { setFoto(await comprimirImagen(archivo)); } catch (err) { alert(err.message); }
+  };
   const [busq,       setBusq]       = useState(compra?.proveedor || "");
   const [showProv,   setShowProv]   = useState(false);
   const [diasProvee, setDiasProvee] = useState(0);
@@ -93,6 +103,7 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
       proveedor, numFactura, fecha, fechaVence, categoria, medio, estado,
       montoBase: base, pctIVA, montoIVA, total, notas,
       proyectoId: proyectoId || null,
+      foto: foto || null,
       lineas: INVENTARIABLE.includes(categoria) ? lineas : [],
       creadoEn: compra?.creadoEn || new Date().toISOString(),
       creadoPor: compra?.creadoPor || getAutorSync(),
@@ -200,6 +211,33 @@ function FormCompra({ compra, contactos, productos, proyectos, onGuardar, onCanc
               <p className="text-[26px] font-black tracking-[-0.03em] text-monki-y leading-tight">{fmtMoney(total,"CRC")}</p>
             </div>
           </div>
+          <Tarjeta cuerpo="p-4">
+            <p className="monki-tag text-monki-k/55 mb-2">Foto del comprobante</p>
+            <input ref={fotoRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={elegirFoto}/>
+            {foto ? (
+              <div className="space-y-2">
+                <button type="button" onClick={() => setVerFoto(true)} className="block w-full rounded-xl overflow-hidden border-2 border-black/10 hover:border-monki-k transition-colors">
+                  <img src={foto} alt="Comprobante" className="w-full max-h-48 object-cover"/>
+                </button>
+                <div className="flex gap-2">
+                  <Boton variante="secundario" tamano="sm" icono={Camera} className="flex-1" onClick={() => fotoRef.current?.click()}>Cambiar</Boton>
+                  <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => setFoto("")}>Quitar</Boton>
+                </div>
+              </div>
+            ) : (
+              <button type="button" onClick={() => fotoRef.current?.click()}
+                className="group w-full border-2 border-dashed border-black/15 hover:border-monki-k hover:bg-monki-cream/60 rounded-xl py-5 flex flex-col items-center gap-2 transition-colors">
+                <span className="w-11 h-11 rounded-full bg-monki-y flex items-center justify-center shadow-[3px_3px_0_#111] transition-transform duration-300 ease-monki group-hover:-translate-y-0.5"><Camera size={18} className="text-monki-k"/></span>
+                <span className="text-sm font-bold text-monki-k">Tomar o subir foto</span>
+                <span className="text-[11px] text-monki-k/45">Queda guardada junto a la compra</span>
+              </button>
+            )}
+          </Tarjeta>
+          {verFoto && (
+            <div className="fixed inset-0 z-50 bg-monki-k/85 flex items-center justify-center p-4" onClick={() => setVerFoto(false)}>
+              <img src={foto} alt="Comprobante" className="max-w-full max-h-full rounded-xl"/>
+            </div>
+          )}
           <Tarjeta cuerpo="p-4 space-y-3">
             <Campo etiqueta="Observaciones"><AreaTexto value={notas} onChange={e=>setNotas(e.target.value)} rows={4} placeholder="Notas, referencia interna…"/></Campo>
             {(proyectos||[]).length > 0 && (
@@ -329,7 +367,7 @@ export default function ComprasScreen() {
   useAccionInicial({ accion: v => v === "nuevo" && nueva() });
   const editar = c => { setEditando(c); setVista("form"); };
   const columnas = [
-    { key: "prov", titulo: "Proveedor", render: c => <div><b className="text-monki-k">{c.proveedor || "—"}</b>{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },
+    { key: "prov", titulo: "Proveedor", render: c => <div><b className="text-monki-k">{c.proveedor || "—"}</b>{c.foto && <Camera size={12} className="inline ml-1.5 -mt-0.5 text-monki-k/45" aria-label="Con foto"/>}{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },
     { key: "num", titulo: "N.° factura", render: c => <span className="font-mono text-xs text-monki-k/55">{c.numFactura || "—"}</span> },
     { key: "cat", titulo: "Categoría", render: c => <span className="text-monki-k/60 text-xs">{c.categoria}</span> },
     { key: "fecha", titulo: "Fecha", render: c => fmtDate(c.fecha) },

@@ -207,7 +207,7 @@ export default function NotaDebitoComercialScreen() {
   const columnas = [
     { key: "numero", titulo: "N.°", render: n => <span className="font-mono text-xs font-bold">{n.numero}</span> },
     { key: "fecha", titulo: "Fecha", render: n => fmtDate(n.fecha) },
-    { key: "cliente", titulo: "Receptor", render: n => <b className="text-monki-k">{n.cliente?.nombre || "—"}</b> },
+    { key: "cliente", titulo: "Receptor", principal: true, render: n => <b className="text-monki-k">{n.cliente?.nombre || "—"}</b> },
     { key: "ref", titulo: "Factura ref.", render: n => <span className="font-mono text-xs text-monki-k/50">{n.facturaRef || "—"}</span> },
     { key: "motivo", titulo: "Motivo", render: n => <span className="text-monki-k/65 text-xs">{n.motivo || "—"}</span> },
     { key: "total", titulo: "Total", alinear: "right", render: n => <b>{fmtMoney(n.total, n.moneda)}</b> },

@@ -224,7 +224,7 @@ export default function NotasCreditoScreen() {
   const columnas = [
     { key: "numero", titulo: "N.°", render: n => <span className="font-mono text-xs font-bold">{n.numero}</span> },
     { key: "fecha", titulo: "Fecha", render: n => fmtDate(n.fecha) },
-    { key: "cliente", titulo: "Cliente", render: n => <b className="text-monki-k">{n.cliente}</b> },
+    { key: "cliente", titulo: "Cliente", principal: true, render: n => <b className="text-monki-k">{n.cliente}</b> },
     { key: "ref", titulo: "Factura ref.", render: n => <span className="font-mono text-xs text-monki-k/50">{n.facturaRef || "—"}</span> },
     { key: "motivo", titulo: "Motivo", render: n => <span className="text-monki-k/70">{n.motivo}</span> },
     { key: "monto", titulo: "Monto", alinear: "right", render: n => <b className="text-red-600">{fmtMoney(n.monto, n.moneda)}</b> },

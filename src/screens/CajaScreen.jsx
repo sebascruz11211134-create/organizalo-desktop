@@ -192,7 +192,7 @@ export default function CajaScreen() {
   const columnas = [
     { key: "hora", titulo: "Hora", render: m => <span className="font-mono text-xs text-monki-k/55">{m.hora}</span> },
     { key: "tipo", titulo: "Tipo", render: m => <b className="text-monki-k">{m.tipo}</b> },
-    { key: "desc", titulo: "Descripción", render: m => <span className="text-monki-k/55 text-xs">{m.descripcion||"—"}</span> },
+    { key: "desc", titulo: "Descripción", principal: true, render: m => <span className="text-monki-k/55 text-xs">{m.descripcion||"—"}</span> },
     { key: "ing", titulo: "Ingreso", alinear: "right", render: m => m.esIngreso ? <b>{fmtMoney(m.monto,"CRC")}</b> : "" },
     { key: "egr", titulo: "Egreso", alinear: "right", render: m => !m.esIngreso ? <b className="text-red-600">{fmtMoney(m.monto,"CRC")}</b> : "" },
     { key: "acc", titulo: "", alinear: "right", render: m => abierta && <BotonIcono icono={Trash2} titulo="Eliminar" tono="peligro" onClick={()=>eliminarMovimiento(m.id)}/> },

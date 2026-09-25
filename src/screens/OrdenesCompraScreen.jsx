@@ -188,7 +188,7 @@ export default function OrdenesCompraScreen() {
 
   const columnas = [
     { key: "numero", titulo: "N.° OC", render: o => <span className="font-mono text-xs font-bold">{o.numero}</span> },
-    { key: "proveedor", titulo: "Proveedor", render: o => <b className="text-monki-k">{o.proveedor}</b> },
+    { key: "proveedor", titulo: "Proveedor", principal: true, render: o => <b className="text-monki-k">{o.proveedor}</b> },
     { key: "fecha", titulo: "Fecha", render: o => fmtDate(o.fecha) },
     { key: "entrega", titulo: "Entrega esp.", render: o => <span className="text-monki-k/55">{o.fechaEntrega ? fmtDate(o.fechaEntrega) : "—"}</span> },
     { key: "estado", titulo: "Estado", render: o => { const e = ESTADOS[o.estado] || ESTADOS.borrador; return <Estado tono={e.tono}>{e.label}</Estado>; } },

@@ -12,7 +12,7 @@ import { getAutorSync, getCurrentUserSync } from "../utils/auth";
  * implementa la firma digital y el envío XML (via facturae-cr o similar).
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Send, Save, FileText, ChevronDown, Printer, Search, Loader2 } from "lucide-react";
+import { Plus, Trash2, Send, Save, FileText, ChevronDown, Printer, Search, Loader2, MessageCircle } from "lucide-react";
 import db from "../utils/db";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
@@ -20,6 +20,7 @@ import { fmtMoney, hoy, genId, fmtDate } from "../utils/fmt";
 import SinpeQR from "../components/SinpeQR";
 import { guardarFacturaVenta } from "../utils/efectosVenta";
 import { Modulo, Boton } from "../components/ui";
+import { compartirFactura } from "../utils/contacto";
 
 import { emitir, etiquetaEstado, camposFactura, idempotencyFactura, facturaReintentable, reintentarFactura, emisionesEnCurso, registrarEmision, quitarEmision, propietarioDe, payloadVigente, cotizacionOficialDeHoy, esCredito } from "../utils/comprobantes";
 
@@ -759,7 +760,11 @@ export default function FacturacionScreen() {
           <p className="text-xs text-monki-k/45 mt-1">Escaneá para pagar por SINPE Móvil</p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
+          <button onClick={() => compartirFactura(enviada, { settings, contactos, fmtMoney })}
+            className="ui-boton flex items-center gap-2 bg-monki-y text-monki-k px-5 py-2.5 rounded-full text-[13px] font-bold hover:shadow-[4px_4px_0_#111] transition-all">
+            <MessageCircle size={15}/> Enviar por WhatsApp
+          </button>
           <button onClick={() => imprimirFactura(enviada)}
             className="ui-boton flex items-center gap-2 bg-white text-monki-k shadow-[inset_0_0_0_2px_#111] px-5 py-2.5 rounded-full text-[13px] font-bold hover:bg-monki-k hover:text-monki-y transition-colors">
             <Printer size={15}/> Imprimir / PDF

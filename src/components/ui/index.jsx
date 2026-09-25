@@ -149,12 +149,65 @@ export function Tarjeta({ children, className, titulo, acciones, cuerpo }) {
   );
 }
 
-// columnas: [{ key, titulo, alinear?: "right"|"center", render?(fila), className? }]
+// columnas: [{ key, titulo, alinear?: "right"|"center", render?(fila), className?, movil?: false, principal?: true }]
+// En el celular cada fila se muestra como tarjeta: la columna `principal` (o la 1.ª) es el título,
+// la última columna numérica (alineada a la derecha) va destacada arriba, el
+// resto como pares etiqueta/valor y las columnas sin título (acciones) abajo.
+function TarjetasMovil({ columnas, filas, claveFila, onFila, seleccionada, vacio, cargando }) {
+  const { tr } = useIdioma();
+  const visibles = columnas.filter(c => c.movil !== false);
+  const principal = visibles.find(c => c.principal) || visibles[0];
+  const resto = visibles.filter(c => c !== principal);
+  const destacada = [...resto].reverse().find(c => c.alinear === "right" && c.titulo);
+  const acciones = resto.filter(c => !c.titulo);
+  const datos = resto.filter(c => c.titulo && c !== destacada);
+  const valor = (c, f) => (c.render ? c.render(f) : f[c.key]);
+  if (cargando) return <div className="py-16 text-center text-monki-k/50"><Loader2 size={20} className="animate-spin inline" /></div>;
+  if (!filas.length) return vacio || <Vacio titulo="Sin resultados" />;
+  return (
+    <div className="p-2 space-y-2">
+      {filas.map((f, i) => {
+        const clave = claveFila(f);
+        const activa = seleccionada != null && seleccionada === clave;
+        return (
+          <div key={clave} onClick={onFila ? () => onFila(f) : undefined}
+            style={{ animationDelay: `${Math.min(i, 10) * 25}ms` }}
+            className={cx("animate-desplegar rounded-2xl border-2 p-3 transition-colors",
+              onFila && "cursor-pointer active:border-monki-k", activa ? "bg-[#FFF4B8] border-monki-y" : "bg-white border-black/10")}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 text-sm text-monki-k">{principal && valor(principal, f)}</div>
+              {destacada && <div className="shrink-0 text-right text-sm font-bold tabular-nums text-monki-k">{valor(destacada, f)}</div>}
+            </div>
+            {datos.length > 0 && (
+              <dl className="ui-rejilla grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2.5 border-t border-black/5">
+                {datos.map(c => (
+                  <div key={c.key} className="min-w-0">
+                    <dt className="monki-tag text-[9px] text-monki-k/45 truncate">{tr(c.titulo)}</dt>
+                    <dd className="text-xs text-monki-k/85 truncate [&>*]:truncate">{valor(c, f)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {acciones.length > 0 && (
+              <div className="flex justify-end gap-1 mt-2 -mb-1" onClick={e => e.stopPropagation()}>
+                {acciones.map(c => <React.Fragment key={c.key}>{valor(c, f)}</React.Fragment>)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Tabla({ columnas, filas, claveFila = f => f.id, onFila, seleccionada, vacio, cargando, pie, className }) {
   const { tr } = useIdioma();
   return (
     <div className={cx("ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col", className)}>
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="md:hidden flex-1 min-h-0 overflow-auto">
+        <TarjetasMovil columnas={columnas} filas={filas} claveFila={claveFila} onFila={onFila} seleccionada={seleccionada} vacio={vacio} cargando={cargando} />
+      </div>
+      <div className="hidden md:block flex-1 min-h-0 overflow-auto">
         <table className="ui-tabla w-full text-sm">
           <thead className="sticky top-0 z-10 bg-white">
             <tr>
