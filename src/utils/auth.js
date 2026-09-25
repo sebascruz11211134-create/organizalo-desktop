@@ -83,22 +83,14 @@ export async function login({ email, password }) {
 
 export async function clearLocalData({ conservar = false } = {}) {
   if (isElectron) {
-    // En Electron no podemos iterar las claves fácilmente — limpiamos las conocidas
-    const DATA_KEYS = [
-      "@finanzia/settings","@finanzia/debts","@finanzia/recibos","@finanzia/facturas",
-      "@finanzia/notasCredito","@finanzia/productos","@finanzia/contactos",
-      "@finanzia/empleados","@finanzia/transactions","@finanzia/ingresos",
-      "@finanzia/cuentas","@finanzia/reconciliadas","@finanzia/pedidos",
-      "@finanzia/ordenesTrabajo","@finanzia/cotizaciones","@finanzia/lastSync",
-      "@finanzia/empresaId","@finanzia/planillas","@finanzia/asientosContables",
-      "@finanzia/cuentasContables","@finanzia/empresas","@finanzia/usuarios",
-      "@finanzia/usuarioActivo","@finanzia/compras","@finanzia/caja",
-      "@finanzia/activosFijos","@finanzia/presupuestos","@finanzia/proyectos",
-      "@finanzia/tiendaConfig","@finanzia/portalConfig","@finanzia/ordenes",
-      "@finanzia/ordenesPedido","@finanzia/movimientosInventario",
-      "@finanzia/asistencia","@finanzia/onboarding_completado",
-    ];
-    DATA_KEYS.forEach(k => window.electronAPI?.store?.delete?.(k));
+    // Electron no tiene espacios por empresa: al salir se borran TODOS los datos
+    // del negocio (la app no deja salir en Electron con cambios sin subir).
+    const AUTH = new Set([TOKEN_KEY, REFRESH_KEY, USER_KEY, MODULOS_KEY]);
+    let todas = {};
+    try { todas = (await window.electronAPI?.store?.getAll?.()) || {}; } catch { /* sin listado */ }
+    const claves = Object.keys(todas).filter(k => k.startsWith("@finanzia/") && !AUTH.has(k));
+    for (const k of claves) await window.electronAPI?.store?.delete?.(k);
+    await borrarEspacio(); // pantallas que guardan directo en el almacén del navegador
   } else {
     if (conservar) return cerrarEspacio();
     await borrarEspacio(); // la base completa de esta empresa (o sus datos en localStorage)

@@ -960,6 +960,8 @@ const EN = {
   "Datos de una sesión anterior": "Data from a previous session",
   "Sí, son de esta empresa": "Yes, they belong to this company",
   "Este equipo tiene datos guardados de una sesión anterior que no se pudieron identificar. ¿Son de esta empresa? Si no estás seguro, elegí Cancelar: quedan guardados sin tocarse.": "This device has data saved from a previous session that couldn't be identified. Does it belong to this company? If you're not sure, choose Cancel: it stays saved untouched.",
+  "Hay cambios en este equipo que todavía no se subieron al servidor. Conectate a internet y volvé a intentar cerrar sesión para no perderlos.": "There are changes on this device that haven't been uploaded yet. Connect to the internet and try signing out again so you don't lose them.",
+  "Entendido": "Got it",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

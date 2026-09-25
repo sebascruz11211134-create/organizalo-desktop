@@ -314,6 +314,13 @@ export default function App() {
     try {
       await syncAll();
       if (await cambiosSinSubir()) {
+        if (window.electronAPI?.store) {
+          // En la app de escritorio no hay espacios por empresa: salir borraría esos cambios
+          await confirmarApp("Cambios sin subir",
+            "Hay cambios en este equipo que todavía no se subieron al servidor. Conectate a internet y volvé a intentar cerrar sesión para no perderlos.",
+            { boton: "Entendido" });
+          return;
+        }
         const salir = await confirmarApp("Cambios sin subir",
           "Hay cambios en este equipo que todavía no se subieron al servidor (¿sin internet?). Si salís igual, quedan guardados aquí y se suben la próxima vez que entres con esta empresa en este equipo.",
           { boton: "Salir igual" });
