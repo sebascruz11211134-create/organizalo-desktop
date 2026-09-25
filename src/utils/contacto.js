@@ -48,7 +48,7 @@ export function telefonoDeCliente(cliente, contactos = []) {
 }
 
 // Mensaje de WhatsApp con el resumen de una factura y el SINPE para pagar
-export function compartirFactura(f, { settings, contactos, fmtMoney }) {
+export function compartirFactura(f, { settings, contactos, fmtMoney, pdf }) {
   const s = settings || {};
   const sinpe = s.sinpe || s.telefono;
   const lineas = [
@@ -60,5 +60,13 @@ export function compartirFactura(f, { settings, contactos, fmtMoney }) {
     sinpe ? `Puede pagar por SINPE Móvil al ${sinpe}.` : null,
     "¡Gracias por su preferencia!",
   ].filter(Boolean);
-  return compartirTexto({ titulo: f.numero, texto: lineas.join("\n"), telefono: telefonoDeCliente(f.cliente, contactos) });
+  const texto = lineas.join("\n");
+  // En el teléfono, con el PDF listo: menú de compartir con el PDF adjunto (WhatsApp, correo…)
+  if (pdf && typeof File !== "undefined") {
+    const archivo = new File([pdf], `${f.numeroConsecutivo || f.numero || "factura"}.pdf`, { type: "application/pdf" });
+    if (navigator.canShare?.({ files: [archivo] })) {
+      return navigator.share({ files: [archivo], title: f.numero, text: texto }).catch(() => {});
+    }
+  }
+  return compartirTexto({ titulo: f.numero, texto, telefono: telefonoDeCliente(f.cliente, contactos) });
 }

@@ -203,3 +203,40 @@ export function referenciaDeFactura(facturas, facturaRef, pedir = PREGUNTAS) {
   if (!/^(0[1-9]|1[0-8])$/.test(tipo)) return { error: "Falta el tipo del comprobante de referencia (01 a 18). No se envió la nota." };
   return { referenciaNumero: ref, referenciaFecha: fecha, referenciaTipoDoc: tipo };
 }
+
+// ── PDF, correo y estado de un comprobante ya emitido ───────────────────────
+// base: "/api/invoices" (facturas y tiquetes) o "/api/emision/notas" (NC/ND).
+async function pedir(url, { token, method = "GET", body } = {}) {
+  const res = await fetch(`${BACKEND}${url}`, {
+    method,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => null);
+    throw new Error(j?.error || `Error ${res.status}`);
+  }
+  return res;
+}
+
+/** PDF del comprobante (armado por el servidor desde el XML firmado). Devuelve un Blob. */
+export async function pdfComprobante(base, id, { token }) {
+  return (await pedir(`${base}/${id}/pdf`, { token })).blob();
+}
+
+/** Envía (o reenvía) el comprobante al cliente por correo. */
+export async function enviarCorreoComprobante(base, id, { token, destinatario }) {
+  return (await pedir(`${base}/${id}/correo`, { token, method: "POST", body: destinatario ? { destinatario } : {} })).json();
+}
+
+/** Consulta el estado en Hacienda (si quedó aceptado, el servidor envía el correo solo). */
+export async function estadoComprobante(base, id, { token }) {
+  return (await pedir(`${base}/${id}/status`, { token })).json();
+}
+
+export function etiquetaCorreo(correo) {
+  if (!correo?.estado) return null;
+  if (correo.estado === "enviado") return `Enviada por correo a ${correo.destino || "el cliente"}`;
+  if (correo.estado === "enviando") return "Enviando por correo…";
+  return `No se pudo enviar por correo${correo.error ? `: ${correo.error}` : ""}`;
+}

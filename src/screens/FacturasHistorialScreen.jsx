@@ -2,13 +2,13 @@
  * FacturasHistorialScreen — Historial de facturas emitidas (desktop)
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, AlertTriangle, MessageCircle } from "lucide-react";
-import { Modulo, Boton, BarraFiltros, Buscador, Selector, Vacio, Estado, Indicadores, Indicador, useConfirmar } from "../components/ui";
+import { FileText, CheckCircle, Clock, XCircle, Trash2, Ban, Send, AlertTriangle, MessageCircle, FileDown, Mail } from "lucide-react";
+import { Modulo, Boton, BarraFiltros, Buscador, Selector, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, useConfirmar } from "../components/ui";
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate } from "../utils/fmt";
 import { getToken } from "../utils/auth";
-import { etiquetaEstado, facturaReintentable, reintentarFactura } from "../utils/comprobantes";
+import { etiquetaEstado, facturaReintentable, reintentarFactura, pdfComprobante, enviarCorreoComprobante, estadoComprobante, etiquetaCorreo } from "../utils/comprobantes";
 import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
 import { useCurrency } from "../contexts/CurrencyContext";
 import { compartirFactura } from "../utils/contacto";
@@ -143,6 +143,58 @@ export default function FacturasHistorialScreen() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  // ── Comprobante en el servidor: estado en Hacienda, correo al cliente y PDF ──
+  const [servidor, setServidor] = useState({});   // id local → { estado, correo }
+  const [pdf, setPdf] = useState(null);           // { id, blob, url }
+  const [correoModal, setCorreoModal] = useState(null); // { f, destino }
+  const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+  const baseDe = () => "/api/invoices";
+  useEffect(() => {
+    const f = facturas.find(x => x.id === selected);
+    if (!f?.haciendaId) return;
+    let vigente = true;
+    (async () => {
+      const token = await getToken();
+      try {
+        const c = await estadoComprobante(baseDe(f), f.haciendaId, { token });
+        if (!vigente) return;
+        setServidor(prev => ({ ...prev, [f.id]: { estado: c.estado, correo: c.correo } }));
+        // Aceptada o rechazada es definitivo: se anota en la factura local
+        if (["aceptado", "rechazado"].includes(c.estado) && c.estado !== f.estado) {
+          const todas = await db.getFacturas();
+          await db.setFacturas(todas.map(x => x.id === f.id ? { ...x, estado: c.estado, haciendaRes: c.respuestaHacienda } : x));
+          cargar();
+        }
+      } catch { /* sin conexión: se muestra lo guardado */ }
+      try {
+        const blob = await pdfComprobante(baseDe(f), f.haciendaId, { token });
+        if (vigente) setPdf(prev => { if (prev?.url) URL.revokeObjectURL(prev.url); return { id: f.id, blob, url: URL.createObjectURL(blob) }; });
+      } catch { /* aún sin firmar */ }
+    })();
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  const abrirPdf = (f) => {
+    if (pdf?.id === f.id) return window.open(pdf.url, "_blank", "noopener");
+    alert("El PDF todavía se está preparando. Probá de nuevo en un momento.");
+  };
+  const enviarCorreo = async () => {
+    const { f, destino } = correoModal;
+    setEnviandoCorreo(true);
+    try {
+      const token = await getToken();
+      const r = await enviarCorreoComprobante(baseDe(f), f.haciendaId, { token, destinatario: destino.trim() || undefined });
+      setServidor(prev => ({ ...prev, [f.id]: { ...prev[f.id], correo: { estado: "enviado", destino: r.destino, enviadoEn: new Date().toISOString() } } }));
+      setCorreoModal(null);
+      alert(`✅ Factura enviada a ${r.destino}`);
+    } catch (e) {
+      alert(`❌ ${e.message}`);
+    } finally {
+      setEnviandoCorreo(false);
+    }
+  };
+
   const busqL    = busq.trim().toLowerCase();
   const visibles = facturas.filter((f) => {
     if (filtroEst !== "todos" && f.estado !== filtroEst) return false;
@@ -187,6 +239,9 @@ export default function FacturasHistorialScreen() {
           <b>{sel.numero}</b><span className="text-white/60">{sel.cliente?.nombre || "Consumidor Final"}</span>
           <b className="text-monki-y">{fmtMoney(sel.total, sel.moneda)}</b>
           {sel.error && <span className="text-red-300 text-xs truncate max-w-md" title={sel.error}>{sel.error}</span>}
+          {etiquetaCorreo(servidor[sel.id]?.correo) && (
+            <span className={`text-xs ${servidor[sel.id].correo.estado === "error" ? "text-red-300" : "text-monki-y"}`}>✉ {etiquetaCorreo(servidor[sel.id].correo)}</span>
+          )}
           <div className="flex-1"/>
           <Boton variante="amarillo" tamano="sm" icono={Send} cargando={reintentando}
             disabled={!(facturaReintentable(sel) || efectosPendientes(sel)) || reintentando}
@@ -194,7 +249,9 @@ export default function FacturasHistorialScreen() {
             onClick={() => reintentar(sel)}>
             {!facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
           </Boton>
-          <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirFactura(sel, { settings, contactos, fmtMoney })}>WhatsApp</Boton>
+          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={FileDown} onClick={() => abrirPdf(sel)}>PDF</Boton>}
+          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={Mail} onClick={() => setCorreoModal({ f: sel, destino: sel.cliente?.email || sel.cliente?.correo || "" })}>Correo</Boton>}
+          <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirFactura(sel, { settings, contactos, fmtMoney, pdf: pdf?.id === sel.id ? pdf.blob : null })}>WhatsApp</Boton>
           <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={() => anular(sel)}>Anular</Boton>
           <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
@@ -260,6 +317,14 @@ export default function FacturasHistorialScreen() {
           </table>
         </div>
       </div>
+      {correoModal && (
+        <Modal titulo="Enviar por correo" subtitulo={`${correoModal.f.numero} · PDF, XML firmado y respuesta de Hacienda`} onCerrar={() => setCorreoModal(null)} ancho="max-w-md"
+          pie={<><Boton variante="fantasma" onClick={() => setCorreoModal(null)}>Cancelar</Boton><Boton icono={Send} cargando={enviandoCorreo} disabled={enviandoCorreo || !correoModal.destino.trim()} onClick={enviarCorreo}>Enviar</Boton></>}>
+          <Campo etiqueta="Correo del cliente" ayuda="Las facturas aceptadas se envían solas al correo del cliente; acá podés reenviarla o mandarla a otro correo.">
+            <Entrada type="email" value={correoModal.destino} onChange={e => setCorreoModal(m => ({ ...m, destino: e.target.value }))} placeholder="cliente@empresa.com"/>
+          </Campo>
+        </Modal>
+      )}
       {dialogo}
     </Modulo>
   );

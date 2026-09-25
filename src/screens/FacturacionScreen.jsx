@@ -699,6 +699,13 @@ export default function FacturacionScreen() {
             <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-xs bg-monki-cream text-monki-k border-2 border-black/10 font-semibold">MODO PRUEBA</span>
           )}
           <p className="text-2xl font-black text-monki-k mt-2">{fmtMoney(enviada.total, enviada.moneda)}</p>
+          {esEnviada && !enviada.modoSimulacion && (
+            <p className="text-xs text-monki-k/55 mt-2 max-w-xs mx-auto">
+              {(enviada.cliente?.email || enviada.cliente?.correo)
+                ? `✉ Cuando Hacienda la acepte, se envía sola a ${enviada.cliente.email || enviada.cliente.correo} (PDF y XML).`
+                : "✉ El cliente no tiene correo: podés enviarla desde el Historial de facturas."}
+            </p>
+          )}
         </div>
 
         {/* Datos de Hacienda */}
