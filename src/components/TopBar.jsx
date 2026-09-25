@@ -66,13 +66,15 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
   return (
     <>
       <header className="drag-region relative z-20 flex items-center justify-between h-12 px-4 bg-monki-cream/80 backdrop-blur-md border-b border-black/10 shrink-0">
-        <div className="flex items-center">
+        <div className="flex items-center shrink-0">
           <div className="hidden lg:block w-[70px]" />
+          {/* Celular: no hay menú lateral, el logo va acá */}
+          <a href="#/" className="md:hidden"><img src="/MK_Logo2.png" alt="Monki" className="w-7 h-7 object-contain" /></a>
         </div>
 
-        <h1 key={title} className="animate-desplegar text-[15px] font-extrabold text-monki-k tracking-[-0.02em] truncate max-w-[160px] sm:max-w-none">{title}<span className="text-monki-y" style={{ WebkitTextStroke: "0.5px #111" }}>.</span></h1>
+        <h1 key={title} className="animate-desplegar mx-2 min-w-0 flex-1 md:flex-none text-left md:text-center text-[15px] font-extrabold text-monki-k tracking-[-0.02em] truncate">{title}<span className="text-monki-y" style={{ WebkitTextStroke: "0.5px #111" }}>.</span></h1>
 
-        <div className="no-drag flex items-center gap-3">
+        <div className="no-drag flex items-center gap-1.5 sm:gap-3 shrink-0">
           <SelectorIdioma />
           {/* Sync dot */}
           <button
@@ -95,13 +97,13 @@ export default function TopBar({ title, syncStatus, onSync, user, onLogout, onMo
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[12px] font-semibold text-monki-k bg-white/70 hover:bg-monki-k hover:text-monki-y transition-colors duration-300"
+                className="flex items-center gap-1.5 p-1 sm:pr-2.5 rounded-full text-[12px] font-semibold text-monki-k bg-white/70 hover:bg-monki-k hover:text-monki-y transition-colors duration-300"
               >
                 <div className="w-6 h-6 bg-monki-y rounded-full flex items-center justify-center ring-2 ring-monki-k">
                   <span className="text-monki-k text-[10px] font-black">{(user.nombre||"U").charAt(0).toUpperCase()}</span>
                 </div>
-                <span className="max-w-[120px] truncate font-medium">{user.nombre || user.email}</span>
-                <ChevronDown size={10} />
+                <span className="hidden sm:inline max-w-[120px] truncate font-medium">{user.nombre || user.email}</span>
+                <ChevronDown size={10} className="hidden sm:block" />
               </button>
 
               {menuOpen && (

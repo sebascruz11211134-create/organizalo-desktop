@@ -266,6 +266,8 @@ export default function ComprasScreen() {
   const [filtroEst, setFiltroEst] = useState("todos");
   const [authToken, setAuthToken] = useState(null);
   const [selected,  setSelected]  = useState(null);
+  // Atajo "Registrar gasto" (?accion=nuevo). Va antes de cualquier return.
+  useAccionInicial({ accion: v => v === "nuevo" && nueva() });
 
   const cargar = useCallback(async () => {
     const [c, ct, pr, py] = await Promise.all([db.getCompras(), db.getContactos(), db.getProductos(), db.getProyectos()]);
@@ -364,7 +366,6 @@ export default function ComprasScreen() {
   const totIVA  = compras.filter(x=>x.estado!=="vencida").reduce((s,c)=>s+(c.montoIVA||0),0);
 
   const nueva = () => { setEditando(null); setVista("form"); };
-  useAccionInicial({ accion: v => v === "nuevo" && nueva() });
   const editar = c => { setEditando(c); setVista("form"); };
   const columnas = [
     { key: "prov", titulo: "Proveedor", render: c => <div><b className="text-monki-k">{c.proveedor || "—"}</b>{c.foto && <Camera size={12} className="inline ml-1.5 -mt-0.5 text-monki-k/45" aria-label="Con foto"/>}{c.creadoPor && <div className="text-[10px] text-monki-k/45">Por {c.creadoPor}</div>}</div> },

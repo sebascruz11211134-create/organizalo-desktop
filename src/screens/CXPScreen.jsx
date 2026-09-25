@@ -225,9 +225,9 @@ export default function CXPScreen() {
         </div>
       )}
 
-      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col">
+      <div className="ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col max-md:bg-transparent max-md:border-0 max-md:rounded-none max-md:overflow-visible">
         {/* Celular: tarjetas */}
-        <div className="md:hidden flex-1 min-h-0 overflow-auto p-2 space-y-2">
+        <div className="md:hidden space-y-2">
           {visibles.length === 0 ? (
             <Vacio icono={CreditCard} titulo="Sin cuentas por pagar" texto={debts.length ? "Probá con otra búsqueda o filtro." : "Registrá lo que le debés a tus proveedores."}
               accion={!debts.length && <Boton icono={Plus} onClick={() => setModal("nueva")}>Nueva cuenta</Boton>}/>

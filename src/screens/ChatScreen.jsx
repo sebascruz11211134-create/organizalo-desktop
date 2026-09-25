@@ -312,7 +312,7 @@ export default function ChatScreen() {
   );
 
   return (
-    <Modulo seccion="Equipo" titulo="Chat interno" descripcion="Canales por área, mensajes directos y soporte con IA las 24 horas.">
+    <Modulo altoFijo seccion="Equipo" titulo="Chat interno" descripcion="Canales por área, mensajes directos y soporte con IA las 24 horas.">
       <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-3">
         <aside className="ui-tarjeta w-full md:w-60 shrink-0 bg-white rounded-[18px] border-2 border-black/10 flex flex-col select-none overflow-hidden max-h-64 md:max-h-none">
           <div className="px-4 py-3.5 border-b-2 border-black/10">

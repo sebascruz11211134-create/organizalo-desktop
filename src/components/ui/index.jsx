@@ -13,10 +13,12 @@ const cx = (...c) => c.filter(Boolean).join(" ");
 // ── Módulo: estructura común de cada pantalla ───────────────────────────────
 // seccion: grupo del menú ("Ventas"), titulo, descripcion, acciones (botones),
 // indicadores (<Indicadores>), pestanas ({ items, activa, onCambiar }).
-export function Modulo({ seccion, titulo, descripcion, acciones, indicadores, pestanas, children, sinRelleno = false }) {
+// En el celular la pantalla entera hace scroll (encabezado + lista). `altoFijo`
+// la mantiene del alto de la ventana también en celular (chats, asistentes).
+export function Modulo({ seccion, titulo, descripcion, acciones, indicadores, pestanas, children, sinRelleno = false, altoFijo = false }) {
   const { tr } = useIdioma();
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className={cx("flex flex-col md:h-full md:min-h-0", altoFijo && "h-full min-h-0")}>
       <div className="ui-modulo-cabecera shrink-0 px-4 md:px-6 pt-5 pb-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
@@ -31,7 +33,7 @@ export function Modulo({ seccion, titulo, descripcion, acciones, indicadores, pe
         {indicadores && <div className="mt-4">{indicadores}</div>}
         {pestanas && <Pestanas {...pestanas} className="mt-4" />}
       </div>
-      <div className={cx("flex-1 min-h-0 flex flex-col", !sinRelleno && "px-4 md:px-6 pb-5")}>{children}</div>
+      <div className={cx("md:flex-1 md:min-h-0 flex flex-col", altoFijo && "flex-1 min-h-0", !sinRelleno && "px-4 md:px-6 pb-5")}>{children}</div>
     </div>
   );
 }
@@ -165,7 +167,7 @@ function TarjetasMovil({ columnas, filas, claveFila, onFila, seleccionada, vacio
   if (cargando) return <div className="py-16 text-center text-monki-k/50"><Loader2 size={20} className="animate-spin inline" /></div>;
   if (!filas.length) return vacio || <Vacio titulo="Sin resultados" />;
   return (
-    <div className="p-2 space-y-2">
+    <div className="space-y-2">
       {filas.map((f, i) => {
         const clave = claveFila(f);
         const activa = seleccionada != null && seleccionada === clave;
@@ -203,8 +205,8 @@ function TarjetasMovil({ columnas, filas, claveFila, onFila, seleccionada, vacio
 export function Tabla({ columnas, filas, claveFila = f => f.id, onFila, seleccionada, vacio, cargando, pie, className }) {
   const { tr } = useIdioma();
   return (
-    <div className={cx("ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col", className)}>
-      <div className="md:hidden flex-1 min-h-0 overflow-auto">
+    <div className={cx("ui-tarjeta flex-1 min-h-0 bg-white rounded-[18px] border-2 border-black/10 overflow-hidden flex flex-col max-md:bg-transparent max-md:border-0 max-md:rounded-none max-md:overflow-visible", className)}>
+      <div className="md:hidden">
         <TarjetasMovil columnas={columnas} filas={filas} claveFila={claveFila} onFila={onFila} seleccionada={seleccionada} vacio={vacio} cargando={cargando} />
       </div>
       <div className="hidden md:block flex-1 min-h-0 overflow-auto">

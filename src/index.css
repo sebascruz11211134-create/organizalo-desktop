@@ -175,7 +175,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   }
 
   /* 2g. TopBar — título más compacto, ocultar etiqueta sync */
-  header h1 { font-size: 11px !important; }
+  header h1 { font-size: 14px !important; }
   header .sync-label { display: none !important; }
 
   /* 2h. Botones full-width en flex stacked */

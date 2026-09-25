@@ -210,7 +210,7 @@ export default function AsistenteScreen() {
   const rolLabel = ROL_LABEL[user?.rol] || user?.rol || "";
 
   return (
-    <Modulo
+    <Modulo altoFijo
       seccion="Rocky IA"
       titulo="Asistente IA"
       descripcion={`Preguntale lo que quieras: consulta los datos reales de tu empresa${rolLabel ? ` · rol ${rolLabel}` : ""}.`}
