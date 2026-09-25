@@ -83,6 +83,7 @@ export async function login({ email, password }) {
 
 export async function clearLocalData({ conservar = false } = {}) {
   if (isElectron) {
+    if (conservar) return; // nunca borrar lo que el usuario decidió conservar
     // Electron no tiene espacios por empresa: al salir se borran TODOS los datos
     // del negocio (la app no deja salir en Electron con cambios sin subir).
     const AUTH = new Set([TOKEN_KEY, REFRESH_KEY, USER_KEY, MODULOS_KEY]);

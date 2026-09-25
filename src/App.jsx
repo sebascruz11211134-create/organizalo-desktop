@@ -327,7 +327,16 @@ export default function App() {
         if (!salir) return;
         conservarDatos = true;
       }
-    } catch { conservarDatos = true; }
+    } catch {
+      // No se pudo comprobar: en Electron salir borraría los datos, así que no se sale
+      if (window.electronAPI?.store) {
+        await confirmarApp("Cambios sin subir",
+          "Hay cambios en este equipo que todavía no se subieron al servidor. Conectate a internet y volvé a intentar cerrar sesión para no perderlos.",
+          { boton: "Entendido" });
+        return;
+      }
+      conservarDatos = true;
+    }
     disconnectSocket();   // cerrar WebSocket
     await logout({ conservarDatos });
     setUser(null);
