@@ -236,3 +236,13 @@ test('señales de dos empresas distintas: dueño ambiguo, no se migra solo', asy
   assert.ok(localStorage.getItem('@finanzia/facturas'));
   assert.equal(a.datosSinDueno(), true);
 });
+
+test('mientras hay un login a medio terminar en otra pestaña, no se guardan datos del negocio', async () => {
+  sesion('E1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  localStorage.setItem('monki:loginPendiente', 'E2');
+  await assert.rejects(a.escribir('@finanzia/facturas', [{ id: 'x' }]), /otra pestaña/);
+  localStorage.removeItem('monki:loginPendiente');
+  await a.escribir('@finanzia/facturas', [{ id: 'x' }]);
+  assert.deepEqual(a.leer('@finanzia/facturas'), [{ id: 'x' }]);
+});

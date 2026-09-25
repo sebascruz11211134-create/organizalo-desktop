@@ -444,6 +444,8 @@ export async function escribirVarias(datos) {
   if (pares.some(([k]) => esDatoDelNegocio(k))) {
     if (bloqueo) throw new Error(MSJ_BLOQUEO);
     // Otra pestaña cambió la sesión (entró otra cuenta o se cerró): no escribir con la vieja
+    // Login a medio terminar en alguna pestaña: las credenciales pueden ser de otra empresa
+    if (localStorage.getItem(MARCA_PENDIENTE)) throw new Error("Se está iniciando sesión en otra pestaña. Recargá la página.");
     if (sesionCerrada() || (espacioAbierto && localStorage.getItem(MARCA_SESION) !== sesionLigada)) {
       throw new Error("La sesión cambió en otra pestaña. Recargá la página.");
     }

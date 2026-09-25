@@ -19,8 +19,10 @@ async function perform() {
   // Marca de sesión: si cambia (login/logout en esta u otra pestaña) no se sube ni se guarda nada
   let sesion=localStorage.getItem('monki:sesion');
   if(sesion?.startsWith('cerrada')) return {ok:true,skipped:true};
+  // Login a medio terminar (en esta u otra pestaña): no sincronizar con credenciales dudosas
+  if(localStorage.getItem('monki:loginPendiente')) return {ok:true,skipped:true};
   if(!sesion){ sesion=`${Date.now()}-migrada`; localStorage.setItem('monki:sesion',sesion); }
-  const misma=()=>!detenido && localStorage.getItem('monki:sesion')===sesion;
+  const misma=()=>!detenido && !localStorage.getItem('monki:loginPendiente') && localStorage.getItem('monki:sesion')===sesion;
   const token=await getToken(), user=await getUser();
   if(!token || !user) return {ok:true,skipped:true};
   const bucket=user.empresaId || user.empresa_id || user.id;
