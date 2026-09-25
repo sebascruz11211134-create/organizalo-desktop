@@ -6,7 +6,7 @@
  */
 import axios from "axios";
 import { BACKEND } from "./config";
-import { abrirEspacio, borrarEspacio, cerrarEspacio, borrarDatosDelNegocio } from "./almacen";
+import { abrirEspacio, borrarEspacio, cerrarEspacio } from "./almacen";
 const isElectron = !!window.electronAPI?.store;
 
 const TOKEN_KEY   = "@finanzia/authToken";
@@ -44,11 +44,11 @@ export async function register({ nombre, email, password, telefono, codigoAcceso
     { timeout: 20000 }
   );
   // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
+  nuevaSesion(); // antes de abrir el espacio: queda ligado a esta sesión
   if (!isElectron) await abrirEspacio(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
-  nuevaSesion();
   window.__orgReanudarSync?.();
   return res.data;
 }
@@ -63,11 +63,11 @@ export async function login({ email, password }) {
   );
   // Datos de otra empresa en este equipo: se borran antes de abrir la sesión
   // Cada empresa tiene su propio espacio: se abre el de esta cuenta (el anterior queda intacto)
+  nuevaSesion(); // antes de abrir el espacio: queda ligado a esta sesión
   if (!isElectron) await abrirEspacio(res.data.user);
   await storeSet(TOKEN_KEY, res.data.token);
   await storeSet(REFRESH_KEY, res.data.refreshToken || null);
   await storeSet(USER_KEY, res.data.user);
-  nuevaSesion();
   window.__orgReanudarSync?.();
   return res.data;
 }
@@ -78,7 +78,6 @@ export async function login({ email, password }) {
 // eligió salir igual) se CONSERVA cerrado para no perderlos: se suben la
 // próxima vez que esa empresa entre en este equipo.
 
-const AUTH_KEYS = new Set([TOKEN_KEY, REFRESH_KEY, USER_KEY, MODULOS_KEY]);
 
 export async function clearLocalData({ conservar = false } = {}) {
   if (isElectron) {
@@ -100,8 +99,7 @@ export async function clearLocalData({ conservar = false } = {}) {
     DATA_KEYS.forEach(k => window.electronAPI?.store?.delete?.(k));
   } else {
     if (conservar) return cerrarEspacio();
-    await borrarDatosDelNegocio(AUTH_KEYS); // IndexedDB y lo que haya en localStorage
-    await borrarEspacio();
+    await borrarEspacio(); // la base completa de esta empresa (o sus datos en localStorage)
   }
 }
 
@@ -122,6 +120,9 @@ export async function logout({ conservarDatos = false } = {}) {
   // Frenar la sincronización (y esperar la que esté en curso) antes de borrar,
   // para que no vuelva a escribir datos de esta sesión después del borrado.
   await window.__orgDetenerSync?.();
+  // Con las escrituras ya congeladas (sesión marcada como cerrada), revisar otra vez:
+  // si otra pestaña guardó algo después de la primera revisión, no se borra.
+  if (!conservarDatos && !isElectron && (await window.__orgCambiosSinSubir?.())) conservarDatos = true;
   // Limpiar datos de la empresa ANTES de borrar el token
   await clearLocalData({ conservar: conservarDatos });
   await storeSet(TOKEN_KEY, null);

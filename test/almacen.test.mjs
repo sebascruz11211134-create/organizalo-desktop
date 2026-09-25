@@ -55,18 +55,33 @@ test('si el espacio ya existe y no abre, el almacén se bloquea: nada de trabaja
   assert.deepEqual(c.leer('@finanzia/facturas'), [{ id: 'f1' }]);
 });
 
-test('espacio nuevo sin IndexedDB disponible: usa localStorage y después se migra', async () => {
+test('IndexedDB presente pero no abre (aunque sea un espacio nuevo): se bloquea, nunca cae a localStorage', async () => {
   sesion('E1');
-  const real = globalThis.indexedDB;
+  ls('@finanzia/contactos', [{ id: 'c1' }]);                       // datos de la versión anterior
   globalThis.indexedDB = { open() { throw new Error('no disponible'); }, deleteDatabase() { return {}; } };
   const a = await nuevaInstancia(); await a.iniciarAlmacen();
-  assert.equal(a.almacenBloqueado(), null);
-  await a.escribir('@finanzia/contactos', [{ id: 'c1' }]);
-  assert.ok(localStorage.getItem('@finanzia/contactos'));
-  globalThis.indexedDB = real;
-  const b = await nuevaInstancia(); await b.iniciarAlmacen();
-  assert.deepEqual(b.leer('@finanzia/contactos'), [{ id: 'c1' }]);
-  assert.equal(localStorage.getItem('@finanzia/contactos'), null);
+  assert.ok(a.almacenBloqueado());
+  assert.ok(localStorage.getItem('@finanzia/contactos'));          // no se tocó nada
+});
+
+test('navegador sin IndexedDB: usa localStorage y otra empresa no borra los datos, pide cerrar la cuenta', async () => {
+  delete globalThis.indexedDB;
+  sesion('E1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  await a.escribir('@finanzia/facturas', [{ id: 'f1' }]);
+  assert.ok(localStorage.getItem('@finanzia/facturas'));
+  await assert.rejects(a.abrirEspacio('E2'), /otra empresa/);
+  assert.ok(localStorage.getItem('@finanzia/facturas'));           // intactas
+});
+
+test('si otra pestaña cambia la sesión, las escrituras de la sesión vieja se rechazan', async () => {
+  sesion('E1');
+  localStorage.setItem('monki:sesion', 'S1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  await a.escribir('@finanzia/facturas', [{ id: 'f1' }]);
+  localStorage.setItem('monki:sesion', 'S2');                      // otra pestaña: login/logout
+  await assert.rejects(a.escribir('@finanzia/facturas', []), /sesión cambió/);
+  assert.deepEqual(a.leer('@finanzia/facturas'), [{ id: 'f1' }]);
 });
 
 test('datos en localStorage de OTRA empresa van a su espacio, no al de quien entra', async () => {
@@ -124,20 +139,4 @@ test('cerrar sesión con todo subido elimina el espacio; con cambios pendientes 
   await a.borrarEspacio();                             // salir con todo sincronizado
   await a.abrirEspacio('E1');
   assert.equal(a.leer('@finanzia/facturas'), null);
-});
-
-test('la base única de la versión anterior pasa al espacio de su dueño', async () => {
-  // Simula la versión anterior: base "monki" sin espacios
-  const vieja = await new Promise((res, rej) => {
-    const p = indexedDB.open('monki', 1);
-    p.onupgradeneeded = () => p.result.createObjectStore('datos');
-    p.onsuccess = () => res(p.result); p.onerror = () => rej(p.error);
-  });
-  await new Promise(res => { const tx = vieja.transaction('datos', 'readwrite'); tx.objectStore('datos').put([{ id: 'x' }], '@finanzia/pedidos'); tx.oncomplete = res; });
-  vieja.close();
-  sesion('E1');
-  const a = await nuevaInstancia(); await a.iniciarAlmacen();
-  assert.deepEqual(a.leer('@finanzia/pedidos'), [{ id: 'x' }]);
-  const existe = await new Promise(res => { let nueva = false; const p = indexedDB.open('monki'); p.onupgradeneeded = () => { nueva = true; }; p.onsuccess = () => { p.result.close(); res(!nueva); }; });
-  assert.equal(existe, false); // la base vieja se eliminó
 });

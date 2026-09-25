@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, ShoppingCart, Check, X, FileSpreadsheet, Send, FileText, PackageCheck, Ban } from "lucide-react";
 import { Modulo, Boton, BotonIcono, BarraFiltros, Tabla, Vacio, Estado, Indicadores, Indicador, Modal, Campo, Entrada, Seleccion, AreaTexto, useConfirmar } from "../components/ui";
 import db from "../utils/db";
-import { leer, escribir, escribirVarias } from "../utils/almacen";
+import { leer, escribir, escribirVarias, leerDeDisco, conCandadoEntrePestanas } from "../utils/almacen";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate, hoy, genId } from "../utils/fmt";
 import { exportExcel } from "../utils/reportHelpers";
@@ -151,43 +151,47 @@ export default function OrdenesCompraScreen() {
   async function recibirOC(oc) {
     if (oc.estado === "recibida" || recibiendo.current) return alert("Esta OC ya fue recibida o se está recibiendo.");
     if (!(await confirmar("Recibir orden", `¿Marcar la OC ${oc.numero} como recibida? Se creará una factura de proveedor en Compras y se sumará el inventario.`, { boton: "Recibir" }))) return;
-    // Revalidar con lo guardado (otra pestaña o un doble clic pudo recibirla ya)
-    const actual = (leer("@finanzia/ordenesCompra") || []).find(o => o.id === oc.id);
-    if (!actual || actual.estado === "recibida" || recibiendo.current) return alert("Esta OC ya fue recibida.");
+    if (recibiendo.current) return;
     recibiendo.current = true;
     try {
-    // Crear entrada en ComprasScreen
-    const compras = await db.getCompras();
-    const nueva = {
-      id: genId(), numero: `COMP-${String(compras.length+1).padStart(5,"0")}`,
-      proveedor: oc.proveedor, cedulaProveedor: oc.cedulaProveedor||"",
-      fecha: hoy(), subtotal: oc.subtotal||0, iva: oc.iva||0,
-      ivaCreditoFiscal: oc.iva||0, total: oc.total||0,
-      moneda: oc.moneda||"CRC", medioPago: "Crédito proveedor",
-      lineas: oc.lineas||[], ocRef: oc.numero,
-      notas: `Generado desde OC ${oc.numero}`, creadoEn: new Date().toISOString(),
-    };
-    // Aumentar inventario
-    const prod = await db.getProductos();
-    const updProd = prod.map(p => {
-      const linea = (oc.lineas||[]).find(l => (l.producto||"").toLowerCase().includes((p.nombre||"").toLowerCase().slice(0,5)));
-      if (linea) return { ...p, stock: (parseFloat(p.stock)||0) + parseFloat(linea.cantidad||0) };
-      return p;
-    });
-    // Compra + inventario + estado de la OC en UNA sola escritura: o se guarda todo o nada
-    const updOcs = (leer("@finanzia/ordenesCompra") || []).map(o => o.id === oc.id ? { ...o, estado: "recibida" } : o);
-    try {
-      if (window.electronAPI?.store) {
-        await db.setCompras([...compras, nueva]);
-        await db.setProductos(updProd);
-        await escribir("@finanzia/ordenesCompra", updOcs);
-      } else {
-        await escribirVarias({ "@finanzia/compras": [...compras, nueva], "@finanzia/productos": updProd, "@finanzia/ordenesCompra": updOcs });
-      }
-    } catch (e) { return alert(e.message); }
-    if (typeof window.__orgPush === "function") window.__orgPush();
-    setOcs(updOcs);
-    alert(`✓ OC recibida. Compra ${nueva.numero} creada e inventario actualizado.`);
+      // Candado entre pestañas + lectura del disco: dos pestañas no pueden recibir la misma OC
+      await conCandadoEntrePestanas("recibir-oc", async () => {
+        const ocsDisco = await leerDeDisco("@finanzia/ordenesCompra", []);
+        const actual = ocsDisco.find(o => o.id === oc.id);
+        if (!actual || actual.estado === "recibida") { setOcs(ocsDisco); return alert("Esta OC ya fue recibida."); }
+        const electron = !!window.electronAPI?.store;
+        const compras = electron ? await db.getCompras() : await leerDeDisco("@finanzia/compras", []);
+        const prod    = electron ? await db.getProductos() : await leerDeDisco("@finanzia/productos", []);
+        const nueva = {
+          id: genId(), numero: `COMP-${String(compras.length+1).padStart(5,"0")}`,
+          proveedor: oc.proveedor, cedulaProveedor: oc.cedulaProveedor||"",
+          fecha: hoy(), subtotal: oc.subtotal||0, iva: oc.iva||0,
+          ivaCreditoFiscal: oc.iva||0, total: oc.total||0,
+          moneda: oc.moneda||"CRC", medioPago: "Crédito proveedor",
+          lineas: oc.lineas||[], ocRef: oc.numero,
+          notas: `Generado desde OC ${oc.numero}`, creadoEn: new Date().toISOString(),
+        };
+        // Aumentar inventario
+        const updProd = prod.map(p => {
+          const linea = (oc.lineas||[]).find(l => (l.producto||"").toLowerCase().includes((p.nombre||"").toLowerCase().slice(0,5)));
+          if (linea) return { ...p, stock: (parseFloat(p.stock)||0) + parseFloat(linea.cantidad||0) };
+          return p;
+        });
+        const updOcs = ocsDisco.map(o => o.id === oc.id ? { ...o, estado: "recibida" } : o);
+        // Compra + inventario + estado de la OC en UNA sola escritura: o se guarda todo o nada
+        try {
+          if (electron) {
+            await db.setCompras([...compras, nueva]);
+            await db.setProductos(updProd);
+            await escribir("@finanzia/ordenesCompra", updOcs);
+          } else {
+            await escribirVarias({ "@finanzia/compras": [...compras, nueva], "@finanzia/productos": updProd, "@finanzia/ordenesCompra": updOcs });
+          }
+        } catch (e) { return alert(e.message); }
+        if (typeof window.__orgPush === "function") window.__orgPush();
+        setOcs(updOcs);
+        alert(`✓ OC recibida. Compra ${nueva.numero} creada e inventario actualizado.`);
+      });
     } finally { recibiendo.current = false; }
   }
 

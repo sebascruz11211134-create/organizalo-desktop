@@ -13,13 +13,14 @@
  *  • Lo que había en localStorage (versión anterior) se mueve al espacio de su
  *    empresa, con un candado para que dos pestañas no lo hagan a la vez, y solo
  *    se borra de localStorage después de confirmar que quedó en IndexedDB.
- *  • Si el espacio de una empresa YA existe pero IndexedDB no abre, el almacén
- *    queda BLOQUEADO (la app pide reintentar): nunca se trabaja sobre una copia
- *    vacía ni se escriben datos en otro lado que después haya que combinar.
+ *  • Si el navegador tiene IndexedDB pero no abre, el almacén queda BLOQUEADO
+ *    (la app pide reintentar): nunca se trabaja sobre una copia vacía ni se
+ *    escriben datos en otro lado que después haya que combinar.
+ *  • Cada espacio queda ligado a la sesión con que se abrió: si en otra pestaña
+ *    entra o sale una cuenta, las escrituras de la sesión vieja se rechazan.
  *  • Solo en navegadores sin IndexedDB se usa localStorage, como antes.
  */
 
-const BASE_VIEJA = "monki";                  // versión anterior: una sola base para todo
 const nombreBase = cubeta => `monki-${cubeta}`;
 const TABLA = "datos";
 const PREFIJO = "@finanzia/";
@@ -31,7 +32,8 @@ const EN_LOCALSTORAGE = new Set([
 ]);
 // Marcas internas (sin el prefijo del negocio: nunca se sincronizan)
 const MARCA_DUENO = "monki:duenoDatos";   // empresa dueña de los datos que haya en localStorage
-const REGISTRO    = "monki:espacios";     // { empresa: última vez abierto } — espacios que existen
+const REGISTRO    = "monki:espacios";     // { empresa: última vez abierto } — solo informativo
+const MARCA_SESION = "monki:sesion";      // cambia en cada login/logout (compartida entre pestañas)
 
 export const esDatoDelNegocio = k => typeof k === "string" && k.startsWith(PREFIJO) && !EN_LOCALSTORAGE.has(k);
 
@@ -43,6 +45,7 @@ let espacioAbierto = null;   // empresa cuyo espacio está abierto
 let bloqueo = null;          // Error si el espacio existe pero no se pudo abrir
 let iniciado = null;         // promesa de iniciarAlmacen()
 let canal = null;            // aviso entre pestañas del mismo espacio
+let sesionLigada = null;     // marca de sesión con la que se abrió el espacio
 const hayIndexedDB = () => typeof indexedDB !== "undefined";
 
 const copia = v => (v === null || v === undefined || typeof v !== "object") ? v
@@ -136,20 +139,6 @@ async function agregarFaltantes(cubeta, pares, conexionAbierta) {
   registrar(cubeta);
 }
 
-// Versión con una sola base "monki": se pasa al espacio de su dueño y se elimina
-async function migrarBaseVieja(cubetaActual, conexionActual) {
-  let nueva = false;
-  const vieja = await abrir(BASE_VIEJA, () => { nueva = true; });
-  let pares = [];
-  try { if (!nueva) pares = (await leerTodoIdb(vieja)).filter(([k]) => esDatoDelNegocio(k)); }
-  finally { vieja.close(); }
-  if (pares.length) {
-    const dueno = localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(pares.map(([k]) => k)) || cubetaActual;
-    await agregarFaltantes(dueno, pares, dueno === cubetaActual ? conexionActual : null);
-  }
-  await borrarBase(BASE_VIEJA);
-}
-
 // Datos del negocio que quedaron en localStorage: al espacio de su dueño
 async function migrarLocalStorage(cubetaActual, conexionActual) {
   const claves = [];
@@ -178,6 +167,10 @@ async function migrarLocalStorage(cubetaActual, conexionActual) {
 /** Arranque: abre el espacio de la sesión guardada (si hay). */
 export function iniciarAlmacen() {
   if (iniciado) return iniciado;
+  // Sesión abierta de la versión anterior (sin marca): se le crea una
+  if (cubetaDeSesion() && !localStorage.getItem(MARCA_SESION)) {
+    localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  }
   iniciado = abrirEspacio(cubetaDeSesion()).catch(() => {});
   return iniciado;
 }
@@ -198,17 +191,15 @@ async function abrirEspacioAhora(userOCubeta) {
   const cubeta = typeof userOCubeta === "string" ? userOCubeta : cubetaDe(userOCubeta);
   if (!cubeta) return;
   if (!hayIndexedDB()) return usarLocalStorage(cubeta);
-  if (idb && espacioAbierto === cubeta) return;
+  if (idb && espacioAbierto === cubeta) { sesionLigada = localStorage.getItem(MARCA_SESION); return; }
   cerrarEspacio();
   bloqueo = null;
 
-  const yaExistia = !!leerRegistro()[cubeta];
   let conexion;
   const datos = new Map();
   try {
     conexion = await abrir(nombreBase(cubeta));
     await conCandado("monki-migracion", async () => {
-      await migrarBaseVieja(cubeta, conexion);
       await migrarLocalStorage(cubeta, conexion);
       for (const [k, v] of await leerTodoIdb(conexion)) {
         if (esDatoDelNegocio(k)) { datos.set(k, v); continue; }
@@ -220,19 +211,17 @@ async function abrirEspacioAhora(userOCubeta) {
   } catch (e) {
     try { conexion?.close(); } catch { /* ignorar */ }
     console.warn("[almacen] No se pudo abrir el espacio:", e?.message || e);
-    if (yaExistia) {
-      // Sus datos están en IndexedDB: trabajar sin ellos sería trabajar sobre una copia vacía
-      bloqueo = e instanceof Error ? e : new Error(String(e));
-      avisarError(MSJ_BLOQUEO, e);
-      throw new Error(MSJ_BLOQUEO);
-    }
-    return usarLocalStorage(cubeta); // espacio nuevo: todo lo de esta empresa sigue en localStorage
+    // Nunca caer a otro almacenamiento: podría ser una copia vacía de datos que sí existen
+    bloqueo = e instanceof Error ? e : new Error(String(e));
+    avisarError(MSJ_BLOQUEO, e);
+    throw new Error(MSJ_BLOQUEO);
   }
 
   // Recién ahora la app pasa a usar este espacio
   for (const [k, v] of datos) cache.set(k, v);
   idb = conexion;
   espacioAbierto = cubeta;
+  sesionLigada = localStorage.getItem(MARCA_SESION);
   registrar(cubeta);
 
   // Extras: si fallan no afectan los datos
@@ -246,27 +235,29 @@ async function abrirEspacioAhora(userOCubeta) {
   } catch { canal = null; }
 }
 
-// Sin IndexedDB: todo en localStorage (5 MB). Otra empresa en el mismo equipo
-// no puede tener espacio propio aquí, así que se borran los datos de la anterior.
+// Sin IndexedDB (navegadores muy viejos): todo en localStorage, sin espacios
+// separados. Si hay datos de OTRA empresa no se borran: se pide cerrar esa
+// cuenta primero (así se suben sus cambios pendientes).
 function usarLocalStorage(cubeta) {
-  const dueno = localStorage.getItem(MARCA_DUENO);
-  if (dueno && dueno !== cubeta) {
-    const aBorrar = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (esDatoDelNegocio(k)) aBorrar.push(k);
-    }
-    aBorrar.forEach(k => localStorage.removeItem(k));
+  const claves = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (esDatoDelNegocio(k)) claves.push(k);
+  }
+  const dueno = localStorage.getItem(MARCA_DUENO) || cubetaDeClaves(claves);
+  if (claves.length && dueno && dueno !== cubeta) {
+    throw new Error("Este navegador tiene datos de otra empresa. Entrá con esa cuenta y cerrá sesión antes de usar otra.");
   }
   localStorage.setItem(MARCA_DUENO, cubeta);
   espacioAbierto = cubeta;
+  sesionLigada = localStorage.getItem(MARCA_SESION);
 }
 
 /** Cierra el espacio abierto sin borrar nada (al cerrar sesión o cambiar de cuenta). */
 export function cerrarEspacio() {
   try { canal?.close(); } catch { /* ignorar */ }
   try { idb?.close(); } catch { /* ignorar */ }
-  canal = null; idb = null; espacioAbierto = null;
+  canal = null; idb = null; espacioAbierto = null; sesionLigada = null;
   cache.clear();
   generacion.clear();
 }
@@ -276,6 +267,16 @@ export async function borrarEspacio(cubeta = espacioAbierto) {
   if (!cubeta) return;
   if (cubeta === espacioAbierto) cerrarEspacio();
   if (hayIndexedDB()) await borrarBase(nombreBase(cubeta));
+  else {
+    // Sin IndexedDB: los datos están en localStorage
+    const aBorrar = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (esDatoDelNegocio(k)) aBorrar.push(k);
+    }
+    aBorrar.forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem(MARCA_DUENO);
+  }
   registrar(cubeta, false);
 }
 
@@ -339,7 +340,13 @@ export function claves() {
 /** Guarda muchas claves en una sola transacción (null = borrar la clave). */
 export async function escribirVarias(datos) {
   const pares = Object.entries(datos || {});
-  if (bloqueo && pares.some(([k]) => esDatoDelNegocio(k))) throw new Error(MSJ_BLOQUEO);
+  if (pares.some(([k]) => esDatoDelNegocio(k))) {
+    if (bloqueo) throw new Error(MSJ_BLOQUEO);
+    // Otra pestaña cambió la sesión (entró otra cuenta o se cerró): no escribir con la vieja
+    if (espacioAbierto && localStorage.getItem(MARCA_SESION) !== sesionLigada) {
+      throw new Error("La sesión cambió en otra pestaña. Recargá la página.");
+    }
+  }
   for (const [k, v] of pares.filter(([k]) => !usaIdb(k))) escribirLocal(k, v);
   const enIdb = pares.filter(([k]) => usaIdb(k));
   if (!enIdb.length) return;
@@ -364,6 +371,18 @@ export async function escribirVarias(datos) {
     throw new Error("No se pudo guardar en este dispositivo (¿poco espacio disponible?). " + (e?.message || ""));
   }
 }
+
+/** Lee una clave directo de IndexedDB (lo último confirmado, aunque venga de otra pestaña). */
+export async function leerDeDisco(clave, porDefecto = null) {
+  if (!usaIdb(clave)) return leer(clave, porDefecto);
+  const v = await transaccion(idb, "readonly", (tabla, listo) => {
+    const p = tabla.get(clave); p.onsuccess = () => listo(p.result);
+  });
+  return v === undefined ? porDefecto : copia(v);
+}
+
+/** Ejecuta fn con un candado compartido entre pestañas (operaciones que no pueden correr dos veces). */
+export const conCandadoEntrePestanas = (nombre, fn) => conCandado(`monki-${nombre}`, fn);
 
 /** Borra todos los datos del negocio del espacio abierto, excepto las claves indicadas. */
 export async function borrarDatosDelNegocio(conservar = new Set()) {

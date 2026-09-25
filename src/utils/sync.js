@@ -82,6 +82,7 @@ export async function detenerSync() {
 }
 export function reanudarSync() { detenido=false; }
 window.__orgDetenerSync=detenerSync;
+window.__orgCambiosSinSubir=cambiosSinSubir;
 window.__orgReanudarSync=reanudarSync;
 export function schedulePush() { clearTimeout(timer); timer=setTimeout(()=>syncAll(),1200); }
 window.__orgPush=schedulePush;

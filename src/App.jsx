@@ -208,6 +208,13 @@ export default function App() {
   const [syncStatus,         setSyncStatus]         = useState("idle");
   // Si algo no se pudo guardar en el dispositivo (p. ej. sin espacio), avisar en vez de callar
   const [errorAlmacen,       setErrorAlmacen]       = useState(false);
+  // Si en otra pestaña entra otra cuenta o se cierra la sesión, esta pestaña
+  // se recarga: nunca sigue mostrando ni guardando datos de la sesión anterior.
+  useEffect(() => {
+    const alCambiar = (e) => { if (e.key === "monki:sesion" && e.oldValue !== e.newValue) window.location.reload(); };
+    window.addEventListener("storage", alCambiar);
+    return () => window.removeEventListener("storage", alCambiar);
+  }, []);
   useEffect(() => {
     const avisar = (e) => setErrorAlmacen(e?.detail?.mensaje || "No se pudo guardar un cambio en este dispositivo (¿poco espacio?). Liberá espacio o sincronizá antes de seguir.");
     window.addEventListener("monki:almacen-error", avisar);
