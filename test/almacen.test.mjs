@@ -190,14 +190,40 @@ test('lo que no se puede copiar ni unir no se borra del origen', async () => {
   assert.ok(localStorage.getItem('@finanzia/settings'));             // la copia distinta queda intacta
 });
 
-test('login cortado a la mitad no convierte a la cuenta nueva en dueña de datos ajenos', async () => {
+test('login cortado a la mitad: se descartan las credenciales y los datos quedan intactos', async () => {
   ls('@finanzia/facturas', [{ id: 'deE1' }]);                      // datos sin dueño
   sesion('E2');                                                     // credenciales de E2 guardadas...
+  ls('@finanzia/authToken', 'tokE2');
   localStorage.setItem('monki:loginPendiente', 'E2');               // ...pero el login no terminó
   const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  assert.equal(localStorage.getItem('@finanzia/authUser'), null);   // hay que entrar de nuevo
+  assert.equal(localStorage.getItem('@finanzia/authToken'), null);
+  assert.equal(a.espacioActual(), null);
+  assert.ok(localStorage.getItem('@finanzia/facturas'));            // nada se tocó
+});
+
+test('un valor vacío de la versión anterior no borra datos que el espacio sí tiene', async () => {
+  sesion('E1');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  await a.escribir('@finanzia/pedidos', [{ id: 'p1' }]);
+  a.cerrarEspacio();
+  ls('@finanzia/pedidos', 'null');
+  ls('@finanzia/syncBaseline:E1', {});
+  const b = await nuevaInstancia(); await b.iniciarAlmacen();
+  assert.deepEqual(b.leer('@finanzia/pedidos'), [{ id: 'p1' }]);
+  assert.equal(localStorage.getItem('@finanzia/pedidos'), 'null');  // se deja para decidir
+});
+
+test('sin IndexedDB, al reiniciar con datos de otra empresa la app queda bloqueada (no lee datos ajenos)', async () => {
+  delete globalThis.indexedDB;
+  ls('@finanzia/facturas', [{ id: 'deE1' }]);
+  ls('@finanzia/syncBaseline:E1', {});
+  sesion('E2');
+  const a = await nuevaInstancia(); await a.iniciarAlmacen();
+  assert.ok(a.almacenBloqueado());
   assert.equal(a.leer('@finanzia/facturas'), null);
+  await assert.rejects(a.escribir('@finanzia/facturas', []));
   assert.ok(localStorage.getItem('@finanzia/facturas'));
-  assert.equal(a.datosSinDueno(), true);                            // se preguntará
 });
 
 test('señales de dos empresas distintas: dueño ambiguo, no se migra solo', async () => {

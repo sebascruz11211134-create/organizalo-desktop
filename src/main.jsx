@@ -24,8 +24,18 @@ function AlmacenNoDisponible() {
             ? "Your data is safe on this device, but the browser couldn't open it right now. Close other Monki tabs and try again. If you're in a private window, use a normal one."
             : "Tus datos están a salvo en este equipo, pero el navegador no pudo abrirlos ahora. Cerrá otras pestañas de Monki y reintentá. Si estás en una ventana privada, usá una normal."}
         </p>
+        {almacenBloqueado()?.message?.includes("otra empresa") && (
+          <p style={{ fontSize: 13, marginTop: 10, fontWeight: 700 }}>{almacenBloqueado().message}</p>
+        )}
         <button onClick={() => location.reload()} style={{ marginTop: 16, background: "#111", color: "#FFD600", border: 0, borderRadius: 999, padding: "10px 22px", fontWeight: 800, cursor: "pointer" }}>
           {ingles ? "Try again" : "Reintentar"}
+        </button>
+        {/* Salir de la cuenta sin tocar los datos del negocio guardados en el equipo */}
+        <button onClick={() => {
+          ["@finanzia/authToken", "@finanzia/refreshToken", "@finanzia/authUser", "@finanzia/modulosHabilitados"].forEach(k => localStorage.removeItem(k));
+          location.reload();
+        }} style={{ display: "block", margin: "10px auto 0", background: "transparent", color: "#111", border: 0, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}>
+          {ingles ? "Sign out of this account" : "Salir de esta cuenta"}
         </button>
       </div>
     </div>

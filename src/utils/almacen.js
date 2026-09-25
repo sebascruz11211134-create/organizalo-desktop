@@ -160,6 +160,11 @@ async function copiarAEspacio(cubeta, pares, conexionAbierta, { unir = false } =
     const actuales = new Map(await leerTodoIdb(conexion));
     const escribirPares = [];
     for (const [k, v] of pares) {
+      if (v === null) {
+        // Valor vacío (borrado) de la versión anterior: seguro solo si el espacio tampoco lo tiene
+        if (!actuales.has(k)) aSalvo.add(k);
+        continue;
+      }
       if (!actuales.has(k)) { escribirPares.push([k, v]); aSalvo.add(k); continue; }
       if (estable(actuales.get(k)) === estable(v)) { aSalvo.add(k); continue; }
       const unido = unir ? fusionarPorId(actuales.get(k), v) : undefined;
@@ -198,17 +203,20 @@ async function migrarLocalStorage(cubetaActual, conexionActual, { duenoSeguro = 
     : senal || (duenoSeguro ? cubetaActual : null);
   if (!dueno) return; // no se sabe de quién son: quedan intactos hasta que alguien lo confirme
   const pares = [];
+  const crudos = new Map();
   for (const k of claves) {
     const crudo = localStorage.getItem(k);
     if (crudo === null) continue;                          // otra pestaña ya la movió
     let valor;
     try { valor = JSON.parse(crudo); } catch { continue; } // no es JSON: se deja donde está
     pares.push([k, valor]);
+    crudos.set(k, crudo);
   }
-  const vacios = pares.filter(([, v]) => v === null).map(([k]) => k);
-  const aSalvo = await copiarAEspacio(dueno, pares.filter(([, v]) => v !== null),
+  const aSalvo = await copiarAEspacio(dueno, pares,
     dueno === cubetaActual ? conexionActual : null, { unir: forzar });
-  [...aSalvo, ...vacios].forEach(k => localStorage.removeItem(k)); // solo lo confirmado
+  // Solo se borra lo confirmado y si nadie lo cambió mientras tanto (p. ej. una
+  // pestaña con la versión anterior que no respeta el candado)
+  for (const k of aSalvo) if (localStorage.getItem(k) === crudos.get(k)) localStorage.removeItem(k);
   if (!clavesDelNegocioEnLocal().length) localStorage.removeItem(MARCA_DUENO);
 }
 
@@ -233,15 +241,21 @@ export function iniciarAlmacen() {
     localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
     localStorage.setItem(MARCA_CONFIRMADA, cubeta);
   }
-  // Login que se cortó a la mitad (credenciales guardadas, sesión sin publicar):
-  // se completa la sesión, pero nunca se la trata como dueña segura de datos viejos
-  if (cubeta && localStorage.getItem(MARCA_PENDIENTE) && (sesionCerrada() || !localStorage.getItem(MARCA_SESION))) {
-    localStorage.setItem(MARCA_SESION, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  // Login que se cortó a la mitad: las credenciales pueden estar mezcladas (token
+  // de una cuenta, usuario de otra). Se descartan y se pide entrar de nuevo.
+  if (localStorage.getItem(MARCA_PENDIENTE)) {
+    ["@finanzia/authToken", "@finanzia/refreshToken", "@finanzia/authUser", "@finanzia/modulosHabilitados"]
+      .forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem(MARCA_PENDIENTE);
+    iniciado = Promise.resolve();
+    return iniciado;
   }
   // Mientras otra pestaña cierra la sesión no se abre nada
   if (sesionCerrada()) { iniciado = Promise.resolve(); return iniciado; }
-  const duenoSeguro = !!cubeta && localStorage.getItem(MARCA_CONFIRMADA) === cubeta && !localStorage.getItem(MARCA_PENDIENTE);
-  iniciado = abrirEspacio(cubeta, { duenoSeguro }).catch(() => {});
+  const duenoSeguro = !!cubeta && localStorage.getItem(MARCA_CONFIRMADA) === cubeta;
+  // Un error acá (p. ej. navegador sin IndexedDB con datos de otra empresa) bloquea
+  // la app en vez de abrirla leyendo datos ajenos
+  iniciado = abrirEspacio(cubeta, { duenoSeguro }).catch(e => { bloqueo = bloqueo || (e instanceof Error ? e : new Error(String(e))); });
   return iniciado;
 }
 
