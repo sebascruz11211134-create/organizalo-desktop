@@ -2,16 +2,33 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode, Bell, Users, Plus, Copy, Eye, EyeOff, UserX, RefreshCcw } from "lucide-react";
 import db from "../utils/db";
 import { pushSync, pullSync } from "../utils/sync";
-import { getToken, getUser } from "../utils/auth";
+import { getToken, getUser, getCurrentUserSync } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
 import { Modulo, useConfirmar } from "../components/ui";
 import { espacio } from "../utils/almacen";
+import { estadoRespaldos, descargarExcel, descargarJson } from "../utils/misDatos";
 
 export default function ConfiguracionScreen() {
   const { confirmar, dialogo } = useConfirmar();
   const [almacen, setAlmacen] = useState(null);
   useEffect(() => { espacio().then(setAlmacen); }, []);
+
+  // ── Respaldos y "Descargar mis datos" (administración) ─────────────────────
+  const [respaldos, setRespaldos] = useState(null);
+  const [descargando, setDescargando] = useState("");
+  const puedeRespaldos = ["admin", "superadmin", "gerencia"].includes(getCurrentUserSync()?.rol);
+  useEffect(() => {
+    if (!puedeRespaldos) return;
+    getToken().then(t => estadoRespaldos(t)).then(setRespaldos).catch(() => setRespaldos({ error: true }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const descargar = async (tipo) => {
+    setDescargando(tipo);
+    try { const t = await getToken(); await (tipo === "excel" ? descargarExcel(t) : descargarJson(t)); }
+    catch (e) { alert(`No se pudo descargar: ${e.message}`); }
+    finally { setDescargando(""); }
+  };
   const [s,       setS]       = useState({ nombreNegocio: "", cedula: "", moneda: "CRC", correo: "", sinpe: "", direccion: "" });
   const [saved,   setSaved]   = useState(false);
   const [syncing, setSyncing] = useState("");
@@ -743,6 +760,44 @@ export default function ConfiguracionScreen() {
           <p className="text-xs text-monki-k/45 mt-1">El número se formatea automáticamente con prefijo 506 (Costa Rica).</p>
         </div>
       </div>
+
+      {/* Respaldos y tus datos */}
+      {puedeRespaldos && (
+        <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">
+          <h2 className="text-[18px] font-black tracking-[-0.02em] text-monki-k mb-2">Respaldos y tus datos</h2>
+          <p className="text-sm text-monki-k/60 mb-4">
+            Todos los días de madrugada se guarda una copia de seguridad de tu empresa. También podés descargar tus datos cuando quieras.
+          </p>
+          <div className="flex flex-wrap gap-2 mb-4 text-xs">
+            {respaldos?.error ? (
+              <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">No se pudo consultar el estado de los respaldos</span>
+            ) : !respaldos ? (
+              <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">Consultando…</span>
+            ) : respaldos.ultimo ? (
+              <>
+                <span className="px-3 py-1.5 rounded-full bg-monki-y text-monki-k font-bold">✓ Último respaldo: {respaldos.ultimo}</span>
+                <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/70">{respaldos.cantidad} copias guardadas</span>
+                <span className={`px-3 py-1.5 rounded-full ${respaldos.externo ? "bg-monki-k text-monki-y" : "bg-monki-cream text-monki-k/60"}`}>
+                  {respaldos.externo ? "🔒 Copia encriptada fuera del servidor" : "Solo en el servidor"}
+                </span>
+              </>
+            ) : (
+              <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">El primer respaldo se hace esta madrugada</span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button onClick={() => descargar("excel")} disabled={!!descargando}
+              className="flex items-center gap-2 px-4 py-2.5 bg-monki-k text-monki-y font-bold rounded-full ui-boton transition-all duration-300 ease-monki hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#FFD600] text-sm disabled:opacity-50">
+              {descargando === "excel" ? "Preparando…" : "Descargar mis datos (Excel)"}
+            </button>
+            <button onClick={() => descargar("json")} disabled={!!descargando}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-monki-k font-bold shadow-[inset_0_0_0_2px_#111] rounded-full hover:bg-monki-k hover:text-monki-y transition-colors text-sm disabled:opacity-50">
+              {descargando === "json" ? "Preparando…" : "Copia completa (JSON)"}
+            </button>
+          </div>
+          <p className="text-xs text-monki-k/45 mt-3">El Excel trae una hoja por módulo. La copia completa incluye además el XML de cada factura electrónica.</p>
+        </div>
+      )}
 
       {/* Sync */}
       <div className="ui-tarjeta bg-white rounded-[18px] border-2 border-black/10 p-6">

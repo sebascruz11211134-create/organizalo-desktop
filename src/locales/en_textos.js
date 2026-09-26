@@ -973,6 +973,10 @@ const EN = {
   "Hacienda RECHAZÓ este comprobante: no tiene validez fiscal. ¿Compartirlo igual?": "Hacienda REJECTED this document: it has no tax validity. Share it anyway?",
   "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla o mandarla a otro correo.": "It's emailed to the customer automatically when issued and when Hacienda responds. Here you can resend it or send it to another address.",
   "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla (a otro correo solo administración).": "It's emailed to the customer automatically when issued and when Hacienda responds. Here you can resend it (another address: admins only).",
+  "Respaldos y tus datos": "Backups and your data",
+  "Descargar mis datos (Excel)": "Download my data (Excel)",
+  "Copia completa (JSON)": "Full copy (JSON)",
+  "Preparando…": "Preparing…",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.
