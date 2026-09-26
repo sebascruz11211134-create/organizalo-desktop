@@ -3,13 +3,25 @@
 import { BACKEND } from "./config.js";
 import db from "./db";
 
+class SinConexion extends Error {}
+
 async function pedir(ruta, token) {
-  const res = await fetch(`${BACKEND}${ruta}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  let res;
+  try { res = await fetch(`${BACKEND}${ruta}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }); }
+  catch (e) { throw new SinConexion(e.message); } // solo esto es "sin conexión"
   if (!res.ok) {
     const j = await res.json().catch(() => null);
-    throw new Error(j?.error || `Error ${res.status}`);
+    throw new Error(j?.error || `Error ${res.status}`); // 401/403/500: NO se usa la copia local
   }
   return res;
+}
+
+// Nunca salen del equipo PIN, contraseñas ni tokens (igual que en el servidor)
+const CAMPO_SECRETO = /^(pin|pins|password|passwd|pass|contrasena|contraseña|clave_acceso|token|tokens|secret|secreto|refresh_token|api_key|apikey)$|(hash|_enc|Enc)$/i;
+function sinSecretos(v) {
+  if (Array.isArray(v)) return v.map(sinSecretos);
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).filter(([k]) => !CAMPO_SECRETO.test(k)).map(([k, x]) => [k, sinSecretos(x)]));
+  return v;
 }
 
 export const estadoRespaldos = async token => (await pedir("/api/respaldos/estado", token)).json();
@@ -43,21 +55,23 @@ const plano = v => (v && typeof v === "object" ? JSON.stringify(v) : v);
  * servidor; si no hay conexión, los datos guardados en este equipo.
  */
 export async function descargarExcel(token) {
-  let datos, comprobantes = {}, origen = "servidor";
+  let datos, tablas = {}, noLegibles = [], origen = "servidor";
   try {
     const exp = await (await pedir("/api/respaldos/mis-datos", token)).json();
-    datos = exp.datos; comprobantes = exp.comprobantes || {};
-  } catch {
+    datos = exp.datos; tablas = exp.tablas || {}; noLegibles = exp.noLegibles || [];
+  } catch (e) {
+    if (!(e instanceof SinConexion)) throw e; // el servidor respondió que no: no se arma nada local
     origen = "este equipo (sin conexión)";
     const todo = await db.getAll();
     datos = Object.fromEntries(Object.entries(todo)
       .filter(([k]) => k.startsWith("@finanzia/") && !/authToken|refreshToken|authUser|syncBaseline|lastSync|usuarioActivo|modulosHabilitados/.test(k))
-      .map(([k, v]) => [k.slice("@finanzia/".length), v]));
+      .map(([k, v]) => [k.slice("@finanzia/".length), sinSecretos(v)]));
   }
   const XLSX = await import("xlsx");
   const libro = XLSX.utils.book_new();
   const usados = new Set();
   const resumen = [{ Dato: "Generado", Valor: new Date().toLocaleString("es-CR") }, { Dato: "Origen", Valor: origen }];
+  if (noLegibles.length) resumen.push({ Dato: "Datos que no se pudieron leer", Valor: noLegibles.map(n => n.clave).join(", ") });
   const agregar = (clave, filas) => {
     const hoja = XLSX.utils.json_to_sheet(filas.map(f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, plano(v)]))));
     XLSX.utils.book_append_sheet(libro, hoja, nombreHoja(clave, usados));
@@ -67,9 +81,9 @@ export async function descargarExcel(token) {
     if (Array.isArray(valor) && valor.length && valor.every(x => x && typeof x === "object")) agregar(clave, valor);
     else if (valor && typeof valor === "object" && !Array.isArray(valor)) agregar(clave, [valor]);
   }
-  for (const [clave, filas] of Object.entries(comprobantes)) {
-    // El XML va en la copia JSON; en Excel solo los datos legibles
-    if (filas?.length) agregar(`comprobantes_${clave}`, filas.map(({ xml_firmado_base64, respuesta_hacienda, ...resto }) => resto));
+  for (const [tabla, filas] of Object.entries(tablas)) {
+    // Los XML y textos técnicos van en la copia JSON; en Excel solo los datos legibles
+    if (filas?.length) agregar(`tabla_${tabla}`, filas.map(({ xml_firmado_base64, xml_sin_firmar, respuesta_hacienda, ...resto }) => resto));
   }
   XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(resumen), nombreHoja("Resumen", usados));
   libro.SheetNames.unshift(libro.SheetNames.pop()); // Resumen primero

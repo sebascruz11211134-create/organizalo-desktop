@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Save, RefreshCw, Upload, Shield, Trash2, CheckCircle, AlertCircle, MessageCircle, Wifi, WifiOff, QrCode, Bell, Users, Plus, Copy, Eye, EyeOff, UserX, RefreshCcw } from "lucide-react";
 import db from "../utils/db";
 import { pushSync, pullSync } from "../utils/sync";
-import { getToken, getUser, getCurrentUserSync } from "../utils/auth";
+import { getToken, getUser } from "../utils/auth";
 
 import { BACKEND } from "../utils/config";
 import { Modulo, useConfirmar } from "../components/ui";
@@ -17,11 +17,17 @@ export default function ConfiguracionScreen() {
   // ── Respaldos y "Descargar mis datos" (administración) ─────────────────────
   const [respaldos, setRespaldos] = useState(null);
   const [descargando, setDescargando] = useState("");
-  const puedeRespaldos = ["admin", "superadmin", "gerencia"].includes(getCurrentUserSync()?.rol);
+  // El rol se lee con getUser() (funciona también en la app de escritorio). La
+  // seguridad real la pone el servidor: estas rutas son solo de administración.
+  const [puedeRespaldos, setPuedeRespaldos] = useState(false);
   useEffect(() => {
-    if (!puedeRespaldos) return;
-    getToken().then(t => estadoRespaldos(t)).then(setRespaldos).catch(() => setRespaldos({ error: true }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let vigente = true;
+    getUser().then(u => {
+      if (!vigente || !["admin", "superadmin", "gerencia"].includes(u?.rol)) return;
+      setPuedeRespaldos(true);
+      getToken().then(t => estadoRespaldos(t)).then(e => vigente && setRespaldos(e)).catch(() => vigente && setRespaldos({ error: true }));
+    });
+    return () => { vigente = false; };
   }, []);
   const descargar = async (tipo) => {
     setDescargando(tipo);
@@ -777,9 +783,14 @@ export default function ConfiguracionScreen() {
               <>
                 <span className="px-3 py-1.5 rounded-full bg-monki-y text-monki-k font-bold">✓ Último respaldo: {respaldos.ultimo}</span>
                 <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/70">{respaldos.cantidad} copias guardadas</span>
-                <span className={`px-3 py-1.5 rounded-full ${respaldos.externo ? "bg-monki-k text-monki-y" : "bg-monki-cream text-monki-k/60"}`}>
-                  {respaldos.externo ? "🔒 Copia encriptada fuera del servidor" : "Solo en el servidor"}
-                </span>
+                {respaldos.externo ? (
+                  <span className="px-3 py-1.5 rounded-full bg-monki-k text-monki-y">🔒 Copia encriptada fuera del servidor</span>
+                ) : respaldos.externoConfigurado ? (
+                  <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700 font-bold">⚠ Falló la última copia fuera del servidor</span>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">Solo en el servidor</span>
+                )}
+                {respaldos.errorUltimo && <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700">El último respaldo falló; se reintenta solo</span>}
               </>
             ) : (
               <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">El primer respaldo se hace esta madrugada</span>
