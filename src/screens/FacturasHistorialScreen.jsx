@@ -182,11 +182,11 @@ export default function FacturasHistorialScreen() {
   // Solo administración puede mandar el comprobante a un correo distinto al del cliente
   const esAdmin = ["superadmin", "admin", "gerencia"].includes(getCurrentUserSync()?.rol);
   const enviarCorreo = async () => {
-    const { f, destino, confirmarPrueba } = correoModal;
+    const { f, destino, confirmarPrueba, solicitud } = correoModal;
     setEnviandoCorreo(true);
     try {
       const token = await getToken();
-      const r = await enviarCorreoComprobante(baseDe(f), f.haciendaId, { token, destinatario: destino.trim() || undefined, confirmarPrueba });
+      const r = await enviarCorreoComprobante(baseDe(f), f.haciendaId, { token, destinatario: destino.trim() || undefined, confirmarPrueba, solicitud });
       setCorreoModal(null);
       alert(r.estado === "enviado" ? `✅ Enviada a ${r.destino}` : `⏳ Quedó en cola para ${r.destino}; se reintentará sola.`);
       const c = await estadoComprobante(baseDe(f), f.haciendaId, { token }).catch(() => null);
@@ -262,7 +262,7 @@ export default function FacturasHistorialScreen() {
             {!facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
           </Boton>
           {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={FileDown} onClick={() => abrirPdf(sel)}>PDF</Boton>}
-          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={Mail} onClick={() => { const original = sel.cliente?.email || sel.cliente?.correo || ""; setCorreoModal({ f: sel, destino: original, original }); }}>Correo</Boton>}
+          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={Mail} onClick={() => { const original = sel.cliente?.email || sel.cliente?.correo || ""; setCorreoModal({ f: sel, destino: original, original, solicitud: `${sel.id}-${Date.now()}-${Math.random().toString(36).slice(2)}` }); }}>Correo</Boton>}
           <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirWhatsApp(sel)}>WhatsApp</Boton>
           <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={() => anular(sel)}>Anular</Boton>
           <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
@@ -336,7 +336,7 @@ export default function FacturasHistorialScreen() {
             ? "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla o mandarla a otro correo."
             : "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla (a otro correo solo administración)."}>
             <Entrada type="email" value={correoModal.destino} disabled={!esAdmin && !!correoModal.original}
-              onChange={e => setCorreoModal(m => ({ ...m, destino: e.target.value }))} placeholder="cliente@empresa.com"/>
+              onChange={e => setCorreoModal(m => ({ ...m, destino: e.target.value, solicitud: `${m.f.id}-${Date.now()}-${Math.random().toString(36).slice(2)}` }))} placeholder="cliente@empresa.com"/>
           </Campo>
           {correoModal.f.modoSimulacion && (
             <label className="mt-3 flex items-start gap-2 text-sm text-red-700 bg-red-50 border-2 border-red-200 rounded-2xl px-3 py-2 cursor-pointer">

@@ -206,10 +206,14 @@ export function referenciaDeFactura(facturas, facturaRef, pedir = PREGUNTAS) {
 
 // ── PDF, correo y estado de un comprobante ya emitido ───────────────────────
 // base: "/api/invoices" (facturas y tiquetes) o "/api/emision/notas" (NC/ND).
-async function pedir(url, { token, method = "GET", body } = {}) {
+async function pedir(url, { token, method = "GET", body, idempotencyKey } = {}) {
   const res = await fetch(`${BACKEND}${url}`, {
     method,
-    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+    },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
@@ -225,8 +229,9 @@ export async function pdfComprobante(base, id, { token }) {
 }
 
 /** Envía (o reenvía) el comprobante al cliente por correo. */
-export async function enviarCorreoComprobante(base, id, { token, destinatario, confirmarPrueba = false }) {
-  return (await pedir(`${base}/${id}/correo`, { token, method: "POST", body: { ...(destinatario ? { destinatario } : {}), ...(confirmarPrueba ? { confirmarPrueba: true } : {}) } })).json();
+export async function enviarCorreoComprobante(base, id, { token, destinatario, confirmarPrueba = false, solicitud }) {
+  // solicitud: la misma para reintentos del mismo pedido → el servidor no manda dos correos
+  return (await pedir(`${base}/${id}/correo`, { token, method: "POST", idempotencyKey: solicitud, body: { ...(destinatario ? { destinatario } : {}), ...(confirmarPrueba ? { confirmarPrueba: true } : {}) } })).json();
 }
 
 /** Consulta el estado en Hacienda (si quedó aceptado, el servidor envía el correo solo). */
