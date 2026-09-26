@@ -55,10 +55,10 @@ const plano = v => (v && typeof v === "object" ? JSON.stringify(v) : v);
  * servidor; si no hay conexión, los datos guardados en este equipo.
  */
 export async function descargarExcel(token) {
-  let datos, tablas = {}, noLegibles = [], origen = "servidor";
+  let datos, tablas = {}, otros = {}, noLegibles = [], origen = "servidor";
   try {
     const exp = await (await pedir("/api/respaldos/mis-datos", token)).json();
-    datos = exp.datos; tablas = exp.tablas || {}; noLegibles = exp.noLegibles || [];
+    datos = exp.datos; tablas = exp.tablas || {}; otros = exp.otros || {}; noLegibles = exp.noLegibles || [];
   } catch (e) {
     if (!(e instanceof SinConexion)) throw e; // el servidor respondió que no: no se arma nada local
     origen = "este equipo (sin conexión)";
@@ -80,6 +80,12 @@ export async function descargarExcel(token) {
   for (const [clave, valor] of Object.entries(datos || {}).sort(([a], [b]) => a.localeCompare(b))) {
     if (Array.isArray(valor) && valor.length && valor.every(x => x && typeof x === "object")) agregar(clave, valor);
     else if (valor && typeof valor === "object" && !Array.isArray(valor)) agregar(clave, [valor]);
+  }
+  // Otros datos (historial y configuración de Rocky, conversaciones de WhatsApp…)
+  for (const [clave, valor] of Object.entries(otros)) {
+    if (Array.isArray(valor) && valor.length && valor.every(x => x && typeof x === "object")) agregar(`otros_${clave}`, valor);
+    else if (valor && typeof valor === "object") agregar(`otros_${clave}`, [valor]);
+    else if (valor != null) agregar(`otros_${clave}`, [{ valor }]);
   }
   for (const [tabla, filas] of Object.entries(tablas)) {
     // Los XML y textos técnicos van en la copia JSON; en Excel solo los datos legibles

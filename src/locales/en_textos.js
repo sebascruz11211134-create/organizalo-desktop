@@ -979,6 +979,7 @@ const EN = {
   "Preparando…": "Preparing…",
   "⚠ Falló la última copia fuera del servidor": "⚠ The last off-server copy failed",
   "El último respaldo falló; se reintenta solo": "The last backup failed; it will retry automatically",
+  "⚠ El respaldo falló y todavía no hay ninguna copia; se reintenta solo": "⚠ The backup failed and there is no copy yet; it will retry automatically",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

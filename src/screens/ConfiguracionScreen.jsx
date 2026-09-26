@@ -792,6 +792,8 @@ export default function ConfiguracionScreen() {
                 )}
                 {respaldos.errorUltimo && <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700">El último respaldo falló; se reintenta solo</span>}
               </>
+            ) : respaldos.errorUltimo ? (
+              <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700 font-bold">⚠ El respaldo falló y todavía no hay ninguna copia; se reintenta solo</span>
             ) : (
               <span className="px-3 py-1.5 rounded-full bg-monki-cream text-monki-k/60">El primer respaldo se hace esta madrugada</span>
             )}
