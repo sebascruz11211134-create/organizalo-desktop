@@ -702,7 +702,7 @@ export default function FacturacionScreen() {
           {esEnviada && !enviada.modoSimulacion && (
             <p className="text-xs text-monki-k/55 mt-2 max-w-xs mx-auto">
               {(enviada.cliente?.email || enviada.cliente?.correo)
-                ? `✉ Cuando Hacienda la acepte, se envía sola a ${enviada.cliente.email || enviada.cliente.correo} (PDF y XML).`
+                ? `✉ Se envía sola a ${enviada.cliente.email || enviada.cliente.correo} (PDF y XML), y después la respuesta de Hacienda.`
                 : "✉ El cliente no tiene correo: podés enviarla desde el Historial de facturas."}
             </p>
           )}

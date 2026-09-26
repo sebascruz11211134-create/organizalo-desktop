@@ -967,6 +967,12 @@ const EN = {
   "PDF": "PDF",
   "Las facturas aceptadas se envían solas al correo del cliente; acá podés reenviarla o mandarla a otro correo.": "Accepted invoices are emailed to the customer automatically; here you can resend it or send it to another address.",
   "✉ El cliente no tiene correo: podés enviarla desde el Historial de facturas.": "✉ The customer has no email: you can send it from the Invoice history.",
+  "Comprobante sin validez fiscal": "Document without tax validity",
+  "Compartir igual": "Share anyway",
+  "Es un comprobante de PRUEBA: no tiene validez fiscal. ¿Compartirlo igual?": "This is a TEST document with no tax validity. Share it anyway?",
+  "Hacienda RECHAZÓ este comprobante: no tiene validez fiscal. ¿Compartirlo igual?": "Hacienda REJECTED this document: it has no tax validity. Share it anyway?",
+  "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla o mandarla a otro correo.": "It's emailed to the customer automatically when issued and when Hacienda responds. Here you can resend it or send it to another address.",
+  "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla (a otro correo solo administración).": "It's emailed to the customer automatically when issued and when Hacienda responds. Here you can resend it (another address: admins only).",
 };
 
 // Textos con partes variables ("3 de 10", "Fact #12"): patrón → reemplazo.

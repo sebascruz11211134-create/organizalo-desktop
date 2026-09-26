@@ -7,7 +7,7 @@ import { Modulo, Boton, BarraFiltros, Buscador, Selector, Vacio, Estado, Indicad
 import db from "../utils/db";
 import { useSyncRefresh } from "../hooks/useSyncRefresh";
 import { fmtMoney, fmtDate } from "../utils/fmt";
-import { getToken } from "../utils/auth";
+import { getToken, getCurrentUserSync } from "../utils/auth";
 import { etiquetaEstado, facturaReintentable, reintentarFactura, pdfComprobante, enviarCorreoComprobante, estadoComprobante, etiquetaCorreo } from "../utils/comprobantes";
 import { guardarFacturaVenta, efectosPendientes } from "../utils/efectosVenta";
 import { useCurrency } from "../contexts/CurrencyContext";
@@ -179,20 +179,31 @@ export default function FacturasHistorialScreen() {
     if (pdf?.id === f.id) return window.open(pdf.url, "_blank", "noopener");
     alert("El PDF todavía se está preparando. Probá de nuevo en un momento.");
   };
+  // Solo administración puede mandar el comprobante a un correo distinto al del cliente
+  const esAdmin = ["superadmin", "admin", "gerencia"].includes(getCurrentUserSync()?.rol);
   const enviarCorreo = async () => {
-    const { f, destino } = correoModal;
+    const { f, destino, confirmarPrueba } = correoModal;
     setEnviandoCorreo(true);
     try {
       const token = await getToken();
-      const r = await enviarCorreoComprobante(baseDe(f), f.haciendaId, { token, destinatario: destino.trim() || undefined });
-      setServidor(prev => ({ ...prev, [f.id]: { ...prev[f.id], correo: { estado: "enviado", destino: r.destino, enviadoEn: new Date().toISOString() } } }));
+      const r = await enviarCorreoComprobante(baseDe(f), f.haciendaId, { token, destinatario: destino.trim() || undefined, confirmarPrueba });
       setCorreoModal(null);
-      alert(`✅ Factura enviada a ${r.destino}`);
+      alert(r.estado === "enviado" ? `✅ Enviada a ${r.destino}` : `⏳ Quedó en cola para ${r.destino}; se reintentará sola.`);
+      const c = await estadoComprobante(baseDe(f), f.haciendaId, { token }).catch(() => null);
+      if (c) setServidor(prev => ({ ...prev, [f.id]: { estado: c.estado, correo: c.correo } }));
     } catch (e) {
       alert(`❌ ${e.message}`);
     } finally {
       setEnviandoCorreo(false);
     }
+  };
+  // WhatsApp con PDF: advertir si el comprobante no tiene validez fiscal
+  const compartirWhatsApp = async (f) => {
+    const sinValidez = f.modoSimulacion || ["rechazado", "rechazada"].includes(f.estado) || ["rechazado"].includes(servidor[f.id]?.estado);
+    if (sinValidez && !(await confirmar("Comprobante sin validez fiscal",
+      f.modoSimulacion ? "Es un comprobante de PRUEBA: no tiene validez fiscal. ¿Compartirlo igual?" : "Hacienda RECHAZÓ este comprobante: no tiene validez fiscal. ¿Compartirlo igual?",
+      { peligro: true, boton: "Compartir igual" }))) return;
+    compartirFactura(f, { settings, contactos, fmtMoney, pdf: pdf?.id === f.id ? pdf.blob : null });
   };
 
   const busqL    = busq.trim().toLowerCase();
@@ -239,9 +250,10 @@ export default function FacturasHistorialScreen() {
           <b>{sel.numero}</b><span className="text-white/60">{sel.cliente?.nombre || "Consumidor Final"}</span>
           <b className="text-monki-y">{fmtMoney(sel.total, sel.moneda)}</b>
           {sel.error && <span className="text-red-300 text-xs truncate max-w-md" title={sel.error}>{sel.error}</span>}
-          {etiquetaCorreo(servidor[sel.id]?.correo) && (
-            <span className={`text-xs ${servidor[sel.id].correo.estado === "error" ? "text-red-300" : "text-monki-y"}`}>✉ {etiquetaCorreo(servidor[sel.id].correo)}</span>
-          )}
+          {(() => {
+            const et = etiquetaCorreo(servidor[sel.id]?.correo);
+            return et && <span className={`text-xs ${et.tono === "error" ? "text-red-300" : et.tono === "alerta" ? "text-amber-200" : "text-monki-y"}`}>✉ {et.texto}</span>;
+          })()}
           <div className="flex-1"/>
           <Boton variante="amarillo" tamano="sm" icono={Send} cargando={reintentando}
             disabled={!(facturaReintentable(sel) || efectosPendientes(sel)) || reintentando}
@@ -250,8 +262,8 @@ export default function FacturasHistorialScreen() {
             {!facturaReintentable(sel) && efectosPendientes(sel) ? "Completar registro" : "Reintentar envío"}
           </Boton>
           {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={FileDown} onClick={() => abrirPdf(sel)}>PDF</Boton>}
-          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={Mail} onClick={() => setCorreoModal({ f: sel, destino: sel.cliente?.email || sel.cliente?.correo || "" })}>Correo</Boton>}
-          <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirFactura(sel, { settings, contactos, fmtMoney, pdf: pdf?.id === sel.id ? pdf.blob : null })}>WhatsApp</Boton>
+          {sel.haciendaId && <Boton variante="secundario" tamano="sm" icono={Mail} onClick={() => { const original = sel.cliente?.email || sel.cliente?.correo || ""; setCorreoModal({ f: sel, destino: original, original }); }}>Correo</Boton>}
+          <Boton variante="amarillo" tamano="sm" icono={MessageCircle} onClick={() => compartirWhatsApp(sel)}>WhatsApp</Boton>
           <Boton variante="secundario" tamano="sm" icono={Ban} disabled={sel.estado === "anulada"} onClick={() => anular(sel)}>Anular</Boton>
           <Boton variante="peligro" tamano="sm" icono={Trash2} onClick={() => eliminar(sel)}>Eliminar</Boton>
         </div>
@@ -319,10 +331,19 @@ export default function FacturasHistorialScreen() {
       </div>
       {correoModal && (
         <Modal titulo="Enviar por correo" subtitulo={`${correoModal.f.numero} · PDF, XML firmado y respuesta de Hacienda`} onCerrar={() => setCorreoModal(null)} ancho="max-w-md"
-          pie={<><Boton variante="fantasma" onClick={() => setCorreoModal(null)}>Cancelar</Boton><Boton icono={Send} cargando={enviandoCorreo} disabled={enviandoCorreo || !correoModal.destino.trim()} onClick={enviarCorreo}>Enviar</Boton></>}>
-          <Campo etiqueta="Correo del cliente" ayuda="Las facturas aceptadas se envían solas al correo del cliente; acá podés reenviarla o mandarla a otro correo.">
-            <Entrada type="email" value={correoModal.destino} onChange={e => setCorreoModal(m => ({ ...m, destino: e.target.value }))} placeholder="cliente@empresa.com"/>
+          pie={<><Boton variante="fantasma" onClick={() => setCorreoModal(null)}>Cancelar</Boton><Boton icono={Send} cargando={enviandoCorreo} disabled={enviandoCorreo || !correoModal.destino.trim() || (correoModal.f.modoSimulacion && !correoModal.confirmarPrueba)} onClick={enviarCorreo}>Enviar</Boton></>}>
+          <Campo etiqueta="Correo del cliente" ayuda={esAdmin
+            ? "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla o mandarla a otro correo."
+            : "Se envía sola al cliente al emitirla y cuando Hacienda responde. Acá podés reenviarla (a otro correo solo administración)."}>
+            <Entrada type="email" value={correoModal.destino} disabled={!esAdmin && !!correoModal.original}
+              onChange={e => setCorreoModal(m => ({ ...m, destino: e.target.value }))} placeholder="cliente@empresa.com"/>
           </Campo>
+          {correoModal.f.modoSimulacion && (
+            <label className="mt-3 flex items-start gap-2 text-sm text-red-700 bg-red-50 border-2 border-red-200 rounded-2xl px-3 py-2 cursor-pointer">
+              <input type="checkbox" className="mt-0.5" checked={!!correoModal.confirmarPrueba} onChange={e => setCorreoModal(m => ({ ...m, confirmarPrueba: e.target.checked }))}/>
+              <span>{"Entiendo que es un comprobante de PRUEBA y le llegará marcado \"sin validez fiscal\"."}</span>
+            </label>
+          )}
         </Modal>
       )}
       {dialogo}

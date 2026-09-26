@@ -214,7 +214,7 @@ async function pedir(url, { token, method = "GET", body } = {}) {
   });
   if (!res.ok) {
     const j = await res.json().catch(() => null);
-    throw new Error(j?.error || `Error ${res.status}`);
+    throw Object.assign(new Error(j?.error || `Error ${res.status}`), { status: res.status, requiereConfirmacion: !!j?.requiereConfirmacion });
   }
   return res;
 }
@@ -225,8 +225,8 @@ export async function pdfComprobante(base, id, { token }) {
 }
 
 /** Envía (o reenvía) el comprobante al cliente por correo. */
-export async function enviarCorreoComprobante(base, id, { token, destinatario }) {
-  return (await pedir(`${base}/${id}/correo`, { token, method: "POST", body: destinatario ? { destinatario } : {} })).json();
+export async function enviarCorreoComprobante(base, id, { token, destinatario, confirmarPrueba = false }) {
+  return (await pedir(`${base}/${id}/correo`, { token, method: "POST", body: { ...(destinatario ? { destinatario } : {}), ...(confirmarPrueba ? { confirmarPrueba: true } : {}) } })).json();
 }
 
 /** Consulta el estado en Hacienda (si quedó aceptado, el servidor envía el correo solo). */
@@ -234,9 +234,15 @@ export async function estadoComprobante(base, id, { token }) {
   return (await pedir(`${base}/${id}/status`, { token })).json();
 }
 
+const ETAPAS = { comprobante: "Comprobante", respuesta: "Respuesta de Hacienda", completo: "Comprobante y respuesta", manual: "Reenvío" };
+/** Resumen legible de las entregas por correo de un comprobante (null si no hay nada que mostrar). */
 export function etiquetaCorreo(correo) {
-  if (!correo?.estado) return null;
-  if (correo.estado === "enviado") return `Enviada por correo a ${correo.destino || "el cliente"}`;
-  if (correo.estado === "enviando") return "Enviando por correo…";
-  return `No se pudo enviar por correo${correo.error ? `: ${correo.error}` : ""}`;
+  if (!correo) return null;
+  if (correo.sinCorreo) return { texto: "El cliente no tiene correo: no se le envió", tono: "alerta" };
+  const e = correo.entregas?.at(-1);
+  if (!e) return null;
+  const etapa = ETAPAS[e.etapa] || "Correo";
+  if (e.estado === "enviado") return { texto: `${etapa} enviado a ${e.destino}`, tono: "ok" };
+  if (e.estado === "fallido") return { texto: `${etapa}: no se pudo enviar${e.error ? ` (${e.error})` : ""}`, tono: "error" };
+  return { texto: `${etapa}: enviando a ${e.destino}…`, tono: "ok" };
 }
