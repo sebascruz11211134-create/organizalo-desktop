@@ -55,10 +55,10 @@ const plano = v => (v && typeof v === "object" ? JSON.stringify(v) : v);
  * servidor; si no hay conexión, los datos guardados en este equipo.
  */
 export async function descargarExcel(token) {
-  let datos, tablas = {}, otros = {}, noLegibles = [], origen = "servidor";
+  let datos, tablas = {}, otros = {}, noLegibles = [], omitidos = [], origen = "servidor";
   try {
     const exp = await (await pedir("/api/respaldos/mis-datos", token)).json();
-    datos = exp.datos; tablas = exp.tablas || {}; otros = exp.otros || {}; noLegibles = exp.noLegibles || [];
+    datos = exp.datos; tablas = exp.tablas || {}; otros = exp.otros || {}; noLegibles = exp.noLegibles || []; omitidos = exp.omitidosPorSeguridad || [];
   } catch (e) {
     if (!(e instanceof SinConexion)) throw e; // el servidor respondió que no: no se arma nada local
     origen = "este equipo (sin conexión)";
@@ -71,6 +71,7 @@ export async function descargarExcel(token) {
   const libro = XLSX.utils.book_new();
   const usados = new Set();
   const resumen = [{ Dato: "Generado", Valor: new Date().toLocaleString("es-CR") }, { Dato: "Origen", Valor: origen }];
+  if (omitidos.length) resumen.push({ Dato: "No incluido por seguridad (sesiones y credenciales)", Valor: omitidos.map(o => o.clave).join(", ") });
   if (noLegibles.length) resumen.push({ Dato: "Datos que no se pudieron leer", Valor: noLegibles.map(n => n.clave).join(", ") });
   const agregar = (clave, filas) => {
     const hoja = XLSX.utils.json_to_sheet(filas.map(f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, plano(v)]))));
